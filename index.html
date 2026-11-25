@@ -536,6 +536,19 @@ body[data-view="today"] #filterbar{display:none}
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+input.tin{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
+.tchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:-4px}
+.tchips .chip{cursor:pointer}
+.ctchips .chip[data-single="stool"]{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 8px}
+.ctchips .chip[data-single="stool"].off{opacity:.85}
+.ctchips .chip[data-single="stool"]:not(.off){box-shadow:0 0 0 2px #a0522d inset}
+@media (max-width:720px){ .ctg .chips:has(> [data-single="stool"]){display:grid;grid-template-columns:1fr 1fr;gap:6px} }
+.st-n{display:flex;flex-direction:column;line-height:1.15;text-align:left} .st-n .faint{font-size:11px;font-weight:400}
+.stool-bar .stool-ic{fill:#fff;vertical-align:-3px;opacity:.9}
+.stool-bar{display:flex;border-radius:10px;overflow:hidden;margin-top:12px;font-size:12px;font-weight:600;color:#fff}
+.stool-bar span{padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.st-hard{background:#92400e}.st-formed{background:#b45309}.st-loose{background:#d97706}.st-watery{background:#ca8a04}
 .pl{display:flex;flex-direction:column}
 .pl-row{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:start;padding:9px 10px;border-left:4px solid var(--k);border-bottom:1px solid var(--border);border-radius:0}
 .pl-row:last-child{border-bottom:0}
@@ -996,11 +1009,24 @@ body[data-view="today"] #filterbar{display:none}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.9', date:'2026-11-25',
+    en:[
+      'Poop consistency: Diaper - Poop entries have Hard / Formed / Loose / Watery chips with small icons (the Brussels Infant and Toddler Stool Scale groups). Health → Care tracking counts them.',
+      'Wet + poop now opens a short form with the time and consistency, then saves both rows.',
+      'Quick Log: “now · −5 · −15 · −30 min · −1 h” buttons under Start time, and water amounts from 10 to 150 ml (change them in Settings → Targets).',
+      'On a computer, time fields are plain text boxes: type 930, 14:45 or 2:15p; ↑ / ↓ move by 5 minutes.',
+    ],
+    fr:[
+      'Consistance des selles : les entrées Diaper - Poop ont des boutons Dures / Moulées / Molles / Liquides avec de petites icônes (groupes de l’échelle de Bruxelles BITSS). Santé → Suivi des soins les compte.',
+      'Pipi + caca ouvre maintenant un court formulaire avec l’heure et la consistance, puis enregistre les deux lignes.',
+      'Ajout rapide : boutons « maintenant · −5 · −15 · −30 min · −1 h » sous l’heure de début, et quantités d’eau de 10 à 150 ml (modifiables dans Paramètres → Cibles).',
+      'À l’ordinateur, les champs d’heure sont des zones de texte : tapez 930, 14:45 ou 14h15; ↑ / ↓ avancent de 5 minutes.',
+    ] },
   { v:'1.8', date:'2026-11-25',
     en:['Quick Log: 💧💩 Wet + poop logs both diapers in one tap (one Diaper - Wet and one Diaper - Poop row, same time).'],
     fr:['Ajout rapide : 💧💩 Pipi + caca note les deux couches d’un seul toucher (une ligne Diaper - Wet et une ligne Diaper - Poop, même heure).'] },
@@ -1253,6 +1279,23 @@ const DEFAULT_TEMPLATES = [
     { label:'Bedtime', kind:'bedtime', start:'20:00' },
   ]},
 ];
+/** Poop consistency, grouped as in the Brussels Infant and Toddler Stool Scale (BITSS) for children in diapers; the type numbers follow the Bristol scale. Stored as a plain tag. */
+const STOOL = () => [
+  ['hard',   L('Hard', 'Dures'),     L('types 1–2 · separate lumps or lumpy', 'types 1–2 · boules ou bosselées')],
+  ['formed', L('Formed', 'Moulées'), L('types 3–5 · sausage-shaped or soft blobs', 'types 3–5 · en boudin ou morceaux mous')],
+  ['loose',  L('Loose', 'Molles'),   L('type 6 · mushy, ragged edges', 'type 6 · bouillie, bords irréguliers')],
+  ['watery', L('Watery', 'Liquides'),L('type 7 · no solid pieces', 'type 7 · sans morceaux solides')],
+];
+const STOOL_KEYS = ['hard', 'formed', 'loose', 'watery'];
+/** Simple drawn icons for the four groups (original shapes, not the BITSS photos). */
+const STOOL_ICON = {
+  hard:   '<circle cx="7" cy="12" r="3.4"/><circle cx="14.5" cy="10" r="3.1"/><circle cx="21.5" cy="12.5" r="3.3"/><circle cx="11" cy="18" r="2.6"/><circle cx="18.5" cy="17.5" r="2.7"/>',
+  formed: '<path d="M4 15.5c0-3 2.4-5 5.5-5h9c3.1 0 5.5 2 5.5 5s-2.4 5-5.5 5h-9C6.4 20.5 4 18.5 4 15.5z"/><path d="M10 11.5c.6 1.6.6 6.3 0 8M16 11.5c.6 1.6.6 6.3 0 8" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.1"/>',
+  loose:  '<path d="M3.5 17c1-3.6 3.6-4.2 5-6.2 1.8 1.4 2.6-.8 4.6.3 1.6-1.4 3.8-.4 4.6 1 1.8-.5 3.5.6 3.8 2.4 1.6.6 2 2.4 1 3.6-1.2 1.4-3 .6-4.4 1.4-1.6.9-3.6.2-5.2.8-1.8.6-3.6-.2-5-.6-1.6-.4-4.6-.4-4.4-2.7z"/>',
+  watery: '<path d="M3 18.5c2.2-1.6 4.6-1 6.4-1.8 2-.9 4-.4 5.8-.2 2 .3 4-.8 6-.2 1.6.5 2.4 1.6 1 2.4-2 1.2-4.8.6-7 1.1-2.4.5-5 .3-7.4 0-1.8-.2-5.2.2-4.8-1.3z" opacity=".85"/><path d="M8.5 11.5c0 1.3-.9 2.1-1.8 2.1s-1.8-.8-1.8-2.1S6.7 8.6 6.7 8.6s1.8 1.6 1.8 2.9zM17.5 9.5c0 1.1-.8 1.8-1.5 1.8s-1.5-.7-1.5-1.8.9-2.6 1.5-3.4c.6.8 1.5 2.3 1.5 3.4z" opacity=".7"/>',
+};
+const stoolIcon = (k, sz = 26) => `<svg class="stool-ic" viewBox="0 0 28 24" width="${sz}" height="${Math.round(sz * 24 / 28)}" aria-hidden="true" fill="${{ hard:'#7c3f12', formed:'#a0522d', loose:'#b7791f', watery:'#c9a227' }[k]}">${STOOL_ICON[k]}</svg>`;
+const isPoopCat = c => /poop|dirty|\bbm\b|stool|caca|selle/i.test(String(c || ''));
 const KIND_STYLE = {
   wake:   { color:'#10b981', label:'Wake target' },
   nap:    { color:'#6366f1', label:'Nap window' },
@@ -1287,7 +1330,7 @@ const DEFAULT_SETTINGS = {
   ntfyTopic: '',
   foodWords: '',                 // extra food keywords (comma-separated)
   targets: {
-    maxDaySleep: 150, milkMin: 12, milkMax: 15, waterMl: 0,
+    maxDaySleep: 150, milkMin: 12, milkMax: 15, waterMl: 0, waterChips: '10, 30, 60, 90, 120, 150',
     ww1: 180, ww2: 210, wwFinal: 240, underTired: 210,
     napCutoff: '16:00', bedtime: '20:00', lateDinner: '18:15',
     nightStart: '22:00', nightEnd: '06:00', splitNightMin: 30,
@@ -3803,6 +3846,11 @@ function renderHealth(){
       <div class="stat-box"><div class="v">${meds.length}</div><div class="k">meds entries in range</div></div></div>
     ${meds.length ? `<ul class="feed" style="margin-top:8px">${Object.values(meds.reduce((g, e) => { const k = norm(e.notes || e.cat); (g[k] ||= []).push(e); return g; }, {})).slice(0, 15).map(g => g.length === 1 ? feedLi(g[0])
       : `<li data-day="${g[0].d}" data-ev="${g[0].id}"><div class="ic" style="background:${catColor(g[0].cat)}22">${cat(g[0].cat).icon}</div><div><div class="t">${esc(g[0].notes || g[0].cat)} <span class="pill">× ${g.length}</span></div><div class="m">${fmtDayShort(g[g.length-1].d)} – ${fmtDayShort(g[0].d)} · last ${fmtDay(g[0].d)}${g[0].st != null ? ' ' + fmtTime(g[0].st) : ''}</div></div></li>`).join('')}</ul>` : ''}
+    ${(() => { const inR = poops.filter(e => days.some(d => d.D === e.d)), c = {}; inR.forEach(e => { const k = STOOL_KEYS.find(x => e.tags.includes(x)); if (k) c[k] = (c[k] || 0) + 1; });
+      const n = Object.values(c).reduce((a, b) => a + b, 0); if (!n) return inR.length ? `<p class="hint">${L('Tip: tag poops Hard / Formed / Loose / Watery in Quick Log to track consistency here.', 'Astuce : indiquez Dures / Moulées / Molles / Liquides dans l’ajout rapide pour suivre la consistance ici.')}</p>` : '';
+      const wk = poops.filter(e => e.d > todayIdx() - 7), hard7 = wk.filter(e => e.tags.includes('hard')).length, wat7 = wk.filter(e => e.tags.includes('watery')).length;
+      return `<div class="stool-bar">${STOOL().map(([k, nm, d]) => c[k] ? `<span class="st-${k}" style="flex:${c[k]}" title="${esc(d)}">${stoolIcon(k, 18).replace('fill=', 'data-f=')} ${esc(nm)} ${c[k]}</span>` : '').join('')}</div>
+        <p class="hint">${L(`Consistency of ${n} of ${inR.length} poops in range (BITSS groups).`, `Consistance de ${n} des ${inR.length} selles de la période (groupes BITSS).`)}${hard7 >= 2 ? ' ' + L(`${hard7} hard in the last 7 days.`, `${hard7} dures dans les 7 derniers jours.`) : ''}${wat7 >= 2 ? ' ' + L(`${wat7} watery in the last 7 days.`, `${wat7} liquides dans les 7 derniers jours.`) : ''}${hard7 >= 2 || wat7 >= 2 ? ' ' + L('Worth mentioning to your pediatrician if it continues.', 'À mentionner au pédiatre si ça continue.') : ''}</p>`; })()}
     ${diaperChartHTML(days)}${(() => { const tags = {}; DATA.events.filter(e => e.k === 'diaper' && days.some(d => d.D === e.d)).forEach(e => e.tags.forEach(x => tags[x] = (tags[x] || 0) + 1)); const l = Object.entries(tags).sort((a, b) => b[1] - a[1]); return l.length ? `<p class="hint">Diaper notes in range: ${l.map(([k, c]) => esc(k) + ' × ' + c).join(' · ')}</p>` : ''; })()}
     <div class="hint">Turn on <b>Diaper &amp; meds</b> in the timeline toolbar to overlay these events on the 24-hour grid.</div>`;
   renderDiaperChart(days);
@@ -4779,7 +4827,7 @@ function playChipsHTML(tagsStr){
   const grp = (title, items, single) => `<div class="ctg"><span class="faint">${title}</span><div class="chips">${items.map(([v, en, fr]) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" ${single ? `data-single="${single}"` : ''} style="text-decoration:none">${esc(L(en, fr))}</span>`).join('')}</div></div>`;
   return `<div class="full ctchips">${grp(L('Activity', 'Activité'), PLAY_ACTS(), '')}${grp(L('With', 'Avec'), PLAY_WITH(), '')}${grp(L('Attention', 'Attention'), PLAY_FOCUS(), 'focus')}</div>`;
 }
-const PLAY_SINGLE = { focus: () => PLAY_FOCUS().map(x => x[0]) };
+const PLAY_SINGLE = { focus: () => PLAY_FOCUS().map(x => x[0]), stool: () => STOOL_KEYS };
 
 /* ── The check-in form ── */
 let CI = null;   // { D, ans:{ id:{ k:[...] } }, tone:{ id }, notes:{ id }, existing:{ id: ev } }
@@ -5118,7 +5166,7 @@ function qlPresets(){
   if (mod('food')) P.push({ e:'🍽', label: mealByTime(now), cat: mealByTime(now), meal:true });
   if (mod('visits')) P.push({ e:'🤝', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤝', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
   P.push({ e:'🙂', label:'Reaction / mood', cat:'Behaviour' });
-  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), both:true, sub:L('one tap, two rows', 'un seul toucher, deux lignes') }, { e:'💊', label:'Meds', cat:'Meds' });
+  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Poop', both:true, sub:L('two rows, same time', 'deux lignes, même heure') }, { e:'💊', label:'Meds', cat:'Meds' });
   if (mod('milestones')) P.push({ e:'⭐', label:'Add Milestone', cat:'Milestone', allDay:true });
   if (mod('growth')) P.push({ e:'⚖️', label:'Weight', cat:'Weight', allDay:true, value:true }, { e:'📏', label:'Length', cat:'Height', allDay:true, value:true });
   if (mod('health')) P.push({ e:'🌡️', label:'Temperature', cat:'Temperature', value:true });
@@ -5140,7 +5188,7 @@ function renderQuickLog(){
   const f = QL, catKindNow = f.row['Category'] ? catKind(f.row['Category']) : '';
   const ocOpts = f.op === 'end' ? (isSleep({ k: catKindNow }) ? OUTCOMES.sleep : []) : catKindNow === 'contact' ? OUTCOMES.contact : catKindNow === 'meal' ? OUTCOMES.meal : (catKindNow === 'nap' || catKindNow === 'night') ? OUTCOMES.sleep : (catKindNow === 'incident' || catKindNow === 'medical') ? OUTCOMES.incident : catKindNow === 'handover' ? OUTCOMES.handover : catKindNow === 'behaviour' ? OUTCOMES.behaviour : [];
   const sugg = catKindNow === 'behaviour' || catKindNow === 'awake' ? [...REACT_NEG.slice(0, 10), ...REACT_POS.slice(0, 5)] : catKindNow === 'handover' ? [...HANDOVER_TAGS, 'upset-at-handover', 'calm'] : catKindNow === 'milestone' ? ['motor','speech','feeding','social'] : catKindNow === 'meal' ? ['new-food','accepted','refused','self-fed'] : [];
-  $('#qlTitle').textContent = f.op === 'update' ? L('Edit entry', 'Modifier l’entrée') : f.op === 'end' ? `End ${f.row['Category']}` : f.row['Category'] ? `Log ${f.row['Category']}` : 'Custom entry';
+  $('#qlTitle').textContent = f.both ? L('Log wet + poop diaper', 'Noter couche pipi + caca') : f.op === 'update' ? L('Edit entry', 'Modifier l’entrée') : f.op === 'end' ? `End ${f.row['Category']}` : f.row['Category'] ? `Log ${f.row['Category']}` : 'Custom entry';
   const known = [...new Set([...Object.keys(DEFAULT_CATS), ...CATS.keys()])];
   const v = h => esc(f.row[h] ?? '');
   $('#qlBody').innerHTML = `<form class="qform" id="qlForm" autocomplete="off">
@@ -5149,11 +5197,14 @@ function renderQuickLog(){
     : `<label class="field full">Category<input type="text" name="Category" list="qlCats" value="${v('Category')}" required placeholder="e.g. Lunch, Sleep - Nap, Milestone"><datalist id="qlCats">${known.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
       <label class="field">Date<input type="date" name="Date" value="${v('Date')}" required></label>
       <label class="field">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
+      ${f.op === 'append' ? `<div class="full tchips" data-for="Start Time"><span class="faint">${L('Started', 'Début')}</span>${[[0, L('now', 'maintenant')], [5, '−5 min'], [15, '−15 min'], [30, '−30 min'], [60, '−1 h']].map(([d, t]) => `<button type="button" class="chip" data-ago="${d}">${t}</button>`).join('')}</div>` : ''}
       <label class="field">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
       <label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>
       ${['pump','growth','temp'].includes(catKindNow) ? `<label class="field">${catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
       <label class="field">Water (ml)<input type="number" step="10" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
+      ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
+      ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     <label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${ocOpts.map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>
     <label class="field full">Notes<textarea name="Notes" rows="2" placeholder="${catKindNow === 'milestone' ? 'e.g. First steps!' : catKindNow === 'incident' ? 'What happened?' : ''}">${v('Notes')}</textarea></label>
@@ -5162,15 +5213,15 @@ function renderQuickLog(){
   </form>`;
 }
 /** Open Quick Log straight into a form for a given row (e.g. from the tooth chart). */
+function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
+function stoolChipsHTML(tagsStr){
+  const cur = new Set(parseTags(tagsStr));
+  return `<div class="full ctchips"><div class="ctg"><span class="faint">${L('Consistency', 'Consistance')} · <a href="https://bitss-stoolscale.com" target="_blank" rel="noopener" class="faint">BITSS</a></span><div class="chips">${STOOL().map(([v, n, d]) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" data-single="stool" title="${esc(d)}">${stoolIcon(v)}<span class="st-n">${esc(n)}<span class="faint">${esc(d.split(' · ')[0])}</span></span></span>`).join('')}</div></div></div>`;
+}
 function openQuickLogWith(row){ if (viewOnly()) return toast(L('This is a view-only connection — logging is done by the family', 'Accès en lecture seulement — la famille fait les entrées')); QL = { op:'append', row:{ 'Date': isoOf(todayIdx()), 'Start Time':'', 'End Time':'', 'Duration (min)':'', 'Category':'', 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'', 'Value':'', ...row } }; renderQuickLog(); $('#qlog').classList.add('on'); $('#scrim').classList.add('on'); }
 async function pickPreset(i){
   const p = window.__qlp[i]; if (!p) return;
   if (p.checkin) { closeQuickLog(); return openCheckin(); }
-  if (p.both) {   // one tap → a Diaper - Wet and a Diaper - Poop row at the same time
-    const r = c => ({ 'Date': isoOf(todayIdx()), 'Start Time': fmtTime(nowMin()), 'End Time':'', 'Duration (min)':'', 'Category': c, 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'', 'Value':'' });
-    closeQuickLog(); await saveQuickOp('append', r('Diaper - Wet'), { batch:true }); await saveQuickOp('append', r('Diaper - Poop'));
-    return toast(L('Logged a wet and a poop diaper', 'Couche pipi et couche caca notées'));
-  }
   if (p.instant) {   // one-tap breastfeeding actions
     const now = nowMin(), base = { 'Date': isoOf(todayIdx()), 'Start Time': fmtTime(now), 'End Time':'', 'Duration (min)':'', 'Category':'Breastfeed', 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'', 'Value':'' };
     closeQuickLog();
@@ -5183,15 +5234,15 @@ async function pickPreset(i){
   const now = nowMin(), row = { 'Date': isoOf(todayIdx()), 'Start Time': fmtTime(now), 'End Time':'', 'Duration (min)':'', 'Category': p.cat, 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'' };
   if (p.op === 'end') { QL = { op:'end', row:{ 'Category': p.cat, 'End Time': fmtTime(now), 'Notes':'', 'Outcome / Rating':'' }, target:p.target }; return renderQuickLog(); }
   if (p.milk) row['Milk (oz)'] = p.milk;
-  if (p.water) { row['Category'] = 'Water'; row['Water (ml)'] = 60; }
+  if (p.water) { row['Category'] = 'Water'; row['Water (ml)'] = waterChips()[2] ?? waterChips()[0] ?? 60; }
   if (p.allDay) row['Start Time'] = '';
   if (p.tags) row['Tags'] = p.tags;
   if (p.notes) row['Notes'] = p.notes;
   row['Value'] = '';
-  QL = { op:'append', row }; renderQuickLog();
+  QL = { op:'append', row, both: !!p.both }; renderQuickLog();
   setTimeout(() => $('#qlForm button[type=submit]')?.focus(), 50);
 }
-function submitQuickLog(form){
+async function submitQuickLog(form){
   const fd = Object.fromEntries(new FormData(form).entries());
   if (QL.op === 'end') {
     const tgt = QL.target, en = parseTime(fd['End Time']); if (en == null) return toast('Pick an end time', true);
@@ -5199,7 +5250,7 @@ function submitQuickLog(form){
     const row = { 'Category': tgt.cat, 'End Time': fmtTime(en), 'Duration (min)': endAbs - tgt.s, 'Notes': fd['Notes'] || '', 'Outcome / Rating': fd['Outcome / Rating'] || '' };
     closeQuickLog(); saveQuickOp('end', row); return;
   }
-  const row = { ...QL.row, ...fd };
+  const row = { ...QL.row, ...fd }, both = QL.both;
   if (row['Milk (oz)'] !== '' && row['Milk (oz)'] != null) row['Milk (oz)'] = +fromDisp(+row['Milk (oz)']).toFixed(2);   // form is in display units
   row['Category'] = canonCat(row['Category']);
   const st = parseTime(row['Start Time']), en = parseTime(row['End Time']);
@@ -5212,7 +5263,10 @@ function submitQuickLog(form){
   Object.keys(row).forEach(k => { if (row[k] == null) row[k] = ''; });
   if (catKind(row['Category']) === 'contact') { const keep = parseTags(row['Tags']).map(contactTag).filter(h => h && ['channel', 'dir', 'who'].includes(h[0])).map(h => h[1]); if (keep.length) { S.lastContactTags = keep.join(', '); saveSettings(); } }
   if (QL.op === 'update') { const ev = QL.ev; closeQuickLog(); return saveQuickOp('update', row, { rowNum: ev.sheetRow, match: ev.match, localId: ev.local ? ev.localId : null }); }
-  closeQuickLog(); saveQuickOp('append', row);
+  closeQuickLog();
+  if (both) { const wet = { ...row, 'Category':'Diaper - Wet', 'Tags': parseTags(row['Tags']).filter(t => !STOOL_KEYS.includes(t)).join(', ') };
+    await saveQuickOp('append', wet, { batch:true }); await saveQuickOp('append', row); return toast(L('Logged a wet and a poop diaper', 'Couche pipi et couche caca notées')); }
+  saveQuickOp('append', row);
 }
 /* ── Edit / delete an existing entry (✏️ in the day view, press-and-hold or right-click anywhere) ── */
 /** Why an entry can't be edited here, or '' when it can. */
@@ -5606,6 +5660,40 @@ function wireOnboarding(){
   addEventListener('scroll', () => TOUR && positionTour(), { passive:true });
 }
 
+/* ── Typed time fields on computers ──
+   The browser's time picker is fiddly with a mouse. With a fine pointer, every <input type=time> becomes a text box that
+   accepts 930, 0930, 9:30, 9h30, 2p, 2:15 pm… and turns it into 24-hour HH:MM on Enter / leaving the field.
+   ↑ / ↓ move by 5 minutes (Shift: 15). Phones keep the native wheel. Other code still reads and writes HH:MM. */
+function normTime(s){
+  s = String(s || '').trim().toLowerCase().replace(/\s+/g, '').replace(/\.?m\.?$/, '').replace(/\./g, ':');
+  if (!s) return '';
+  const m = s.match(/^(\d{1,2})(?:[:h]?(\d{2}))?(a|p)?$/); if (!m) return null;
+  let h = +m[1]; const mi = m[2] ? +m[2] : 0;
+  if (m[3]) { if (h > 12 || h === 0) return null; if (h === 12) h = 0; if (m[3] === 'p') h += 12; }
+  if (h > 23 || mi > 59) return null;
+  return String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0');
+}
+(function typedTimes(){
+  if (!matchMedia('(pointer: fine)').matches) return;
+  const fix = el => { if (el.dataset.tx) return; el.dataset.tx = '1'; const v = el.value; el.type = 'text'; el.value = v; el.classList.add('tin');
+    el.setAttribute('placeholder', 'HH:MM'); el.setAttribute('autocomplete', 'off'); el.setAttribute('spellcheck', 'false'); el.maxLength = 9; el.title = L('Type e.g. 930, 14:45 or 2:15p · ↑/↓ ±5 min', 'Tapez p. ex. 930, 14:45 ou 14h15 · ↑/↓ ±5 min'); };
+  const scan = root => root.querySelectorAll?.('input[type=time]').forEach(fix);
+  scan(document); new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => n.nodeType === 1 && (n.matches?.('input[type=time]') ? fix(n) : scan(n))))).observe(document.body, { childList:true, subtree:true });
+  const commit = el => { const v = normTime(el.value); if (v == null) { el.classList.add('bad'); el.setCustomValidity(L('Not a time — try 930 or 14:45', 'Heure invalide — essayez 930 ou 14:45')); return false; }
+    el.classList.remove('bad'); el.setCustomValidity(''); if (el.value !== v) el.value = v; return true; };
+  // partial typing ("9", "93") must not reach settings handlers that save on every keystroke
+  document.addEventListener('input', e => { const el = e.target; if (!el.classList?.contains('tin')) return; el.classList.remove('bad'); el.setCustomValidity('');
+    if (!/^\d{2}:\d{2}$/.test(el.value)) e.stopImmediatePropagation(); }, true);
+  document.addEventListener('change', e => { const el = e.target; if (!el.classList?.contains('tin')) return; if (!commit(el)) { e.stopImmediatePropagation(); return; }
+    el.dispatchEvent(new Event('input', { bubbles:true })); }, true);
+  document.addEventListener('submit', e => { const bad = [...e.target.querySelectorAll('.tin')].filter(el => !commit(el)); if (bad.length) { e.preventDefault(); e.stopImmediatePropagation(); bad[0].reportValidity(); } }, true);
+  document.addEventListener('keydown', e => { const el = e.target; if (!el.classList?.contains('tin')) return;
+    if (e.key === 'Enter' && el.form == null) { el.blur(); return; }
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault();
+    const cur = parseTime(normTime(el.value) || '') ?? (Math.round(nowMin() / 5) * 5), step = (e.shiftKey ? 15 : 5) * (e.key === 'ArrowUp' ? 1 : -1);
+    el.value = fmtTime(((Math.round(cur / Math.abs(step)) * Math.abs(step) + step) % DAY + DAY) % DAY); el.dispatchEvent(new Event('change', { bubbles:true })); }, true);
+})();
+
 /* ════════════════════════════════════════════════════════════════════════════
    21. SETTINGS MODAL
    ════════════════════════════════════════════════════════════════════════════ */
@@ -5849,7 +5937,7 @@ function renderSettings(){
   else if (setPane === 'targets') h = `
     <h4>Sleep</h4><div class="fgrid">${numField('targets.maxDaySleep','Max daytime sleep (min)',5)}${timeField('targets.napCutoff','Hard nap cutoff')}${timeField('targets.bedtime','Default bedtime target')}${numField('targets.splitNightMin','Split night = awake ≥ (min)',5)}</div>
     <h4>Wake windows (minutes)</h4><div class="fgrid">${numField('targets.ww1','Wake → Nap 1',15,'default 180 (3h)')}${numField('targets.ww2','Nap 1 → Nap 2',15,'default 210 (3.5h)')}${numField('targets.wwFinal','Last nap → Bedtime',15,'default 240 (4h)')}${numField('targets.underTired','Under-tired if final window <',15,'default 210 (3.5h)')}</div>
-    <h4>Feeding</h4><div class="fgrid">${milkField('targets.milkMin','Milk minimum')}${milkField('targets.milkMax','Milk maximum')}${numField('targets.waterMl','Water target (ml/day, 0 = none)',10)}${timeField('targets.lateDinner','Late dinner after')}</div>
+    <h4>Feeding</h4><div class="fgrid">${milkField('targets.milkMin','Milk minimum')}${milkField('targets.milkMax','Milk maximum')}${numField('targets.waterMl','Water target (ml/day, 0 = none)',10)}<label class="field">${L('Water amounts in Quick Log (ml)', 'Quantités d’eau dans l’ajout rapide (ml)')}<input type="text" data-set="targets.waterChips" value="${esc(T().waterChips || '')}" placeholder="10, 30, 60, 90, 120, 150"></label>${timeField('targets.lateDinner','Late dinner after')}</div>
     ${mod('diapers') ? `<h4>Diapers (per day — from your provider's guidance; 0 = no target)</h4><div class="fgrid">${numField('targets.wetMin','Wet diapers at least',1)}${numField('targets.dirtyMin','Dirty diapers at least',1)}</div>` : ''}
     <h4>Routine</h4><div class="fgrid">${numField('targets.bathMin','Bath every at least (nights)',1)}${numField('targets.bathMax','Bath every at most (nights)',1)}${timeField('targets.earlyVisitCutoff','Early-visit template if Visit starts by','default 09:30')}</div>
     <p class="hint">Templates can override max daytime sleep and the milk range (Schedule templates). Bedtime targets per day type also come from the templates.</p>`;
@@ -6029,6 +6117,9 @@ function wire(){
   // Quick log
   $('#fab').onclick = openQuickLog; $('#qlClose').onclick = closeQuickLog;
   $('#qlBody').addEventListener('click', e => { const tg = e.target.closest('[data-tag]'); if (tg) { toggleTagChip(tg); return; }
+    const ago = e.target.closest('[data-ago]'); if (ago) { const i = $('#qlForm [name="Start Time"]'), D = $('#qlForm [name=Date]'); let t = nowMin() - +ago.dataset.ago, d = todayIdx(); if (t < 0) { t += DAY; d--; }
+      i.value = fmtTime(t); if (D) D.value = isoOf(d); $$('#qlForm [data-ago]').forEach(b => b.classList.toggle('off', b !== ago)); return; }
+    const sv = e.target.closest('[data-set-v]'); if (sv) { const i = $(`#qlForm [name="${sv.closest('[data-for]').dataset.for}"]`); i.value = sv.dataset.setV; $$('#qlForm [data-set-v]').forEach(b => b.classList.toggle('off', b !== sv)); return; }
     const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid); });
   $('#kidSeg').addEventListener('click', onKidSeg);
