@@ -8,6 +8,21 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.16 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+All of these read only what you already log (or your calendar); nothing new to record.
+
+- **Suggested now** (Quick Log): the 2–3 entries you usually log at this hour or that today's plan expects, plus anything in progress.
+- **Nudges** (Today banner): a nap, night or outing still "in progress" after hours; a meal or nap you log most days that isn't there yet by its usual time.
+- **Bedtime routines follow bedtime:** a template step can be set in *minutes before bedtime*. The stock bath (45 min) and non-bath (30 min) routines now do this, and Baseline's weekday routines also apply on visit days, so a 19:00 visit-day bedtime moves bath night to 18:15.
+- **Tomorrow card** (Today, from 15:00): when tomorrow has a calendar or logged visit, the template it will use, car naps, routines and bedtime(s), and how nights after past visits compared with home days.
+- **Trends to watch** (Routine tab, and one line in the banner): three days running of more night waking, longer bedtime, later bedtime, less day sleep, less milk, or 3+ refused meals; fewer naps than planned on most of the last week (nap-transition hint). Age bands now include 12–18 months, 18–24 months (one nap), 2–3 years and 3 years +; your notes and routines are kept when you apply a band.
+- **Vaccines · Québec schedule** (Health): 2, 4, 12, 18 months and 4–6 years from the date of birth, matched to your Vaccine rows. Banner reminder two weeks ahead; post-vaccine watch for 2 days (and a note about late reactions 1–2 weeks after the 12- and 18-month doses). Fevers (≥ 38 °C), health notes and difficult days logged afterwards are listed. *Settings → Reminders* to turn off.
+- **Allergen upkeep** (Feeding): for each common allergen group already eaten, the last time it was offered and how often in 30 days; over a week shows in orange.
+- **Teething and sleep** (Health → Teeth): night waking and day sleep for the two weeks before, the 3 days before and the 3 days after each tooth.
+- **📋 Copy for AI** (Today's entries): the day's log as plain text with a short prompt, ready to paste into an AI assistant (share sheet on phones).
+- **Guided tour** updated for everything since v1.6 (34 steps).
+
 ## v1.15 — 2026-11-25 · **Apps Script v1.2** (update needed)
 
 - **Visits from shared calendars:** the script now reads every calendar ticked in your Google Calendar, including shared ones like a family calendar, instead of only your main one. A visit that's in two calendars counts once. To limit it, set `CALENDARS` to a list of names or IDs, e.g. `['primary', 'Famille']`.
