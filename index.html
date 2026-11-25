@@ -996,11 +996,14 @@ body[data-view="today"] #filterbar{display:none}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.8', date:'2026-11-25',
+    en:['Quick Log: 💧💩 Wet + poop logs both diapers in one tap (one Diaper - Wet and one Diaper - Poop row, same time).'],
+    fr:['Ajout rapide : 💧💩 Pipi + caca note les deux couches d’un seul toucher (une ligne Diaper - Wet et une ligne Diaper - Poop, même heure).'] },
   { v:'1.7', date:'2026-11-25',
     en:[
       'Today’s plan: the Today section lists today’s template as a schedule (time, what, notes), highlights what’s happening now and what’s next with a countdown, and shows the actual times next to what’s already done. Earlier items fold away.',
@@ -5115,7 +5118,7 @@ function qlPresets(){
   if (mod('food')) P.push({ e:'🍽', label: mealByTime(now), cat: mealByTime(now), meal:true });
   if (mod('visits')) P.push({ e:'🤝', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤝', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
   P.push({ e:'🙂', label:'Reaction / mood', cat:'Behaviour' });
-  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💊', label:'Meds', cat:'Meds' });
+  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), both:true, sub:L('one tap, two rows', 'un seul toucher, deux lignes') }, { e:'💊', label:'Meds', cat:'Meds' });
   if (mod('milestones')) P.push({ e:'⭐', label:'Add Milestone', cat:'Milestone', allDay:true });
   if (mod('growth')) P.push({ e:'⚖️', label:'Weight', cat:'Weight', allDay:true, value:true }, { e:'📏', label:'Length', cat:'Height', allDay:true, value:true });
   if (mod('health')) P.push({ e:'🌡️', label:'Temperature', cat:'Temperature', value:true });
@@ -5163,6 +5166,11 @@ function openQuickLogWith(row){ if (viewOnly()) return toast(L('This is a view-o
 async function pickPreset(i){
   const p = window.__qlp[i]; if (!p) return;
   if (p.checkin) { closeQuickLog(); return openCheckin(); }
+  if (p.both) {   // one tap → a Diaper - Wet and a Diaper - Poop row at the same time
+    const r = c => ({ 'Date': isoOf(todayIdx()), 'Start Time': fmtTime(nowMin()), 'End Time':'', 'Duration (min)':'', 'Category': c, 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'', 'Value':'' });
+    closeQuickLog(); await saveQuickOp('append', r('Diaper - Wet'), { batch:true }); await saveQuickOp('append', r('Diaper - Poop'));
+    return toast(L('Logged a wet and a poop diaper', 'Couche pipi et couche caca notées'));
+  }
   if (p.instant) {   // one-tap breastfeeding actions
     const now = nowMin(), base = { 'Date': isoOf(todayIdx()), 'Start Time': fmtTime(now), 'End Time':'', 'Duration (min)':'', 'Category':'Breastfeed', 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'', 'Value':'' };
     closeQuickLog();
