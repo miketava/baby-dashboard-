@@ -1044,11 +1044,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.17';
+const APP_VERSION = '1.18';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.18', date:'2026-11-25',
+    en:['Quick Log: a 🍎 Snack button is always there (the 🍽 meal button still follows the time of day), and the meal form has Breakfast / Lunch / Snack / Dinner buttons to switch.'],
+    fr:['Ajout rapide : un bouton 🍎 Collation est toujours là (le bouton 🍽 repas suit toujours l’heure), et le formulaire de repas a des boutons Déjeuner / Dîner / Collation / Souper pour changer.'] },
   { v:'1.17', date:'2026-11-25',
     en:['Vaccines: “✓ Log date” on each schedule row opens a pre-filled Vaccine entry; set the date from the vaccination booklet and save.', 'Growth: “＋ Past measurement” adds a weight, length or head size with any date, e.g. from the health booklet.'],
     fr:['Vaccins : « ✓ Noter la date » sur chaque ligne du calendrier ouvre une entrée Vaccine préremplie; indiquez la date du carnet et enregistrez.', 'Croissance : « ＋ Mesure passée » ajoute un poids, une taille ou un tour de tête à n’importe quelle date, p. ex. d’après le carnet de santé.'] },
@@ -5281,7 +5284,7 @@ function qlPresets(){
   P.push({ e:'⚡', label:'Awake / Restless', cat:'Awake / Restless', start:true });
   (metric() ? [60, 90, 120, 150] : [2, 3, 4, 5]).forEach(a => P.push({ e:'🍼', label:`+${a} ${MU()} Milk`, cat:'Milk', milk: +fromDisp(a).toFixed(2) }));
   if (mod('hydration')) P.push({ e:'💧', label:'Water', cat:'Milk', water:true });
-  if (mod('food')) P.push({ e:'🍽', label: mealByTime(now), cat: mealByTime(now), meal:true });
+  if (mod('food')) { P.push({ e:'🍽', label: mealByTime(now), cat: mealByTime(now), meal:true }); if (mealByTime(now) !== 'Snack') P.push({ e:'🍎', label:'Snack', cat:'Snack', meal:true, fixed:true }); }
   if (mod('visits')) P.push({ e:'🤝', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤝', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
   P.push({ e:'🙂', label:'Reaction / mood', cat:'Behaviour' });
   if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Poop', both:true, sub:L('two rows, same time', 'deux lignes, même heure') }, { e:'💊', label:'Meds', cat:'Meds' });
@@ -5324,6 +5327,7 @@ function renderQuickLog(){
       <label class="field">Water (ml)<input type="number" step="10" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
+      ${catKindNow === 'meal' && f.op === 'append' ? `<div class="full tchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     <label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${ocOpts.map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>
@@ -5441,7 +5445,7 @@ function smartPicks(P, now = nowMin()){
     const c = it.kind === 'meal' ? mealByTime(now) : it.kind === 'nap' ? 'Sleep - Nap' : it.kind === 'bedtime' ? 'Sleep - Night' : null; if (c) score.set(c, (score.get(c) || 0) + 10); });
   const open = new Set(DATA.events.filter(e => e.ongoing).map(e => e.cat));
   [...score].filter(([c, n]) => n >= 4 && !open.has(c) && !today.some(e => e.cat === c && e.st != null && Math.abs(e.st - now) <= 90)).sort((a, b) => b[1] - a[1])
-    .forEach(([c]) => add(P.findIndex(p => !p.live && !p.both && (p.cat === c || (p.meal && catKind(c) === 'meal')))));
+    .forEach(([c]) => { const i = P.findIndex(p => !p.live && !p.both && p.cat === c); add(i >= 0 ? i : P.findIndex(p => !p.live && !p.both && p.meal && !p.fixed && catKind(c) === 'meal')); });
   return out;
 }
 function smartRowHTML(P){

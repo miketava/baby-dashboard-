@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.18 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Snack button:** Quick Log always has 🍎 Snack; the 🍽 meal button still names the meal for the time of day (breakfast before 10:30, lunch until 14:30, snack until 17:00, then dinner). The meal form has Breakfast / Lunch / Snack / Dinner buttons to switch.
+
 ## v1.17 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Vaccines from the booklet:** each not-yet-logged row of the Québec schedule has **✓ Log date**, which opens a Vaccine entry pre-filled with that visit's vaccines; set the date from the vaccination booklet and save.
