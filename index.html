@@ -1009,11 +1009,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.10';
+const APP_VERSION = '1.11';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.11', date:'2026-11-25',
+    en:['Quick Log: the same “now · −5 · −15 · −30 min · −1 h” buttons for End time, when ending a nap or feed and on any entry with a duration.'],
+    fr:['Ajout rapide : les mêmes boutons « maintenant · −5 · −15 · −30 min · −1 h » pour l’heure de fin, en terminant une sieste ou un boire et sur toute entrée avec une durée.'] },
   { v:'1.10', date:'2026-11-25',
     en:['Back button (Android and browsers): closes the open panel, dialog, filter or Quick Log first, then goes back to the previous section; it only leaves the app from the screen you started on.'],
     fr:['Bouton Retour (Android et navigateurs) : ferme d’abord le volet, la fenêtre, les filtres ou l’ajout rapide ouverts, puis revient à la section précédente; il ne quitte l’application que depuis l’écran de départ.'] },
@@ -5196,12 +5199,14 @@ function renderQuickLog(){
   const v = h => esc(f.row[h] ?? '');
   $('#qlBody').innerHTML = `<form class="qform" id="qlForm" autocomplete="off">
     ${f.op === 'end' ? `<div class="full callout info">Ending <b>${esc(f.row['Category'])}</b> that started at ${fmtTime(f.target.st)} (${fmtDur(nowAbs() - f.target.s)} so far).</div>
-      <label class="field">End time<input type="time" name="End Time" value="${v('End Time')}" required></label>`
+      <label class="field">End time<input type="time" name="End Time" value="${v('End Time')}" required></label>
+      ${agoChips('End Time', L('Ended', 'Fin'))}`
     : `<label class="field full">Category<input type="text" name="Category" list="qlCats" value="${v('Category')}" required placeholder="e.g. Lunch, Sleep - Nap, Milestone"><datalist id="qlCats">${known.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
       <label class="field">Date<input type="date" name="Date" value="${v('Date')}" required></label>
       <label class="field">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
-      ${f.op === 'append' ? `<div class="full tchips" data-for="Start Time"><span class="faint">${L('Started', 'Début')}</span>${[[0, L('now', 'maintenant')], [5, '−5 min'], [15, '−15 min'], [30, '−30 min'], [60, '−1 h']].map(([d, t]) => `<button type="button" class="chip" data-ago="${d}">${t}</button>`).join('')}</div>` : ''}
+      ${f.op === 'append' ? agoChips('Start Time', L('Started', 'Début')) : ''}
       <label class="field">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
+      ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
       <label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>
       ${['pump','growth','temp'].includes(catKindNow) ? `<label class="field">${catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
       <label class="field">Water (ml)<input type="number" step="10" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
@@ -5216,6 +5221,8 @@ function renderQuickLog(){
   </form>`;
 }
 /** Open Quick Log straight into a form for a given row (e.g. from the tooth chart). */
+/** “now · −5 · −15 · −30 min · −1 h” buttons that fill a time field. */
+const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span>${[[0, L('now', 'maintenant')], [5, '−5 min'], [15, '−15 min'], [30, '−30 min'], [60, '−1 h']].map(([d, t]) => `<button type="button" class="chip" data-ago="${d}">${t}</button>`).join('')}</div>`;
 function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
 function stoolChipsHTML(tagsStr){
   const cur = new Set(parseTags(tagsStr));
@@ -6121,8 +6128,8 @@ function wire(){
   // Quick log
   $('#fab').onclick = openQuickLog; $('#qlClose').onclick = closeQuickLog;
   $('#qlBody').addEventListener('click', e => { const tg = e.target.closest('[data-tag]'); if (tg) { toggleTagChip(tg); return; }
-    const ago = e.target.closest('[data-ago]'); if (ago) { const i = $('#qlForm [name="Start Time"]'), D = $('#qlForm [name=Date]'); let t = nowMin() - +ago.dataset.ago, d = todayIdx(); if (t < 0) { t += DAY; d--; }
-      i.value = fmtTime(t); if (D) D.value = isoOf(d); $$('#qlForm [data-ago]').forEach(b => b.classList.toggle('off', b !== ago)); return; }
+    const ago = e.target.closest('[data-ago]'); if (ago) { const box = ago.closest('[data-for]'), fld = box.dataset.for, i = $(`#qlForm [name="${fld}"]`), D = $('#qlForm [name=Date]'); let t = nowMin() - +ago.dataset.ago, d = todayIdx(); if (t < 0) { t += DAY; d--; }
+      i.value = fmtTime(t); if (D && fld === 'Start Time') D.value = isoOf(d); box.querySelectorAll('[data-ago]').forEach(b => b.classList.toggle('off', b !== ago)); i.dispatchEvent(new Event('change', { bubbles:true })); return; }
     const sv = e.target.closest('[data-set-v]'); if (sv) { const i = $(`#qlForm [name="${sv.closest('[data-for]').dataset.for}"]`); i.value = sv.dataset.setV; $$('#qlForm [data-set-v]').forEach(b => b.classList.toggle('off', b !== sv)); return; }
     const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid); });

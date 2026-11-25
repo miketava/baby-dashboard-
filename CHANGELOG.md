@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.11 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **End time buttons:** *now · −5 · −15 · −30 min · −1 h* under End time when ending a nap or feed, and on new entries that have a duration (naps, feeds, play, visits, family contact reply time).
+
 ## v1.10 — 2026-11-25 · Apps Script v1.1 (no script change)
 
 - **Back button** (Android installed app and browsers): closes whatever is open on top first (report, Settings and other dialogs, Quick Log, More, the day panel, the phone filter panel, the tour), then returns to the previous section. It only leaves the app from the screen you started on. Closing something with its own ✕ keeps the history tidy, so you never need an extra Back press.
