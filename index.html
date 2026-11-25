@@ -1009,11 +1009,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.9';
+const APP_VERSION = '1.10';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.10', date:'2026-11-25',
+    en:['Back button (Android and browsers): closes the open panel, dialog, filter or Quick Log first, then goes back to the previous section; it only leaves the app from the screen you started on.'],
+    fr:['Bouton Retour (Android et navigateurs) : ferme d’abord le volet, la fenêtre, les filtres ou l’ajout rapide ouverts, puis revient à la section précédente; il ne quitte l’application que depuis l’écran de départ.'] },
   { v:'1.9', date:'2026-11-25',
     en:[
       'Poop consistency: Diaper - Poop entries have Hard / Formed / Loose / Watery chips with small icons (the Brussels Infant and Toddler Stool Scale groups). Health → Care tracking counts them.',
@@ -5337,8 +5340,9 @@ function renderNav(){
 }
 function openMore(){ hideTip(); $('#moreSheet').classList.add('on'); $('#scrim').classList.add('on'); }
 function closeMore(){ $('#moreSheet').classList.remove('on'); if (!$('.modal.on') && !$('.sheet.on') && drawerDay == null) $('#scrim').classList.remove('on'); }
-function setView(v){
+function setView(v, opt = {}){
   if (!NAV().some(t => t.v === v)) v = 'today';
+  if (opt.hist !== false && !TOUR && v !== VIEW && typeof navPushView === 'function') navPushView(v);
   if (v !== 'timeline' && S.kidView === 'all') { S.kidView = 'one'; renderKidSeg(); }
   VIEW = v; document.body.dataset.view = v; $('#filterbar').classList.remove('open'); closeMore();
   renderNav(); $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v)); renderView();
@@ -5581,14 +5585,14 @@ function endTour(){
   $('#tour').classList.remove('on'); $('#filterbar').classList.remove('open');
   F = t.savedF; saveFilter();
   if (t.saved) ingest(t.saved.base, t.saved.source, t.saved.label, { synced: t.saved.synced, viewer: t.saved.viewer || null }); else renderAll();
-  setView(t.view);
+  setView(t.view, { hist:false });
 }
 function showTourStep(i){
   const steps = TOUR.steps; if (i < 0) i = 0; if (i >= steps.length) return endTour();
   TOUR.i = i; const s = steps[i];
   $('#filterbar').classList.toggle('open', s.el === '#filterbar');   // the sticky filter bar would cover later targets on phones
   s.prep?.();
-  if (s.tab && VIEW !== s.tab) setView(s.tab);
+  if (s.tab && VIEW !== s.tab) setView(s.tab, { hist:false });
   const el = typeof s.el === 'function' ? s.el() : $(s.el);
   if (!el || !el.getClientRects().length) return showTourStep(i + (TOUR.dir || 1));
   el.scrollIntoView({ block: el.offsetHeight > innerHeight * .6 ? 'start' : 'center', behavior:'instant' });
@@ -6287,6 +6291,42 @@ function importConfig(file){
   }, 30000);
   checkReminders();
 })();
+/* ── Android / browser Back button ──
+   Every overlay that opens (report, settings and other dialogs, Quick Log, More, the day panel, the phone filter panel, the tour)
+   and every change of section adds a history entry, so Back closes the top overlay first, then returns to the previous
+   section, and only leaves the app from the starting screen. Closing an overlay with its own ✕ removes its entry again. */
+let NAV_IGNORE = 0, NAV_FROM_POP = false;
+function navPushView(v){ if (NAV_FROM_POP) return; if (history.state?.o) history.replaceState({ v }, ''); else history.pushState({ v }, ''); }   // leaving via the More sheet replaces its entry
+(function backButton(){
+  if (!history.pushState) return;
+  history.replaceState({ v: VIEW, root:true }, '');
+  const OV = [
+    ['#tour',      el => el.classList.contains('on'),                          () => endTour()],
+    ['#report',    el => el.classList.contains('on'),                          () => closeReport()],
+    ...$$('.modal').map(m => ['#' + m.id, el => el.classList.contains('on'),    () => { const c = $('#' + m.id + ' [data-close]'); if (c) c.click(); else { m.classList.remove('on'); closeModals(); } }]),
+    ['#qlog',      el => el.classList.contains('on'),                          () => closeQuickLog()],
+    ['#moreSheet', el => el.classList.contains('on'),                          () => closeMore()],
+    ['#drawer',    el => el.classList.contains('on'),                          () => closeDrawer()],
+    ['#filterbar', el => el.classList.contains('open') && innerWidth <= 720,   () => $('#filterbar').classList.remove('open')],
+  ].filter(([sel]) => $(sel));
+  const isOpen = new Map(OV.map(([sel, test]) => [sel, test($(sel))]));
+  const stuck = () => $('#mWizard')?.classList.contains('on') && !S.profile?.onboarded;   // first-run setup can't be backed out of
+  new MutationObserver(() => {
+    OV.forEach(([sel, test]) => { const now = test($(sel)), was = isOpen.get(sel); if (now === was) return; isOpen.set(sel, now);
+      if (now) history.pushState({ v: VIEW, o: sel }, '');
+      else if (!NAV_FROM_POP && history.state?.o) { NAV_IGNORE++; history.back(); } });
+  }).observe(document.body, { subtree:true, attributes:true, attributeFilter:['class'] });
+  addEventListener('popstate', e => {
+    if (NAV_IGNORE) { NAV_IGNORE--; return; }
+    const top = OV.find(([sel, test]) => test($(sel)));
+    NAV_FROM_POP = true;
+    try {
+      if (top) { if (top[0] === '#mWizard' && stuck()) { history.pushState({ v: VIEW, o: '#mWizard' }, ''); return; } top[2](); return; }
+      const v = e.state?.v; if (v && v !== VIEW) setView(v, { hist:false });
+    } finally { setTimeout(() => { NAV_FROM_POP = false; }, 0); }
+  });
+})();
+
 </script>
 </body>
 </html>

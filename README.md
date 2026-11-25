@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.6** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.10** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -39,7 +39,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 **Sections** (a sidebar on a computer; on a phone, a bottom bar with Today, Timeline, ＋ Log, Check-ins and More)
 | Section | What it shows |
 |---|---|
-| 📅 Today | The live banner (asleep or awake, next nap window, today's totals) and today on the 24-hour grid. |
+| 📅 Today | The live banner (asleep or awake, next nap window, today's totals), **today's plan** from your template with notes, what's now and next, and upcoming calendar visits, and today on the 24-hour grid. |
 | 🗓️ Timeline | Every day on a 24-hour colour-coded grid with your schedule targets overlaid. Click a day for the full breakdown. |
 | 📊 Routine & Visits | Daily **routine score** (how closely the day followed *your* routine), plain-language findings, and on the placement path: before / during / after-visit analysis, visit-by-visit table, cocooning. |
 | 😴 Sleep | Averages, wake windows, daytime sleep vs night wakings, how long bedtime takes, effect of outings and car rides. |
@@ -74,9 +74,10 @@ Make a spreadsheet with the columns below, export it as CSV and drag it onto the
    (Metric users can name the milk column `Milk (ml)`. Missing columns like `Child`, `Logged At` or `Edited At` are added automatically when needed.)
 2. **Add the script.** In the Sheet: *Extensions → Apps Script*. Delete the starter code, paste [`apps-script/Code.gs`](apps-script/Code.gs), and change `SECRET` to a long random phrase only your caregivers will know. Set the time zone under ⚙️ *Project Settings*. Save.
 3. **Deploy it.** *Deploy → New deployment →* ⚙️ *Web app*. Execute as **Me**; Who has access: **Anyone** (the script rejects anything without your secret). Approve the permissions; on "Google hasn't verified this app", choose *Advanced → Go to … (unsafe)*, which is expected for your own script. Copy the **Web app URL** (ends in `/exec`).
-4. **Optional: timestamps.** In the Apps Script toolbar choose `markExistingRows` and click ▸ **Run** once. From then on every row records when it was entered (*Logged At*) and when it was corrected (*Edited At*).
-5. **Connect.** Dashboard → ⚙️ *Settings → Data source*: paste the URL and your secret, then **Save & sync**.
-6. **Share with co-caregivers.** *Settings → Backup & sync → Export config* creates a small file. Send it **privately** (it contains the secret); they open the dashboard and import it.
+4. **Optional: visits from your calendar.** If off-site visits are in your Google Calendar with "visit" in the title, choose `checkCalendar` in the Apps Script toolbar and click ▸ **Run** once to approve calendar access. The dashboard then picks the visit-day template ahead of time. Only dates and times are read. Set `CALENDAR_ID = ''` in the script if you don't want this.
+5. **Optional: timestamps.** In the Apps Script toolbar choose `markExistingRows` and click ▸ **Run** once. From then on every row records when it was entered (*Logged At*) and when it was corrected (*Edited At*).
+6. **Connect.** Dashboard → ⚙️ *Settings → Data source*: paste the URL and your secret, then **Save & sync**.
+7. **Share with co-caregivers.** *Settings → Backup & sync → Export config* creates a small file. Send it **privately** (it contains the secret); they open the dashboard and import it.
 
 ---
 
@@ -126,7 +127,7 @@ You can invent your own (`Daycare`, `Swim class`…). New categories are picked 
 |---|---|
 | `index.html` | The whole dashboard. Contains **no personal data**; safe to publish. |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png`, `apple-touch-icon.png` | Make it installable on phones and usable offline |
-| `apps-script/Code.gs` | Google Apps Script for your Sheet: read (sync), Quick Log writes, edits and deletes, timestamps, read-only viewer keys |
+| `apps-script/Code.gs` | Google Apps Script for your Sheet: read (sync), Quick Log writes, edits and deletes, timestamps, read-only viewer keys, planned visits from Google Calendar |
 | `apps-script/Reminders.gs` | *Optional.* Lock-screen phone reminders through ntfy.sh. Add it as a second script file, set a private topic, run `installReminderTrigger` once, subscribe in the ntfy app. |
 | `README.md`, `CHANGELOG.md` | This file and the version history |
 

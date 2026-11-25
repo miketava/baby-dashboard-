@@ -8,6 +8,29 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.10 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **Back button** (Android installed app and browsers): closes whatever is open on top first (report, Settings and other dialogs, Quick Log, More, the day panel, the phone filter panel, the tour), then returns to the previous section. It only leaves the app from the screen you started on. Closing something with its own ✕ keeps the history tidy, so you never need an extra Back press.
+
+## v1.9 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **Poop consistency:** `Diaper - Poop` entries get Hard / Formed / Loose / Watery chips with small drawn icons, the four groups of the Brussels Infant and Toddler Stool Scale (BITSS, Bristol types 1–2 / 3–5 / 6 / 7). Stored as a tag (`hard`, `formed`, `loose`, `watery`). Health → Care tracking shows the mix for the range and notes 2+ hard or watery poops in the last 7 days.
+- **Wet + poop** opens a short form (time, consistency, notes) and saves both rows; the consistency goes on the poop row only.
+- **Quick Log times:** *now · −5 · −15 · −30 min · −1 h* buttons under Start time.
+- **Water amounts:** 10 / 30 / 60 / 90 / 120 / 150 ml buttons, editable in *Settings → Targets*.
+- **Time fields on a computer** are plain text boxes: type `930`, `14:45`, `2:15p` or `9h30`; ↑ / ↓ move by 5 minutes (Shift: 15). Phones keep the native picker.
+
+## v1.8 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **Quick Log → 💧💩 Wet + poop:** one tap logs both diapers (a `Diaper - Wet` and a `Diaper - Poop` row at the same time), so wet and poop counts both stay right.
+
+## v1.7 — 2026-11-25 · **Apps Script v1.1** (update needed for calendar visits)
+
+- **Today's plan:** the Today section lists today's template as a schedule (time · what · notes), highlights what's happening now and what's next with a countdown, and shows the logged time next to what's done. Earlier items fold away. With a bridge-nap template, only the bedtime that applies today is shown.
+- **Template notes and weekdays:** each target can carry notes and be limited to some days (`Mon, Thu, Sun`), e.g. bath-night vs non-bath routines. Stock *Baseline Home Day* gains the wind-down + milk steps and both bedtime routines (added to existing setups without touching anything you changed).
+- **Visits from Google Calendar (Apps Script v1.1):** timed events with "visit" / "visite" in the title (not "home visit" or "cancelled") pick the early or late visit-day template before the visit is logged, line up the car naps with the real time, appear in the Today banner, and are listed as *Next visits* in Today's plan. Only dates and times leave Google; titles never do, and viewer keys get nothing from the calendar. Set `CALENDAR_ID = ''` to turn it off.
+  - **To update:** paste the new `Code.gs` (keep your `SECRET` and `VIEWERS`), choose `checkCalendar` in the toolbar and click ▸ **Run** once to approve calendar access (it logs the visits it found), then *Deploy → Manage deployments → ✏️ → New version → Deploy*. Same URL.
+
 ## v1.6 — 2026-11-24 · Apps Script v1.0 (no script change)
 
 - **New navigation.** Computer: a sidebar grouped as *Daily* (Today, Timeline, Check-ins), *Analysis* (Routine & Visits, Sleep, Feeding, Health & Growth), *Placement* (Birth Family) and *Data*. Phone: a bottom bar with Today, Timeline, a centre **＋** to log, Check-ins and **More** (every other section, plus Report, Settings and the tour). Medium screens keep top tabs, now with icons.
