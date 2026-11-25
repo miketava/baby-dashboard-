@@ -536,6 +536,19 @@ body[data-view="today"] #filterbar{display:none}
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+.pl{display:flex;flex-direction:column}
+.pl-row{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:start;padding:9px 10px;border-left:4px solid var(--k);border-bottom:1px solid var(--border);border-radius:0}
+.pl-row:last-child{border-bottom:0}
+.pl-time{font-weight:700;font-variant-numeric:tabular-nums;color:var(--k)} .pl-time span{font-weight:500;color:var(--muted);font-size:12px;display:block}
+.pl-note{color:var(--muted);font-size:13px;margin-top:2px}
+.pl-act{font-size:12px;white-space:nowrap;text-align:right} .pl-did{color:#10b981;font-weight:600} .pl-miss{color:var(--faint)}
+.pl-tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:4px;vertical-align:1px}
+.pl-tag.now{background:var(--k);color:#fff} .pl-tag.next{background:color-mix(in srgb,var(--accent) 14%,var(--panel));color:var(--accent)}
+.pl-row.cur,.pl-row.nxt{background:color-mix(in srgb,var(--k) 8%,var(--panel))}
+.pl-row.past{opacity:.6} .pl:not(.showpast) .pl-row.past{display:none}
+.pl-more{margin:0 0 6px}
+.pl-up{margin-top:10px;padding:8px 10px;border-radius:10px;background:var(--bg);font-size:13px;color:var(--muted)}
+@media (max-width:720px){ .pl-row{grid-template-columns:74px 1fr;} .pl-act{grid-column:2;text-align:left} }
 .filterbar .chipline{display:none} .filterbar.cats .chipline{display:flex}
 @media (min-width:1100px){
   body{padding-left:216px} .filterbar .search{max-width:210px}
@@ -656,6 +669,10 @@ body[data-view="today"] #filterbar{display:none}
   </div>
   <div class="today-body" id="todayBody"></div>
 </section>
+    <div class="card" style="margin-top:14px" id="planCard">
+      <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub"></div></div></div>
+      <div id="planList"></div>
+    </div>
     <div class="card" style="margin-top:14px">
       <div class="card-head"><div><h2>Today so far</h2><div class="sub">Everything logged today on the 24-hour grid · tap the row for the full day</div></div><button class="btn sm" id="btnTodayDay">Full day →</button></div>
       <div class="tl-scroll"><div id="todayTl"></div></div>
@@ -979,11 +996,22 @@ body[data-view="today"] #filterbar{display:none}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
-const REQUIRED_SCRIPT = '1.0';
+const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.7', date:'2026-11-25',
+    en:[
+      'Today’s plan: the Today section lists today’s template as a schedule (time, what, notes), highlights what’s happening now and what’s next with a countdown, and shows the actual times next to what’s already done. Earlier items fold away.',
+      'Templates: each target can have notes and be limited to some days of the week (bath nights, a weekly home visit). The stock Baseline Home Day gains the wind-down + milk steps and the bath / non-bath bedtime routines.',
+      'Visits from your Google Calendar (Apps Script v1.1): timed events with “visit” in the title pick the right day template before the visit is logged, line up the car naps with the real visit time, and show as “Next visits” in Today’s plan. Only dates and times are read; titles stay in your calendar and viewer keys never get them.',
+    ],
+    fr:[
+      'Plan du jour : la section Aujourd’hui affiche le modèle du jour comme un horaire (heure, quoi, notes), met en évidence ce qui se passe et ce qui vient avec un compte à rebours, et indique les heures réelles de ce qui est déjà fait. Le début de journée se replie.',
+      'Modèles : chaque repère peut avoir des notes et être limité à certains jours de la semaine (soirs de bain, visite à domicile hebdomadaire). La journée de base standard reçoit les étapes de transition + lait et les routines du coucher avec ou sans bain.',
+      'Visites tirées de votre agenda Google (Apps Script v1.1) : les événements avec « visite » dans le titre choisissent le bon modèle avant que la visite soit notée, alignent les siestes en auto sur l’heure réelle et s’affichent sous « Prochaines visites » dans le plan du jour. Seuls les dates et heures sont lus; les titres restent dans votre agenda et les clés de lecture n’y ont jamais accès.',
+    ] },
   { v:'1.6', date:'2026-11-24',
     en:[
       'New layout. On a computer, sections are listed in a sidebar grouped as Daily, Analysis, Placement and Data. On a phone, a bar at the bottom holds Today, Timeline, a big ＋ to log, Check-ins and More.',
@@ -1184,23 +1212,27 @@ const HANDOVER_TAGS = ['drop-off','pick-up','agency','parent','caregiver','on-ti
  */
 const DEFAULT_TEMPLATES = [
   { id:'baseline', name:'Baseline Home Day', targets:{ maxDaySleep:150, milkMin:12, milkMax:15 }, items:[
-    { label:'Wake', kind:'wake', start:'07:15' },
-    { label:'Breakfast', kind:'meal', start:'07:45' },
-    { label:'Nap 1', kind:'nap', start:'10:15', end:'11:30' },
-    { label:'Lunch', kind:'meal', start:'12:00' },
+    { label:'Wake', kind:'wake', start:'07:15', note:'Water + open blinds' },
+    { label:'Breakfast', kind:'meal', start:'07:45', note:'Solids' },
+    { label:'Wind-down + milk', kind:'note', start:'09:55', note:'Dim room, diaper, sleep sack · 4–5 oz' },
+    { label:'Nap 1', kind:'nap', start:'10:15', end:'11:30', note:'Wake at 11:30 if still asleep' },
+    { label:'Lunch', kind:'meal', start:'12:00', note:'Solids' },
+    { label:'Wind-down + milk', kind:'note', start:'14:25', note:'Same pre-nap cue · 4–5 oz' },
     { label:'Nap 2', kind:'nap', start:'14:45', end:'16:00' },
-    { label:'Hard Nap Cutoff', kind:'cutoff', start:'16:00' },
-    { label:'Snack', kind:'meal', start:'16:15' },
-    { label:'Dinner', kind:'meal', start:'17:45' },
-    { label:'Bedtime', kind:'bedtime', start:'20:00' },
+    { label:'Hard Nap Cutoff', kind:'cutoff', start:'16:00', note:'Hard wake-up' },
+    { label:'Snack', kind:'meal', start:'16:15', note:'Solids + water' },
+    { label:'Dinner', kind:'meal', start:'17:45', note:'Hearty meal' },
+    { label:'Bath + bedtime routine', kind:'note', start:'19:15', days:'Mon, Thu, Sun', note:'Bath (15 min), lotion and PJs, 4–5 oz milk, brush, story, sleep sack' },
+    { label:'Bedtime routine', kind:'note', start:'19:30', days:'Tue, Wed, Fri, Sat', note:'Diaper and PJs, 4–5 oz milk, quick brush, sleep sack' },
+    { label:'Bedtime', kind:'bedtime', start:'20:00', note:'Down by 20:00' },
   ]},
   { id:'late-visit', name:'Late-Morning Visit Day', targets:{}, items:[
     { label:'Breakfast', kind:'meal', start:'07:45' },
-    { label:'Car Nap 1', kind:'nap', start:'10:00', end:'10:45' },
+    { label:'Car Nap 1', kind:'nap', start:'10:00', end:'10:45', note:'On the drive there' },
     { label:'Visit', kind:'visit', start:'11:00', end:'12:30' },
     { label:'Lunch', kind:'meal', start:'11:45' },
-    { label:'Car Nap 2', kind:'nap', start:'12:45', end:'13:30' },
-    { label:'Optional Bridge Nap', kind:'nap', start:'16:00', end:'16:20', optional:true },
+    { label:'Car Nap 2', kind:'nap', start:'12:45', end:'13:30', note:'On the drive home' },
+    { label:'Optional Bridge Nap', kind:'nap', start:'16:00', end:'16:20', optional:true, note:'Only if very tired · skipping it means the 19:00 bedtime' },
     { label:'Dinner', kind:'meal', start:'17:45' },
     { label:'Bedtime (no bridge)', kind:'bedtime', start:'19:00' },
     { label:'Bedtime (with bridge)', kind:'bedtime', start:'20:00' },
@@ -1432,10 +1464,17 @@ const ALLERGENS = [
 /* ════════════════════════════════════════════════════════════════════════════
    APPS SCRIPT — read (doGet) + Quick Log append (doPost). Shown in Settings → Setup guide.
    ════════════════════════════════════════════════════════════════════════════ */
-const APPS_SCRIPT = `// Baby Routine Dashboard — Apps Script v1.0 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+const APPS_SCRIPT = `// Baby Routine Dashboard — Apps Script v1.1 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.0';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.1';                       // the dashboard checks this to tell you when to redeploy
+
+// Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
+// to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
+// end are sent: never titles, places or descriptions, and never to viewer keys. Set CALENDAR_ID = '' to turn it off.
+const CALENDAR_ID = 'primary';                      // or a calendar's ID from Google Calendar → Settings → Integrate calendar
+const VISIT_MATCH = /\\bvisit|\\bvisite/i;            // titles that count as an off-site visit…
+const NOT_VISIT = /home visit|visite à domicile|à domicile|cancel|annul/i;   // …unless they also match this
 
 // Optional read-only viewer keys (e.g. for a caseworker). A viewer key can only read, never add rows.
 // Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's
@@ -1465,7 +1504,19 @@ function loggedCol_(sh) {
   return c;
 }
 
-// READ — GET …/exec?token=SECRET  →  { ok, headers, rows }
+function plannedVisits_() {
+  if (!CALENDAR_ID) return [];
+  const cal = CALENDAR_ID === 'primary' ? CalendarApp.getDefaultCalendar() : CalendarApp.getCalendarById(CALENDAR_ID);
+  if (!cal) return [];
+  const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p);
+  return cal.getEvents(new Date(now - 60 * 864e5), new Date(now + 60 * 864e5))
+    .filter(ev => !ev.isAllDayEvent() && VISIT_MATCH.test(ev.getTitle()) && !NOT_VISIT.test(ev.getTitle()))
+    .map(ev => ({ date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm') }));
+}
+// Run once from the editor (▸ Run) to approve calendar access and see which events count as visits.
+function checkCalendar() { Logger.log(JSON.stringify(plannedVisits_(), null, 1)); }
+
+// READ — GET …/exec?token=SECRET  →  { ok, headers, rows, planned }
 function doGet(e) {
   const p = (e && e.parameter) || {};
   const viewer = p.token && p.token !== SECRET ? VIEWERS[p.token] : null;
@@ -1489,7 +1540,9 @@ function doGet(e) {
     scope = { label: viewer.label || 'Viewer', excluded: viewer.exclude || [], from: viewer.from || '', child: viewer.childName || '' };
   }
   const rows = data.map(r => Object.assign(Object.fromEntries(headers.map((h, i) => [h, r[i]])), viewer ? {} : { _row: r._row }));
-  return out_({ ok: true, headers: headers, rows: rows, viewer: scope, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, p.callback);
+  let planned = [], calError = '';
+  if (!viewer) try { planned = plannedVisits_(); } catch (err) { calError = String(err.message || err); }
+  return out_({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, p.callback);
 }
 
 // WRITE (Quick Log) — POST {token, action: 'append' | 'end', row: {Header: value}}
@@ -2122,7 +2175,7 @@ function deepMerge(base, over){
 }
 /** v1 templates had no meal items / optional flags / per-template targets: add them to the stock templates. */
 function migrateSettings(s){
-  if ((s.schema || 1) >= 2) return s;
+  if ((s.schema || 1) >= 2) return migrate3(s);
   s.templates = (s.templates || []).map(tp => {
     const def = DEFAULT_TEMPLATES.find(d => d.id === tp.id);
     tp = { targets:{}, ...tp };
@@ -2133,13 +2186,23 @@ function migrateSettings(s){
     }
     return tp;
   });
-  s.schema = 2; return s;
+  s.schema = 2; return migrate3(s);
+}
+/** v1.7: stock templates gain notes, wind-down markers and weekday routines. Added only to stock templates that have no notes yet;
+    nothing the family changed is overwritten (items are matched by label, new ones only added when no item has that label). */
+function migrate3(s){
+  if ((s.schema || 1) >= 3) return s;
+  (s.templates || []).forEach(tp => { const def = DEFAULT_TEMPLATES.find(d => d.id === tp.id); if (!def || tp.items.some(i => i.note || i.days)) return;
+    tp.items.forEach(i => { const d = def.items.find(x => x.label === i.label && x.kind === i.kind); if (d?.note && d.start === i.start) i.note = d.note; });
+    def.items.filter(d => d.kind === 'note' && !tp.items.some(i => i.label === d.label && i.start === d.start)).forEach(d => tp.items.push({ ...d }));
+    tp.items.sort((a, b) => (parseTime(a.start) ?? 0) - (parseTime(b.start) ?? 0)); });
+  s.schema = 3; return s;
 }
 const STORED_SETTINGS = lsGet(LS_SETTINGS, null);
 let S = migrateSettings(deepMerge(structuredClone(DEFAULT_SETTINGS), STORED_SETTINGS || {}));
 if (!S.lang) S.lang = /^fr/i.test(navigator.language || '') ? 'fr' : 'en';
 if (!STORED_SETTINGS) S.seenVersion = APP_VERSION;              // brand-new users don't need a “what's new” note
-S.schema = 2;
+S.schema = 3;
 // v4: people who used v1–v3 keep everything as it was (placement path, all features on) and get a "what's new" note.
 if (STORED_SETTINGS && !STORED_SETTINGS.profile) S.profile = { ...S.profile, onboarded:true, path:'placement', modules:{ ...ALL_ON, newborn:false }, whatsNew:'4.0' };
 /** Is a feature module switched on? (Everything is on until the setup wizard says otherwise.) */
@@ -2474,7 +2537,7 @@ function ingest(base, source, label, { synced, viewer } = {}){
   DATA.allEvents = DATA.events; filterKidEvents();
   for (const [n, c] of unknownKidNames(DATA.allEvents)) DATA.warnings.push({ row:'—', msg:`Child “${n}” (${c} row${c > 1 ? 's' : ''}) doesn't match any child — add it as an alias in Settings → Child & features` });
   analyze();
-  if (S.cacheData && source !== 'demo') lsSet(LS_CACHE, { headers: base.headers, records: base.records, source, label, synced: DATA.synced, viewer: DATA.viewer });
+  if (S.cacheData && source !== 'demo') lsSet(LS_CACHE, { headers: base.headers, records: base.records, planned: base.planned || null, source, label, synced: DATA.synced, viewer: DATA.viewer });
   ensureCustomRange();
   renderAll();
 }
@@ -2519,7 +2582,8 @@ async function syncLive({ quiet=false, skipFlush=false } = {}){
     let headers = data.headers, records = data.rows ?? data.data ?? data;
     if (Array.isArray(records) && Array.isArray(records[0])) { headers = records.shift().map(String); records = records.map(r => Object.fromEntries(headers.map((h,i) => [h, r[i]]))); }
     if (!Array.isArray(records)) throw new Error('Unexpected response shape');
-    ingest({ headers: headers || Object.keys(records[0] || {}), records }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
+    if (data.calError) toast(L('Calendar: ', 'Agenda : ') + data.calError, true);
+    ingest({ headers: headers || Object.keys(records[0] || {}), records, planned: Array.isArray(data.planned) ? data.planned : null }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
     SCRIPT_SEEN = data.scriptVersion || '0'; renderNotice();
     if (!quiet) toast(`Synced ${DATA.events.length} events`);
     return true;
@@ -2742,14 +2806,35 @@ function analyze(){
 /* ── Templates ── */
 const tplById = id => S.templates.find(x => x.id === id);
 /** Auto-pick a template from a day's rows (v2 rule: off-site Visit ≤ 09:30 → early, later → late; else baseline). */
+const hhmm = x => { x = ((x % DAY) + DAY) % DAY; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
+/** Visits on the family's Google Calendar (date, start, end only), sent by Apps Script v1.1+. */
+function plannedVisit(D){
+  const p = DATA.base?.planned; if (!Array.isArray(p) || D == null) return null;
+  const d = isoOf(D), v = p.filter(x => x.date === d).map(x => ({ st: parseTime(x.start), en: parseTime(x.end) })).filter(x => x.st != null).sort((a, b) => a.st - b.st);
+  return v[0] || null;
+}
+const upcomingVisits = (n = 3) => (Array.isArray(DATA.base?.planned) ? DATA.base.planned : []).map(x => ({ D: parseDate(x.date), st: parseTime(x.start), en: parseTime(x.end) }))
+  .filter(x => x.D != null && x.st != null && (x.D > todayIdx() || (x.D === todayIdx() && (x.en ?? x.st) >= nowMin()))).sort((a, b) => a.D - b.D || a.st - b.st).slice(0, n);
+/** Visit start for template choice: the logged visit, else the one on the calendar. */
+const visitAt = m => m?.visit && m.visitStart != null ? m.visitStart : plannedVisit(m?.D)?.st ?? null;
 function autoTemplate(m){
-  if (m?.visit) {
+  const vs = visitAt(m);
+  if (vs != null) {
     const cut = parseTime(T().earlyVisitCutoff) ?? 570;
-    return (m.visitStart <= cut ? tplById('early-visit') : tplById('late-visit')) || tplById('baseline') || S.templates[0];
+    return (vs <= cut ? tplById('early-visit') : tplById('late-visit')) || tplById('baseline') || S.templates[0];
   }
   return tplById('baseline') || S.templates[0];
 }
-function templateFor(m){ return alignToVisit(templateFor0(m), m); }
+function templateFor(m){ return alignToVisit(forWeekday(templateFor0(m), m), m); }
+/** Template items can be limited to some weekdays (“Mon, Thu, Sun” / “lun, jeu, dim”), e.g. bath-night routines or a weekly home visit. */
+const WD = { su:0, mo:1, tu:2, we:3, th:4, fr:5, sa:6, di:0, lu:1, ma:2, me:3, je:4, ve:5 };
+const parseDays = s => { const out = new Set(); String(s || '').toLowerCase().split(/[\s,;/]+/).forEach(w => { const k = w.normalize('NFD').replace(/[^a-z]/g, '').slice(0, 2); if (k in WD) out.add(WD[k]); }); return out; };
+const itemOnDay = (i, dow) => { if (!i.days) return true; const d = parseDays(i.days); return !d.size || d.has(dow); };
+function forWeekday(tp, m){
+  if (!tp || m?.D == null || !tp.items.some(i => i.days)) return tp;
+  const dow = idxDate(m.D).getUTCDay();
+  return { ...tp, items: tp.items.filter(i => itemOnDay(i, dow)) };
+}
 function templateFor0(m){
   if (m && m.D === todayIdx() && S.todayTpl?.date === isoOf(m.D) && S.todayTpl.id !== 'auto' && tplById(S.todayTpl.id)) return tplById(S.todayTpl.id);
   if (S.overlayTpl !== 'auto' && tplById(S.overlayTpl)) return tplById(S.overlayTpl);
@@ -2759,13 +2844,14 @@ function templateFor0(m){
     and the naps right before / after it (the car naps) by the same amount, so they're judged against the visit that actually happened.
     Meals, the bridge nap, the cutoff and bedtimes stay where they are. */
 function alignToVisit(tp, m){
-  if (!tp || !m?.visit || m.visitStart == null) return tp;
+  const at = visitAt(m), pv = m?.visit ? null : plannedVisit(m?.D);
+  if (!tp || at == null) return tp;
   const v = tp.items.find(i => i.kind === 'visit' && parseTime(i.start) != null && parseTime(i.end) != null); if (!v) return tp;
-  const vs = parseTime(v.start), ve = parseTime(v.end), off = m.visitStart - vs;
-  if (Math.abs(off) < 15 || Math.abs(off) > 240) return tp;
+  const vs = parseTime(v.start), ve = parseTime(v.end), off = at - vs;
+  if (Math.abs(off) < 15 || Math.abs(off) > 240) return pv?.en != null ? { ...tp, items: tp.items.map(i => i === v ? { ...i, end: hhmm(pv.en) } : i) } : tp;
   const hh = x => { x = ((x % DAY) + DAY) % DAY; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
   const near = i => { const a = parseTime(i.start), b = parseTime(i.end); return i.kind === 'visit' || (i.kind === 'nap' && !i.optional && b != null && ((b <= vs && vs - b <= 45) || (a >= ve && a - ve <= 45))); };
-  return { ...tp, shift: off, items: tp.items.map(i => i.end && near(i) ? { ...i, start: hh(parseTime(i.start) + off), end: hh(parseTime(i.end) + off), shifted: true } : i) };
+  return { ...tp, shift: off, items: tp.items.map(i => i.end && near(i) ? { ...i, start: hh(parseTime(i.start) + off), end: i === v && pv?.en != null ? hh(pv.en) : hh(parseTime(i.end) + off), shifted: true } : i) };
 }
 const shiftNote = tp => tp?.shift ? L(` (visit-day naps moved ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} to match the visit)`, ` (siestes du jour de visite décalées de ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} selon la visite)`) : '';
 /** Global targets with any per-template overrides (blank template values fall back to global). */
@@ -3035,6 +3121,8 @@ function todayState(){
     const hit = napBands.filter(n => a < n.b && b > n.a);
     S0.callouts.push({ cls: hit.length ? '' : 'info', html: `${cat(e.cat).icon} <b>${esc(catL(e.cat))}</b> ${fmtTime(a)}–${fmtTime(b)}${e.notes ? ' · ' + esc(e.notes) : ''} — ${hit.length ? `<b>${L('overlaps', 'chevauche')} ${hit.map(h => esc(h.label) + ' (' + h.start + '–' + h.end + ')').join(', ')}</b>${L('; plan to shift that nap', '; prévoyez de déplacer cette sieste')}` : L('does not overlap a nap window', 'ne chevauche pas une plage de sieste')}` });
   });
+  const pv = !m.visit ? plannedVisit(D) : null;
+  if (mod('schedule') && pv && (S.todayTpl?.date !== isoOf(D) || S.todayTpl.id === 'auto')) S0.callouts.push({ cls:'info', html:L(`🗓️ Visit on your calendar ${fmtTime(pv.st)}${pv.en != null ? '–' + fmtTime(pv.en) : ''} → using <b>${esc(tp.name)}</b>`, `🗓️ Visite à l’agenda ${fmtTime(pv.st)}${pv.en != null ? '–' + fmtTime(pv.en) : ''} → modèle <b>${esc(tp.name)}</b>`) });
   if (mod('schedule') && m.visit && (S.todayTpl?.date !== isoOf(D) || S.todayTpl.id === 'auto')) S0.callouts.push({ cls:'info', html:L(`🏠 Off-site visit at ${fmtTime(m.visitStart)} → using <b>${esc(tp.name)}</b> (visits ≤ ${t.earlyVisitCutoff} use the early template)`, `🏠 Visite à l’extérieur à ${fmtTime(m.visitStart)} → modèle <b>${esc(tp.name)}</b> (les visites avant ${t.earlyVisitCutoff} utilisent le modèle matinal)`) });
   // upcoming appointments / vaccines in the next 7 days (pre-filled rows)
   DATA.events.filter(e => (e.k === 'medical' || e.k === 'vaccine') && e.s > nowA && e.s <= nowA + 7*DAY && !(e.d === D)).slice(0, 3)
@@ -3278,8 +3366,48 @@ function renderTimeline(){
     $('#timeline').innerHTML = `<div class="tl h">${axisHTML()}${list.map(m => dayRowHTML(m)).join('')}</div>`;
   }
 }
-/** Today tab: the live banner plus today's row on the 24-hour grid. */
+/** Today's plan: the template for today as a list (time · what · notes), with what actually happened next to past items. */
+function planActual(it, m, used){
+  const a = parseTime(it.start), b = it.end ? parseTime(it.end) : null;
+  if (it.kind === 'nap' && b != null) { const n = m.naps.find(n => !used.has(n) && n.st != null && n.st < b + 45 && n.st + (n.dur || 0) > a - 45);
+    if (n) { used.add(n); return n.ongoing ? L(`asleep since ${fmtTime(n.st)}`, `endormie depuis ${fmtTime(n.st)}`) : `${fmtTime(n.st)}–${fmtTime((n.st + (n.dur || 0)) % DAY)}`; } return null; }
+  if (it.kind === 'wake') return m.wake != null ? fmtTime(m.wake) : null;
+  if (it.kind === 'bedtime') return m.bed != null ? fmtTime(m.bed % DAY) : null;
+  if (it.kind === 'visit') return m.visit && m.visitStart != null ? fmtTime(m.visitStart) : null;
+  if (it.kind === 'meal') { const e = m.evs.find(e => isMeal(e) && !used.has(e) && e.st != null && Math.abs(e.st - a) <= 75); if (e) { used.add(e); return fmtTime(e.st); } return null; }
+  return null;
+}
+function renderTodayPlan(){
+  const card = $('#planCard'); if (!card) return;
+  const m = todayMetrics(), tp = m.tpl;
+  if (!mod('schedule') || !tp) { card.classList.add('hidden'); return; } card.classList.remove('hidden');
+  const now = nowMin(), used = new Set(), bedT = targetBed(m);
+  // two bedtime lines (bridge-nap templates): keep the one that applies today, unless it's still undecided
+  let items = tp.items.map(i => ({ ...i, a: parseTime(i.start), b: i.end ? parseTime(i.end) : null })).filter(i => i.a != null).sort((x, y) => x.a - y.a || (x.b ?? x.a) - (y.b ?? y.a));
+  const beds = items.filter(i => i.kind === 'bedtime');
+  if (beds.length > 1 && bedT != null) items = items.filter(i => i.kind !== 'bedtime' || i.a === bedT);
+  const isPast = i => (i.b ?? i.a) < now, isNow = i => i.b != null && i.a <= now && now <= i.b;
+  const nextI = items.findIndex(i => i.a > now && !isNow(i));
+  const rows = items.map((it, k) => {
+    const act = planActual(it, m, used), past = isPast(it), cur = isNow(it), next = k === nextI;
+    const st = cur ? `<span class="pl-tag now">${L('now', 'en cours')}</span>` : next ? `<span class="pl-tag next">${L(`in ${fmtDur(it.a - now)}`, `dans ${fmtDur(it.a - now)}`)}</span>` : '';
+    const did = act ? `<span class="pl-did">✓ ${esc(act)}</span>` : past && ['nap', 'meal', 'wake'].includes(it.kind) ? `<span class="pl-miss">${it.optional ? L('skipped', 'sautée') : L('not logged', 'non noté')}</span>` : '';
+    return `<div class="pl-row${past && !cur ? ' past' : ''}${cur ? ' cur' : ''}${next ? ' nxt' : ''}" style="--k:${KIND_STYLE[it.kind]?.color || '#64748b'}">
+      <div class="pl-time">${fmtTime(it.a)}${it.b != null ? `<span>–${fmtTime(it.b)}</span>` : ''}</div>
+      <div class="pl-what"><b>${esc(it.label)}</b>${it.optional ? ` <span class="faint">(${L('optional', 'facultatif')})</span>` : ''} ${st}${it.note ? `<div class="pl-note">${esc(it.note)}</div>` : ''}</div>
+      <div class="pl-act">${did}</div></div>`; });
+  const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && k !== nextI).length, open = !!UI.planPast;
+  $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
+  const pv = !m.visit ? plannedVisit(m.D) : null;
+  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
+  $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
+    + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}</div>`
+    + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
+        return `<div class="pl-up">🗓️ <b>${L('Next visits', 'Prochaines visites')}:</b> ${up.length ? up.map(v => `${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''}`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>`; })();
+}
+/** Today tab: the live banner, today's plan, and today's row on the 24-hour grid. */
 function renderTodayView(){
+  renderTodayPlan();
   const m = DAYS.get(todayIdx());
   $('#todayTl').innerHTML = m ? `<div class="tl h">${axisHTML()}${dayRowHTML(m)}</div>`
     : `<p class="muted" style="margin:6px 0">${L('Nothing logged today yet. Tap ＋ to log the first thing.', 'Rien de noté aujourd’hui. Touchez ＋ pour noter la première chose.')}</p>`;
@@ -5725,9 +5853,9 @@ function renderSettings(){
       <div class="fgrid"><label class="field">Name<input type="text" id="tplName" value="${esc(tp.name)}"></label>
         ${['maxDaySleep','milkMin','milkMax'].map(k => { const ml = k !== 'maxDaySleep'; return `<label class="field">${{ maxDaySleep:'Max day sleep (min)', milkMin:`Milk min (${MU()})`, milkMax:`Milk max (${MU()})` }[k]}<input type="number" step="${ml ? (metric() ? 10 : .5) : 5}" data-tt="${k}" ${ml ? 'data-milk' : ''} value="${esc(tp.targets[k] == null || tp.targets[k] === '' ? '' : ml ? toDisp(tp.targets[k]) : tp.targets[k])}" placeholder="global: ${ml ? toDisp(T()[k]) : T()[k]}"></label>`; }).join('')}</div>
       <table class="tpl-items" style="margin-top:10px"><thead><tr class="faint" style="font-size:12px"><td>Label</td><td style="width:130px">Type</td><td style="width:100px">Start</td><td style="width:100px">End (opt.)</td><td style="width:64px">Optional</td><td style="width:36px"></td></tr></thead><tbody>
-      ${tp.items.map((it,i) => `<tr data-i="${i}"><td><input type="text" data-ti="label" value="${esc(it.label)}"></td><td><select data-ti="kind">${Object.keys(KIND_STYLE).map(k => `<option value="${k}" ${it.kind === k ? 'selected' : ''}>${KIND_STYLE[k].label}</option>`).join('')}</select></td><td><input type="time" data-ti="start" value="${esc(it.start)}"></td><td><input type="time" data-ti="end" value="${esc(it.end || '')}"></td><td style="text-align:center"><input type="checkbox" data-ti="optional" ${it.optional ? 'checked' : ''} ${it.kind === 'nap' ? '' : 'disabled'}></td><td><button class="btn sm ghost danger" data-act="tiDel" title="Remove">✕</button></td></tr>`).join('')}
+      ${tp.items.map((it,i) => `<tr data-i="${i}"><td><input type="text" data-ti="label" value="${esc(it.label)}"></td><td><select data-ti="kind">${Object.keys(KIND_STYLE).map(k => `<option value="${k}" ${it.kind === k ? 'selected' : ''}>${KIND_STYLE[k].label}</option>`).join('')}</select></td><td><input type="time" data-ti="start" value="${esc(it.start)}"></td><td><input type="time" data-ti="end" value="${esc(it.end || '')}"></td><td style="text-align:center"><input type="checkbox" data-ti="optional" ${it.optional ? 'checked' : ''} ${it.kind === 'nap' ? '' : 'disabled'}></td><td><button class="btn sm ghost danger" data-act="tiDel" title="Remove">✕</button></td></tr><tr data-i="${i}" class="tpl-sub"><td colspan="6"><div class="row" style="gap:6px"><input type="text" data-ti="note" value="${esc(it.note || '')}" placeholder="${esc(L('Notes & instructions (shown in Today’s plan)', 'Notes et consignes (affichées dans le plan du jour)'))}" style="flex:3"><input type="text" data-ti="days" value="${esc(it.days || '')}" placeholder="${esc(L('Every day (or e.g. Mon, Thu, Sun)', 'Tous les jours (ou p. ex. lun, jeu, dim)'))}" style="flex:2"></div></td></tr>`).join('')}
       </tbody></table><button class="btn sm" data-act="tiAdd" style="margin-top:8px">＋ Add target</button>
-      <p class="hint">Bands (with an end time) and lines (without) draw on the timeline; meal targets show as ▼ markers and drive the “coming up” cues and reminders. <b>Optional</b> naps (e.g. the bridge nap) are never flagged as late; when a template has two bedtimes, the later one applies only on days the optional nap happened. In <b>Auto</b> mode, an off-site Visit starting by ${T().earlyVisitCutoff} uses <i>Early-Morning Visit Day</i>, later visits use <i>Late-Morning Visit Day</i>, and all other days (including in-home visits and appointments) use <i>Baseline Home Day</i>.</p>`;
+      <p class="hint">Bands (with an end time) and lines (without) draw on the timeline; meal targets show as ▼ markers and drive the “coming up” cues and reminders. Each target can have <b>notes</b> (shown in Today’s plan) and be limited to some <b>days</b> of the week (bath nights, a weekly home visit). <b>Optional</b> naps (e.g. the bridge nap) are never flagged as late; when a template has two bedtimes, the later one applies only on days the optional nap happened. In <b>Auto</b> mode, an off-site Visit starting by ${T().earlyVisitCutoff} uses <i>Early-Morning Visit Day</i>, later visits use <i>Late-Morning Visit Day</i>, and all other days (including in-home visits and appointments) use <i>Baseline Home Day</i>.</p>`;
   }
   else if (setPane === 'score') {
     const W = S.score.weights;
@@ -5840,6 +5968,7 @@ function wire(){
   $('#moreList').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.v) return setView(b.dataset.v); closeMore();
     if (b.dataset.act === 'report') $('#btnReport').click(); else if (b.dataset.act === 'settings') $('#btnSettings').click(); else if (b.dataset.act === 'tour') $('#btnHelp').click(); };
   $('#moreClose').onclick = closeMore;
+  $('#planList').onclick = e => { if (e.target.closest('#planPast')) { UI.planPast = !UI.planPast; saveUI(); renderTodayPlan(); } };
   $('#btnTodayDay').onclick = () => { if (DAYS.has(todayIdx())) openDrawer(todayIdx()); };
   // Timeline toolbar
   $('#orientSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.orientation = b.dataset.o; saveSettings(); renderTimeline(); };
@@ -5948,7 +6077,7 @@ function wire(){
     if (el.dataset.tt) { const tp = S.templates[tplIdx]; tp.targets ||= {}; if (el.value === '') delete tp.targets[el.dataset.tt]; else tp.targets[el.dataset.tt] = el.dataset.milk != null ? +fromDisp(+el.value).toFixed(2) : +el.value; settingsChanged(true); }
     if (el.dataset.ti) { const i = +el.closest('tr').dataset.i; const it = S.templates[tplIdx].items[i];
       if (el.dataset.ti === 'optional') it.optional = el.checked || undefined; else it[el.dataset.ti] = el.value;
-      if (el.dataset.ti === 'end' && !el.value) delete it.end; settingsChanged(true); }
+      if (el.dataset.ti === 'end' && !el.value) delete it.end; if ((el.dataset.ti === 'note' || el.dataset.ti === 'days') && !el.value.trim()) delete it[el.dataset.ti]; settingsChanged(true); }
   });
   pane.addEventListener('change', e => {
     const se = e.target.dataset.shareex; if (se != null) { const set = new Set(S.share.exclude || []); e.target.checked ? set.add(se) : set.delete(se); S.share.exclude = [...set]; saveSettings(); reingest(); renderSettings(); return; }
@@ -6043,7 +6172,7 @@ function importConfig(file){
   // Installable app: only when hosted (GitHub Pages etc.) next to sw.js; silently skipped when opened as a file.
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   const cache = S.cacheData ? lsGet(LS_CACHE, null) : null;
-  if (cache && (cache.records?.length || cache.source === 'local')) ingest({ headers: cache.headers, records: cache.records }, cache.source, cache.label, { synced: cache.synced, viewer: cache.viewer || null });
+  if (cache && (cache.records?.length || cache.source === 'local')) ingest({ headers: cache.headers, records: cache.records, planned: cache.planned || null }, cache.source, cache.label, { synced: cache.synced, viewer: cache.viewer || null });
   else loadDemo();
   if (S.endpoint) syncLive({ quiet:true });
   setupAutoRefresh();
@@ -6053,7 +6182,8 @@ function importConfig(file){
   setInterval(() => {
     const dayChanged = todayIdx() !== lastDay; lastDay = todayIdx();
     if (dayChanged && DATA.source === 'demo') loadDemo();
-    else if (dayChanged || DATA.events.some(e => e.open)) { analyze(); if (VIEW === 'timeline' || dayChanged) renderView(); }
+    else if (dayChanged || DATA.events.some(e => e.open)) { analyze(); if (VIEW === 'timeline' || VIEW === 'today' || dayChanged) renderView(); }
+    else if (VIEW === 'today') renderTodayPlan();
     renderToday(); checkReminders(); checkCheckinReminder();
   }, 30000);
   checkReminders();
