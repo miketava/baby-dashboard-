@@ -536,6 +536,12 @@ body[data-view="today"] #filterbar{display:none}
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+header.app{position:relative}
+.tw{display:flex;gap:6px;align-items:stretch} .tw input{flex:1;min-width:0} .nowbtn{flex:none;padding:0 10px}
+.verpill{border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));background:color-mix(in srgb,var(--accent) 9%,var(--panel));color:var(--accent);border-radius:999px;padding:4px 10px;font:600 12px/1.2 inherit;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+.verpill:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
+.verpill .vs{display:block;font-size:10px;font-weight:500;opacity:.8}
+@media (max-width:720px){ .verpill{position:absolute;top:10px;right:12px;z-index:2} header.app h1{padding-right:64px} }
 /* section descriptions live behind an ⓘ button */
 main .card-head .sub.sub-i{display:none}
 main .card.show-sub .card-head .sub.sub-i{display:block;margin-top:4px;padding:8px 10px;border-radius:9px;background:var(--bg);color:var(--muted);font-size:13px;line-height:1.4}
@@ -624,6 +630,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
     <button class="btn icon" id="btnTheme" title="Toggle light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
     <button class="btn icon" id="btnHelp" title="Guided tour" style="font-weight:800;min-width:34px">?</button>
     <button class="btn icon" id="btnSettings" title="Settings & setup guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="verpill" id="verPill" data-noi18n></button>
   </div>
   <input type="file" id="csvInput" accept=".csv,text/csv" hidden>
 </header>
@@ -1015,11 +1022,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.12';
+const APP_VERSION = '1.13';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.13', date:'2026-11-25',
+    en:['The version number now shows in the top right corner. Tap it for what’s new and the full changelog.', 'Quick Log: a Now button beside every time field, including End time when you edit an entry or finish something like play.'],
+    fr:['Le numéro de version s’affiche maintenant en haut à droite. Touchez-le pour les nouveautés et l’historique complet.', 'Ajout rapide : un bouton Maint. à côté de chaque champ d’heure, y compris l’heure de fin quand vous modifiez une entrée ou terminez un jeu, par exemple.'] },
   { v:'1.12', date:'2026-11-25',
     en:['Tidier sections: instructions and legends under section titles (how to read a chart, what a column means) are now behind an ⓘ button at the top right. Lines with numbers (counts, coverage, the current week) stay visible.'],
     fr:['Sections plus compactes : les consignes et légendes sous les titres (comment lire un graphique, ce que veut dire une colonne) sont maintenant derrière un bouton ⓘ en haut à droite. Les lignes avec des chiffres (totaux, couverture, semaine en cours) restent visibles.'] },
@@ -2645,7 +2655,7 @@ async function syncLive({ quiet=false, skipFlush=false } = {}){
     if (!Array.isArray(records)) throw new Error('Unexpected response shape');
     if (data.calError) toast(L('Calendar: ', 'Agenda : ') + data.calError, true);
     ingest({ headers: headers || Object.keys(records[0] || {}), records, planned: Array.isArray(data.planned) ? data.planned : null }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
-    SCRIPT_SEEN = data.scriptVersion || '0'; renderNotice();
+    SCRIPT_SEEN = data.scriptVersion || '0'; renderNotice(); if (typeof renderVerPill === 'function') renderVerPill();
     if (!quiet) toast(`Synced ${DATA.events.length} events`);
     return true;
   } catch (err) { toast('Sync failed: ' + err.message, true); return false; }
@@ -5228,6 +5238,10 @@ function renderQuickLog(){
     ${f.op === 'update' ? `<div class="full faint" style="font-size:12px">${L(`Sheet row ${f.ev.sheetRow ?? '—'} · first logged ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. Saving stamps “Edited At”; the original entry time is kept.`, `Ligne ${f.ev.sheetRow ?? '—'} de la feuille · saisie le ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. L’enregistrement ajoute « Edited At »; l’heure de saisie originale est conservée.`)}</div>` : ''}
     <div class="full row sp">${f.op === 'update' ? `<button type="button" class="btn danger" id="qlDelete">🗑 ${L('Delete', 'Supprimer')}</button>` : `<button type="button" class="btn" id="qlBack">← Back</button>`}<button type="submit" class="btn primary">${f.op === 'update' ? L('Save changes', 'Enregistrer') : `Save ${S.endpoint ? 'to Sheet' : 'on device'}`}</button></div>
   </form>`;
+  // a small “Now” button right beside every time field (start and end, new entries and edits)
+  $$('#qlForm input[type=time], #qlForm input.tin').forEach(i => { if (i.parentElement.classList.contains('tw')) return;
+    const w = document.createElement('span'); w.className = 'tw'; i.replaceWith(w); w.appendChild(i);
+    w.insertAdjacentHTML('beforeend', `<button type="button" class="btn sm nowbtn" data-now="${esc(i.name)}" data-noi18n>${L('Now', 'Maint.')}</button>`); });
 }
 /** Open Quick Log straight into a form for a given row (e.g. from the tooth chart). */
 /** “now · −5 · −15 · −30 min · −1 h” buttons that fill a time field. */
@@ -5730,6 +5744,14 @@ function normTime(s){
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => n.nodeType === 1 && fix(n.parentElement || n)))).observe(document.querySelector('main') || document.body, { childList:true, subtree:true });
 })();
 
+/** Version in the header: tap for Settings → About & changes (the full changelog). */
+function renderVerPill(){
+  const b = $('#verPill'); if (!b) return;
+  b.innerHTML = `v${esc(APP_VERSION)}`;
+  b.title = L(`Dashboard v${APP_VERSION}${typeof SCRIPT_SEEN !== 'undefined' && SCRIPT_SEEN ? ` · Apps Script v${SCRIPT_SEEN}` : ''} — what’s new and the full changelog`, `Tableau de bord v${APP_VERSION}${typeof SCRIPT_SEEN !== 'undefined' && SCRIPT_SEEN ? ` · Apps Script v${SCRIPT_SEEN}` : ''} — nouveautés et historique complet`);
+  b.setAttribute('aria-label', b.title);
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    21. SETTINGS MODAL
    ════════════════════════════════════════════════════════════════════════════ */
@@ -6100,6 +6122,8 @@ function wire(){
   $('#moreList').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.v) return setView(b.dataset.v); closeMore();
     if (b.dataset.act === 'report') $('#btnReport').click(); else if (b.dataset.act === 'settings') $('#btnSettings').click(); else if (b.dataset.act === 'tour') $('#btnHelp').click(); };
   $('#moreClose').onclick = closeMore;
+  $('#verPill').onclick = () => openSettings('about');
+  renderVerPill();
   $('#planList').onclick = e => { if (e.target.closest('#planPast')) { UI.planPast = !UI.planPast; saveUI(); renderTodayPlan(); } };
   $('#btnTodayDay').onclick = () => { if (DAYS.has(todayIdx())) openDrawer(todayIdx()); };
   // Timeline toolbar
@@ -6155,6 +6179,10 @@ function wire(){
   $('#qlBody').addEventListener('click', e => { const tg = e.target.closest('[data-tag]'); if (tg) { toggleTagChip(tg); return; }
     const ago = e.target.closest('[data-ago]'); if (ago) { const box = ago.closest('[data-for]'), fld = box.dataset.for, i = $(`#qlForm [name="${fld}"]`), D = $('#qlForm [name=Date]'); let t = nowMin() - +ago.dataset.ago, d = todayIdx(); if (t < 0) { t += DAY; d--; }
       i.value = fmtTime(t); if (D && fld === 'Start Time') D.value = isoOf(d); box.querySelectorAll('[data-ago]').forEach(b => b.classList.toggle('off', b !== ago)); i.dispatchEvent(new Event('change', { bubbles:true })); return; }
+    const nb = e.target.closest('[data-now]'); if (nb) { const i = $(`#qlForm [name="${nb.dataset.now}"]`), D = $('#qlForm [name=Date]');
+      i.value = fmtTime(nowMin()); if (D && nb.dataset.now === 'Start Time') D.value = isoOf(todayIdx());
+      $(`#qlForm .tchips[data-for="${nb.dataset.now}"]`)?.querySelectorAll('[data-ago]').forEach(b => b.classList.toggle('off', b.dataset.ago !== '0'));
+      i.dispatchEvent(new Event('change', { bubbles:true })); return; }
     const sv = e.target.closest('[data-set-v]'); if (sv) { const i = $(`#qlForm [name="${sv.closest('[data-for]').dataset.for}"]`); i.value = sv.dataset.setV; $$('#qlForm [data-set-v]').forEach(b => b.classList.toggle('off', b !== sv)); return; }
     const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid); });
@@ -6287,7 +6315,7 @@ function wire(){
 }
 function setLang(l){
   S.lang = l; saveSettings(); translateStatic(); $('#btnLang').textContent = l === 'fr' ? 'EN' : 'FR';
-  applyModules(); renderAll();
+  applyModules(); renderAll(); renderVerPill();
   if ($('#mSettings').classList.contains('on')) renderSettings();
   if ($('#report').classList.contains('on')) renderReport();
 }

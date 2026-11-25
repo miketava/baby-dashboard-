@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.13 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **Version in the top right corner:** tap it for Settings → About & changes (what's new and the full changelog). Hover or long-press shows the dashboard and Apps Script versions.
+- **Now button beside every time field** in Quick Log, for start and end times, on new entries and on edits (e.g. filling in when play or a nap actually finished).
+
 ## v1.12 — 2026-11-25 · Apps Script v1.1 (no script change)
 
 - **ⓘ for section instructions:** how-to-read lines and legends under section titles (chart keys, column meanings, “tap a row to…”) fold into an ⓘ button at the top right of each card. Lines that carry numbers stay visible: check-in coverage and per-area counts, the cocooning week, teeth count, contacts in range, events matching the filters, bath target, and Today's plan.
