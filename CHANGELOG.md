@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.12 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **ⓘ for section instructions:** how-to-read lines and legends under section titles (chart keys, column meanings, “tap a row to…”) fold into an ⓘ button at the top right of each card. Lines that carry numbers stay visible: check-in coverage and per-area counts, the cocooning week, teeth count, contacts in range, events matching the filters, bath target, and Today's plan.
+
 ## v1.11 — 2026-11-25 · Apps Script v1.1 (no script change)
 
 - **End time buttons:** *now · −5 · −15 · −30 min · −1 h* under End time when ending a nap or feed, and on new entries that have a duration (naps, feeds, play, visits, family contact reply time).

@@ -536,6 +536,12 @@ body[data-view="today"] #filterbar{display:none}
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+/* section descriptions live behind an ⓘ button */
+main .card-head .sub.sub-i{display:none}
+main .card.show-sub .card-head .sub.sub-i{display:block;margin-top:4px;padding:8px 10px;border-radius:9px;background:var(--bg);color:var(--muted);font-size:13px;line-height:1.4}
+.ibtn{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--panel);color:var(--muted);font:600 14px/1 Georgia,serif;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;order:9}
+.ibtn:hover,.card.show-sub .ibtn{color:var(--accent);border-color:var(--accent)}
+.card-head:has(.sub.sub-i:empty) .ibtn{display:none}
 input.tin{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
 .tchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:-4px}
@@ -587,7 +593,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
   .filterbar.open{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:80vh;overflow:auto;z-index:76;background:var(--panel);border-radius:18px 18px 0 0;border:0;padding:14px 14px calc(16px + env(safe-area-inset-bottom));box-shadow:0 0 0 100vmax rgba(15,23,42,.45)}
   .filterbar.open #filterDone{display:inline-flex}
   .filterbar.open .chipline{display:flex} #catToggle{display:none!important}
-  #tlOpts{display:inline-flex} #v-timeline .card-head .sub{display:none}
+  #tlOpts{display:inline-flex}
   #v-timeline .tl-toolbar,#tlLegend{display:none} #v-timeline .card.opts .tl-toolbar,#v-timeline .card.opts #tlLegend{display:flex}
   .filterbar.open .line{flex-direction:column;align-items:stretch}
   .filterbar.open .line .row,.filterbar.open .search{max-width:none}
@@ -683,7 +689,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
   <div class="today-body" id="todayBody"></div>
 </section>
     <div class="card" style="margin-top:14px" id="planCard">
-      <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub"></div></div></div>
+      <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub" data-keep></div></div></div>
       <div id="planList"></div>
     </div>
     <div class="card" style="margin-top:14px">
@@ -728,7 +734,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
       </div>
     </div>
     <div class="card" style="margin-top:14px" data-mod="cocooning">
-      <div class="card-head"><div><h2>Cocooning</h2><div class="sub" id="cocoonSub"></div></div></div>
+      <div class="card-head"><div><h2>Cocooning</h2><div class="sub" id="cocoonSub" data-keep></div></div></div>
       <div id="cocoonBox"></div>
       <div class="chartbox" style="height:220px"><canvas id="chCocoon"></canvas></div>
       <div id="cocoonCmp" class="tbl-wrap"></div>
@@ -799,7 +805,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
         <div id="lateBox"></div>
       </div>
       <div class="card">
-        <div class="card-head"><div><h2>Bath Cadence</h2><div class="sub" id="bathSub"></div></div></div>
+        <div class="card-head"><div><h2>Bath Cadence</h2><div class="sub" id="bathSub" data-keep></div></div></div>
         <div id="bathBox"></div>
       </div>
     </div>
@@ -846,7 +852,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
         <div id="growthBox"></div>
       </div>
       <div class="card" data-mod="teeth">
-        <div class="card-head"><div><h2>Teeth</h2><div class="sub" id="teethSub"></div></div></div>
+        <div class="card-head"><div><h2>Teeth</h2><div class="sub" id="teethSub" data-keep></div></div></div>
         <div id="teethBox"></div>
       </div>
     </div>
@@ -859,14 +865,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
   <!-- View 5: Data explorer -->
   <section class="view" id="v-checkins" data-mod="checkins">
     <div class="card">
-      <div class="card-head"><div><h2>Daily Check-ins</h2><div class="sub" id="ciSub"></div></div><button class="btn primary" data-ciopen>📝 Today's check-in</button></div>
+      <div class="card-head"><div><h2>Daily Check-ins</h2><div class="sub" id="ciSub" data-keep></div></div><button class="btn primary" data-ciopen>📝 Today's check-in</button></div>
       <div id="ciStrip"></div>
     </div>
     <div class="grid2" id="ciAreas" style="margin-top:14px"></div>
   </section>
   <section class="view" id="v-contact" data-mod="familyContact">
     <div class="card">
-      <div class="card-head"><div><h2>Family Contact</h2><div class="sub" id="ctSub"></div></div></div>
+      <div class="card-head"><div><h2>Family Contact</h2><div class="sub" id="ctSub" data-keep></div></div></div>
       <div class="row wrap faint" id="ctRule" style="gap:8px;font-size:13px;margin:-4px 0 10px"></div>
       <div class="kpis" id="ctKpis"></div>
       <div id="ctFind" style="margin-top:10px"></div>
@@ -887,7 +893,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
     </div>
     <div class="card">
       <div class="card-head">
-        <div><h2>Event Log</h2><div class="sub" id="logSub"></div></div>
+        <div><h2>Event Log</h2><div class="sub" id="logSub" data-keep></div></div>
         <button class="btn" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export filtered CSV</button>
       </div>
       <div class="tbl-wrap" id="evlog"></div>
@@ -1009,11 +1015,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.11';
+const APP_VERSION = '1.12';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.1';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.12', date:'2026-11-25',
+    en:['Tidier sections: instructions and legends under section titles (how to read a chart, what a column means) are now behind an ⓘ button at the top right. Lines with numbers (counts, coverage, the current week) stay visible.'],
+    fr:['Sections plus compactes : les consignes et légendes sous les titres (comment lire un graphique, ce que veut dire une colonne) sont maintenant derrière un bouton ⓘ en haut à droite. Les lignes avec des chiffres (totaux, couverture, semaine en cours) restent visibles.'] },
   { v:'1.11', date:'2026-11-25',
     en:['Quick Log: the same “now · −5 · −15 · −30 min · −1 h” buttons for End time, when ending a nap or feed and on any entry with a duration.'],
     fr:['Ajout rapide : les mêmes boutons « maintenant · −5 · −15 · −30 min · −1 h » pour l’heure de fin, en terminant une sieste ou un boire et sur toute entrée avec une durée.'] },
@@ -4927,7 +4936,7 @@ function renderCheckins(){
     <p class="hint">${L('Tap a day to fill in or change its check-in. Colour = how the day went overall across areas.', 'Touchez une journée pour remplir ou modifier son bilan. Couleur = l’impression d’ensemble de la journée.')}</p>`;
   $('#ciAreas').innerHTML = ciAreas().map(a => { const rows = DATA.events.filter(e => e.cat.toLowerCase() === a.cat.toLowerCase() && days.some(d => d.D === e.d));
     const sum = ciSummary(a, rows), notes = rows.filter(e => e.notes).slice(-6).reverse();
-    return `<div class="card ciacard"><div class="card-head"><div><h2>${a.icon} ${L(a.en, a.fr)}</h2><div class="sub">${L(`${rows.length} check-in${rows.length === 1 ? '' : 's'} in range`, `${plural(rows.length, '', '', 'bilan', 'bilans')} dans la période`)}</div></div></div>
+    return `<div class="card ciacard"><div class="card-head"><div><h2>${a.icon} ${L(a.en, a.fr)}</h2><div class="sub" data-keep>${L(`${rows.length} check-in${rows.length === 1 ? '' : 's'} in range`, `${plural(rows.length, '', '', 'bilan', 'bilans')} dans la période`)}</div></div></div>
       <div class="cidots">${days.map(d => { const e = rows.find(x => x.d === d.D); return `<i class="${e ? (e.outcome || 'set').toLowerCase() : ''}" title="${esc(fmtDayShort(d.D))}${e?.outcome ? ' · ' + esc(ocL(e.outcome)) : ''}"></i>`; }).join('')}</div>
       ${sum.length ? `<ul class="find">${sum.map(s => `<li>${s}</li>`).join('')}</ul>` : `<p class="muted">${L('Nothing recorded yet.', 'Rien d’enregistré pour l’instant.')}</p>`}
       ${notes.length ? `<ul class="feed cinotes">${notes.map(e => `<li data-day="${e.d}" data-ev="${e.id}"><b>${fmtDayShort(e.d)}</b> ${esc(e.notes)}</li>`).join('')}</ul>` : ''}</div>`; }).join('');
@@ -5703,6 +5712,22 @@ function normTime(s){
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault();
     const cur = parseTime(normTime(el.value) || '') ?? (Math.round(nowMin() / 5) * 5), step = (e.shiftKey ? 15 : 5) * (e.key === 'ArrowUp' ? 1 : -1);
     el.value = fmtTime(((Math.round(cur / Math.abs(step)) * Math.abs(step) + step) % DAY + DAY) % DAY); el.dispatchEvent(new Event('change', { bubbles:true })); }, true);
+})();
+
+/* ── Section descriptions behind ⓘ ──
+   Subtitles that are instructions or legends (how to read a chart, what a column means) fold into an ⓘ button at the top right.
+   Subtitles that carry numbers (counts, coverage, the current week) or live controls are marked data-keep and stay visible. */
+(function infoButtons(){
+  const fix = root => root.querySelectorAll?.('main .card-head').forEach(h => {
+    const sub = h.querySelector(':scope > div > .sub'); if (!sub || sub.hasAttribute('data-keep') || sub.classList.contains('sub-i')) return;
+    sub.classList.add('sub-i');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ibtn'; b.textContent = 'i';
+    b.title = L('About this section', 'À propos de cette section'); b.setAttribute('aria-label', b.title); b.setAttribute('data-noi18n', '');
+    b.onclick = e => { e.stopPropagation(); h.closest('.card')?.classList.toggle('show-sub'); };
+    h.appendChild(b);
+  });
+  fix(document);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => n.nodeType === 1 && fix(n.parentElement || n)))).observe(document.querySelector('main') || document.body, { childList:true, subtree:true });
 })();
 
 /* ════════════════════════════════════════════════════════════════════════════
