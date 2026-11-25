@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.19 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Leaner header:** only Refresh and Settings remain as buttons. Report, the guided tour, English / Français, dark mode and *Import CSV* (only when no Sheet is connected) are under **More** (bottom bar on phones, last item of the sidebar or tabs on a computer). Language and theme are also in *Settings → Display*.
+- **Today's routine score in the header** (e.g. "Today 82 so far"), coloured like the calendar; tap it for the breakdown in the day panel.
+- **Script update notice → pill:** an outdated Apps Script now shows as a small 🔧 pill beside the other warnings (tap for how to update) instead of a banner across the page.
+
 ## v1.18 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Snack button:** Quick Log always has 🍎 Snack; the 🍽 meal button still names the meal for the time of day (breakfast before 10:30, lunch until 14:30, snack until 17:00, then dinner). The meal form has Breakfast / Lunch / Snack / Dinner buttons to switch.

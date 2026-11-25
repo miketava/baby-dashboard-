@@ -536,6 +536,8 @@ body[data-view="today"] #filterbar{display:none}
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+header.app .actions [data-tucked]{display:none!important}
+.pill.score{font-weight:700;cursor:pointer;border:1px solid transparent} .pill.score:hover{border-color:currentColor}
 .smartrow{margin:0 0 12px;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--accent) 7%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 25%,var(--border))}
 .smartrow > .faint{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:6px}
 .smartbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -621,6 +623,8 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
     <div class="seg kidseg hidden" id="kidSeg" role="group" aria-label="Child"></div>
   <div class="meta">
     <span id="srcPill" class="pill demo"><span class="dot"></span>Demo Mode</span>
+    <button id="scorePill" class="pill score hidden" data-noi18n></button>
+    <button id="scriptPill" class="pill warn hidden" data-noi18n></button>
     <button id="healthPill" class="pill warn hidden" title="Some rows could not be read cleanly">⚠ <span></span></button>
     <button id="scopePill" class="pill scope hidden" title="Some categories are left out of this view"></button>
     <span id="queuePill" class="pill local hidden" title="Quick-log entries not yet in the Google Sheet"></span>
@@ -628,11 +632,11 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
   </div>
   <div class="actions">
     <button class="btn" id="btnRefresh" title="Refresh data from Google Sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span class="lbl-txt">Refresh</span></button>
-    <button class="btn icon" id="btnReport" title="Doctor / case-worker summary report (print or PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg></button>
-    <button class="btn icon" id="btnCsv" title="Import a Daily Log CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></button>
-    <button class="btn icon" id="btnLang" title="Français / English" style="font-weight:700;font-size:12.5px">FR</button>
-    <button class="btn icon" id="btnTheme" title="Toggle light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <button class="btn icon" id="btnHelp" title="Guided tour" style="font-weight:800;min-width:34px">?</button>
+    <button class="btn icon" id="btnReport" data-tucked title="Doctor / case-worker summary report (print or PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg></button>
+    <button class="btn icon" id="btnCsv" data-tucked title="Import a Daily Log CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></button>
+    <button class="btn icon" id="btnLang" data-tucked title="Français / English" style="font-weight:700;font-size:12.5px">FR</button>
+    <button class="btn icon" id="btnTheme" data-tucked title="Toggle light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <button class="btn icon" id="btnHelp" data-tucked title="Guided tour" style="font-weight:800;min-width:34px">?</button>
     <button class="btn icon" id="btnSettings" title="Settings & setup guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button class="verpill" id="verPill" data-noi18n></button>
   </div>
@@ -1044,11 +1048,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.18';
+const APP_VERSION = '1.19';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.19', date:'2026-11-25',
+    en:['Cleaner header: only Refresh and Settings stay. Report, the tour, language, dark mode and CSV import (only shown when no Sheet is connected) are under More.', 'Today’s routine score is in the header; tap it to see what’s helping and what isn’t.', 'The Apps Script update notice is now a small 🔧 pill next to the other warnings instead of a banner.'],
+    fr:['En-tête allégé : seuls Actualiser et Paramètres restent. Le rapport, la visite guidée, la langue, le mode sombre et l’import CSV (affiché seulement sans feuille connectée) sont sous Plus.', 'Le score de routine du jour est dans l’en-tête; touchez-le pour voir ce qui aide et ce qui nuit.', 'L’avis de mise à jour de l’Apps Script est maintenant une petite pastille 🔧 à côté des autres avertissements au lieu d’un bandeau.'] },
   { v:'1.18', date:'2026-11-25',
     en:['Quick Log: a 🍎 Snack button is always there (the 🍽 meal button still follows the time of day), and the meal form has Breakfast / Lunch / Snack / Dinner buttons to switch.'],
     fr:['Ajout rapide : un bouton 🍎 Collation est toujours là (le bouton 🍽 repas suit toujours l’heure), et le formulaire de repas a des boutons Déjeuner / Dîner / Collation / Souper pour changer.'] },
@@ -3118,6 +3125,12 @@ function renderHeader(){
   p.className = 'pill ' + (DATA.source === 'demo' ? 'demo' : DATA.source === 'live' ? 'live' : '');
   p.innerHTML = '<span class="dot"></span>' + esc(DATA.source === 'demo' ? L('Demo Mode', 'Mode démo') : FRL() ? DATA.label.replace('Live · view only', 'En direct · lecture seule').replace('Live · Google Sheet', 'En direct · feuille Google') : DATA.label);
   p.title = DATA.source === 'demo' ? 'Showing built-in sample data. Connect your Sheet in Settings or drop a CSV.' : '';
+  const spl = $('#scriptPill'), old = scriptOutdated(); spl.classList.toggle('hidden', !old);
+  if (old) { spl.textContent = L(`🔧 Script update (v${REQUIRED_SCRIPT})`, `🔧 Mise à jour du script (v${REQUIRED_SCRIPT})`); spl.title = L(`Your Apps Script is ${SCRIPT_SEEN === '0' ? 'before 1.0' : 'v' + SCRIPT_SEEN}; this dashboard needs v${REQUIRED_SCRIPT} for everything to work. Tap for how to update.`, `Votre Apps Script est ${SCRIPT_SEEN === '0' ? 'antérieur à 1.0' : 'en v' + SCRIPT_SEEN}; ce tableau de bord a besoin de la v${REQUIRED_SCRIPT}. Touchez pour savoir comment le mettre à jour.`); }
+  const scp = $('#scorePill'), tm = mod('score') !== false && mod('schedule') ? DAYS.get(todayIdx()) : null, sc = tm?.score;
+  scp.classList.toggle('hidden', !sc || sc.score == null);
+  if (sc?.score != null) { scp.innerHTML = `${L('Today', 'Aujourd’hui')} <b>${sc.score}</b>${sc.partial ? `<span class="faint" style="font-weight:500"> ${L('so far', 'jusqu’ici')}</span>` : ''}`; scp.style.color = scoreCol(sc.score); scp.style.background = `color-mix(in srgb, ${scoreCol(sc.score)} 12%, var(--panel))`;
+    scp.title = L('Today’s routine score — tap to see what’s helping and what isn’t', 'Score de routine du jour — touchez pour voir ce qui aide et ce qui nuit'); }
   const w = DATA.warnings.filter(x => !x.info).length, info = DATA.warnings.length - w;
   const hp = $('#healthPill'); hp.classList.toggle('hidden', !DATA.warnings.length && !DATA.newCats.length);
   hp.querySelector('span').textContent = w ? L(`${w} parse warning${w>1?'s':''}`, `${w} avertissement${w>1?'s':''}`) : DATA.newCats.length ? L(`${DATA.newCats.length} new categor${DATA.newCats.length>1?'ies':'y'}`, `${DATA.newCats.length} nouvelle${DATA.newCats.length>1?'s':''} catégorie${DATA.newCats.length>1?'s':''}`) : `${info} note${info>1?'s':''}`;
@@ -3636,7 +3649,7 @@ function renderDrawer(){
   const own = m.evs.filter(e => !hid.has(e.cat)).sort((a,b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || a.s - b.s);
   const li = (e, cont) => evLi(e, m.D, cont, drawerEv);
   const sc = m.score, W = S.score.weights;
-  const partsHTML = sc ? `<div class="row sp" style="margin-bottom:6px"><b>Routine score</b><span style="font-size:20px;font-weight:750;color:${scoreCol(sc.score)}">${sc.score ?? '—'}${sc.score != null ? '<span class="faint" style="font-size:12px"> / 100' + (sc.partial ? ' so far' : '') + '</span>' : ''}</span></div>
+  const partsHTML = sc ? `<div class="row sp" style="margin-bottom:6px"><b>Routine score</b><span style="font-size:20px;font-weight:750;color:${scoreCol(sc.score)}">${sc.score ?? '—'}${sc.score != null ? '<span class="faint" style="font-size:12px"> / 100' + (sc.partial ? ' ' + L('so far', 'jusqu’ici') : '') + '</span>' : ''}</span></div>
     <div class="parts">${SCORE_PARTS.map(([k, l]) => { const p = sc.parts[k]; return `<div class="pr"><div>${l} <span class="faint">· ${esc(p.detail)}${+W[k] ? '' : ' · weight 0'}</span>${p.v == null ? '' : `<div class="meter"><i style="width:${p.v*100}%;background:${p.v >= .8 ? 'var(--good)' : p.v >= .5 ? 'var(--warn)' : 'var(--bad)'}"></i></div>`}</div><div style="text-align:right;font-weight:650">${p.v == null ? '<span class="faint">n/a</span>' : Math.round(p.v*100) + '%'}</div></div>`; }).join('')}</div>
     ${sc.score == null ? '<div class="hint" style="margin:-8px 0 12px">Needs at least 3 scored components.</div>' : ''}<div class="row wrap" style="gap:4px;margin-bottom:12px">${iconsHTML(m, 12)}</div>` : '';
   $('#drBody').innerHTML = partsHTML + `<div class="totals">${tot.map(([k,v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}</div>
@@ -5705,6 +5718,7 @@ function renderNav(){
   const tabs = NAV(), grp = g => L(...TAB_GROUPS[g]); let last = '', h = '';
   tabs.forEach(t => { if (t.g !== last) { h += `<div class="tgrp">${esc(grp(t.g))}</div>`; last = t.g; }
     h += `<button class="tab${t.v === VIEW ? ' on' : ''}" data-v="${t.v}"${t.v === 'patterns' ? ' id="tabPatterns"' : ''}><span class="ti" aria-hidden="true">${t.ic}</span><span class="tn">${esc(t.n)}</span></button>`; });
+  h += `<div class="tgrp">${esc(L('More', 'Plus'))}</div><button class="tab" data-more><span class="ti" aria-hidden="true">☰</span><span class="tn">${esc(L('More: report, tour, language…', 'Plus : rapport, visite, langue…'))}</span></button>`;
   $('#tabs').innerHTML = h; document.body.dataset.view = VIEW;
   const one = v => { const t = tabs.find(x => x.v === v); return t ? `<button data-v="${t.v}" class="${t.v === VIEW ? 'on' : ''}"><span class="ti" aria-hidden="true">${t.ic}</span>${esc(t.n)}</button>` : ''; };
   const four = BBAR_4(), inBar = ['today', 'timeline', four], moreOn = !inBar.includes(VIEW);
@@ -5714,7 +5728,7 @@ function renderNav(){
   last = ''; let m = '';
   tabs.forEach(t => { if (t.g !== last) { m += `<div class="mgrp">${esc(grp(t.g))}</div>`; last = t.g; }
     m += `<button data-v="${t.v}" class="${t.v === VIEW ? 'on' : ''}"><span class="ti" aria-hidden="true">${t.ic}</span>${esc(t.n)}</button>`; });
-  m += `<div class="mgrp">${esc(L('More', 'Plus'))}</div><button data-act="report"><span class="ti">📄</span>${esc(L('Report', 'Rapport'))}</button><button data-act="settings"><span class="ti">⚙️</span>${esc(L('Settings', 'Paramètres'))}</button><button data-act="tour"><span class="ti">❔</span>${esc(L('Guided tour', 'Visite guidée'))}</button>`;
+  m += `<div class="mgrp">${esc(L('More', 'Plus'))}</div><button data-act="report"><span class="ti">📄</span>${esc(L('Report', 'Rapport'))}</button><button data-act="settings"><span class="ti">⚙️</span>${esc(L('Settings', 'Paramètres'))}</button><button data-act="tour"><span class="ti">❔</span>${esc(L('Guided tour', 'Visite guidée'))}</button><button data-act="lang"><span class="ti">🌐</span>${FRL() ? 'English' : 'Français'}</button><button data-act="theme"><span class="ti">${document.documentElement.dataset.theme === 'dark' ? '☀️' : '🌙'}</span>${esc(document.documentElement.dataset.theme === 'dark' ? L('Light mode', 'Mode clair') : L('Dark mode', 'Mode sombre'))}</button>${S.endpoint ? '' : `<button data-act="csv"><span class="ti">📥</span>${esc(L('Import CSV', 'Importer un CSV'))}</button>`}`;
   $('#moreList').innerHTML = m; $('#moreTitle').textContent = L('All sections', 'Toutes les sections');
 }
 function openMore(){ hideTip(); $('#moreSheet').classList.add('on'); $('#scrim').classList.add('on'); }
@@ -5803,7 +5817,7 @@ function renderNotice(){
   let h = '';
   if (S.profile.whatsNew === '4.0') h = `<span>✨ <b>New:</b> tell the dashboard about your child and switch features on or off, plus a guided tour of everything.</span>
       <button class="btn sm primary" data-nact="wizard">Set up profile</button><button class="btn sm" data-nact="tour">Take the tour</button><button class="btn sm ghost" data-nact="dismissNew">✕</button>`;
-  else if (scriptOutdated()) h = `<span>🔧 ${L(`Your Apps Script is older than this dashboard (script ${SCRIPT_SEEN === '0' ? 'before 1.0' : 'v' + SCRIPT_SEEN}, needs v${REQUIRED_SCRIPT}). Some features (editing entries, per-child Quick Log) won't work until you update it.`, `Votre Apps Script est plus ancien que le tableau de bord (script ${SCRIPT_SEEN === '0' ? 'antérieur à 1.0' : 'v' + SCRIPT_SEEN}, requis : v${REQUIRED_SCRIPT}). Certaines fonctions (modifier des entrées, saisie par enfant) ne marchent pas avant la mise à jour.`)}</span>
+  else if (false && scriptOutdated()) h = `<span>🔧 ${L(`Your Apps Script is older than this dashboard (script ${SCRIPT_SEEN === '0' ? 'before 1.0' : 'v' + SCRIPT_SEEN}, needs v${REQUIRED_SCRIPT}). Some features (editing entries, per-child Quick Log) won't work until you update it.`, `Votre Apps Script est plus ancien que le tableau de bord (script ${SCRIPT_SEEN === '0' ? 'antérieur à 1.0' : 'v' + SCRIPT_SEEN}, requis : v${REQUIRED_SCRIPT}). Certaines fonctions (modifier des entrées, saisie par enfant) ne marchent pas avant la mise à jour.`)}</span>
       <button class="btn sm primary" data-nact="script">${L('How to update', 'Comment mettre à jour')}</button>`;
   else if (b && mod('schedule') && b.ww && S.profile.bandAck && S.profile.bandAck !== b.id) h = `<span>🎂 ${esc(S.profile.name || 'Your child')} is now <b>${ageLabel(ageDays())}</b> (${b.label}). Nap targets for this age may differ from yours.</span>
       <button class="btn sm primary" data-nact="band">Review suggestions</button><button class="btn sm ghost" data-nact="dismissBand">Not now</button>`;
@@ -5927,7 +5941,7 @@ function tourSteps(){
     { tab:'patterns', el:'#visitBox', mod:'visits', title:'Visit by visit', body:'Every visit on one line: drop-off and pick-up, car naps, that night, the next day, and how many days the routine took to settle.' },
     { tab:'patterns', el: cardOf('#cocoonBox'), mod:'cocooning', title:'Cocooning', body:L('Outings and guests per week during the settling-in period you set, and how sleep, mood and the routine score compared on those days with quiet days at home.', 'Sorties et invités par semaine pendant la période d’adaptation choisie, et comment le sommeil, l’humeur et le score de routine se comparaient ces jours-là aux journées tranquilles à la maison.') },
     { tab:'patterns', el:'#findBox', title:'Key findings', body:'Plain-language sentences with the numbers behind them, ready to copy into an email or report.' },
-    { el:'#btnReport', title:'Reports', body: () => mod('workerReports') ? 'Build a printable report for any two-week period, or an “all visits to date” summary. Add your comments, save an unchangeable copy, then print or save as PDF.' : 'A printable summary for the pediatrician or family: sleep, feeding, milestones, appointments and a day-by-day table.' },
+    { tab:'patterns', el:'#btnReport2', title:'Reports', body: () => mod('workerReports') ? 'Build a printable report for any two-week period, or an “all visits to date” summary. Add your comments, save an unchangeable copy, then print or save as PDF.' : 'A printable summary for the pediatrician or family: sleep, feeding, milestones, appointments and a day-by-day table.' },
     { tab:'checkins', el: cardOf('#ciStrip'), mod:'checkins', title:L('End-of-day check-in', 'Bilan de fin de journée'),
       body:L('A short evening form on language, emotional development, feeding, play, sleep and contact with the parents: quick taps for what can be counted, plus your own words. A reminder appears in the Today banner at the time you choose. Each square is a day; tap one to fill it in or change it.', 'Un court formulaire du soir sur le langage, le développement affectif, l’alimentation, le jeu, le sommeil et les contacts avec les parents : des touches rapides pour ce qui se compte, plus vos propres mots. Un rappel apparaît dans le bandeau du jour à l’heure choisie. Chaque carré est une journée; touchez-en une pour la remplir ou la modifier.') },
     { tab:'checkins', el: () => $('#ciAreas .ciacard:nth-child(2)') || $('#ciAreas .ciacard'), mod:'checkins', title:L('What the check-ins add up to', 'Ce que donnent les bilans'),
@@ -5945,11 +5959,11 @@ function tourSteps(){
     { tab:'health', el: cardOf('#teethBox'), mod:'teeth', title:'Teeth', body:'Tap a tooth on the chart when it comes through. The dashboard checks the days around each new tooth for changes in sleep, eating and mood, like it does for visits. <b>Teething and sleep</b> below compares the nights around each tooth with the two weeks before.' },
     { tab:'health', el:'#careBox', mod:'diapers', title:'Diapers & meds', body: () => L('Diaper counts per day, poop consistency (hard / formed / loose / watery, picked when you log a poop) and a meds log. Turn on “Diaper & meds” in the timeline display options to see them on the 24-hour grid.', 'Couches par jour, consistance des selles (dures / moulées / molles / liquides, choisie en notant une selle) et journal des médicaments. Activez « Couches et médicaments » dans les options d’affichage de la chronologie pour les voir sur la grille de 24 heures.') },
     { tab:'health', el:'#vaxCard', mod:'health', title:L('Vaccines', 'Vaccins'), body: () => L('The Québec vaccination schedule (2, 4, 12 and 18 months, then 4–6 years) checked against the Vaccine rows you log. The banner reminds you two weeks ahead, and for a few days after each visit asks you to note any fever or reaction; anything you log shows up here. Turn it off in Settings → Reminders.', 'Le calendrier de vaccination du Québec (2, 4, 12 et 18 mois, puis 4–6 ans) comparé aux lignes Vaccine notées. Le bandeau vous le rappelle deux semaines avant et, quelques jours après chaque visite, vous invite à noter fièvre ou réaction; ce que vous notez s’affiche ici. À désactiver dans Paramètres → Rappels.') },
-    { el:'#btnLang', title:'English / Français', body:L('Switch the whole app, reports included, between English and French. Values written to the Sheet stay in English, so the Sheet works either way.', 'Passez toute l’application, rapports compris, de l’anglais au français. Les valeurs écrites dans la feuille restent en anglais : elle fonctionne dans les deux langues.') },
+    { el: () => innerWidth <= 720 ? $('#bbar [data-more]') : $('#tabs [data-more]'), title:'English / Français', body:L('<b>More</b> holds the report, this tour, English / Français and dark mode (also in Settings → Display). Switching language changes the whole app, reports included; values written to the Sheet stay in English, so the Sheet works either way.', '<b>Plus</b> regroupe le rapport, cette visite, English / Français et le mode sombre (aussi dans Paramètres → Affichage). Changer de langue traduit toute l’application, rapports compris; les valeurs écrites dans la feuille restent en anglais, elle fonctionne donc dans les deux langues.') },
     { el:'#btnSettings', title:'Make it yours', body: () => L('Child details and features (and <b>＋ Add a child</b>), targets, schedule templates, reminders and your Google Sheet connection all live in Settings. In templates, each step can have notes, be limited to some days (bath nights) or be set in minutes before bedtime.', 'Les renseignements sur l’enfant et les fonctions (et <b>＋ Ajouter un enfant</b>), les cibles, les modèles d’horaire, les rappels et la connexion à votre feuille Google se trouvent dans les Paramètres. Dans les modèles, chaque repère peut avoir des notes, être limité à certains jours (soirs de bain) ou être placé en minutes avant le coucher.')
       + (mod('workerReports') ? L(' <b>Sharing &amp; viewers</b> creates a read-only key for a caseworker, with any categories left out.', ' <b>Partage et accès en lecture</b> crée une clé de lecture seule pour un intervenant, avec les catégories de votre choix exclues.') : '')
       + L(' <b>About &amp; changes</b> shows the version and what’s new.', ' <b>À propos et versions</b> affiche la version et les nouveautés.') },
-    { el:'#btnHelp', title:'That’s it!', body: () => L('Replay this tour any time with the ? button. Tap ⓘ on any section for how to read it, and the version number in the top corner for what’s new. Your own data is back in place now.', 'Refaites cette visite quand vous voulez avec le bouton ?. Touchez ⓘ sur une section pour savoir comment la lire, et le numéro de version en haut pour les nouveautés. Vos propres données sont de retour.') },
+    { el:'#verPill', title:'That’s it!', body: () => L('Replay this tour any time from More → Guided tour. Tap ⓘ on any section for how to read it, and the version number in the top corner for what’s new. Your own data is back in place now.', 'Refaites cette visite quand vous voulez avec Plus → Visite guidée. Touchez ⓘ sur une section pour savoir comment la lire, et le numéro de version en haut pour les nouveautés. Vos propres données sont de retour.') },
   ];
   return steps.filter(s => (!s.mod || mod(s.mod)) && !(s.skip && s.skip()));
 }
@@ -6446,6 +6460,8 @@ function wire(){
   $('#btnLang').onclick = () => setLang(S.lang === 'fr' ? 'en' : 'fr');
   $('#scopePill').onclick = () => viewOnly() ? toast($('#scopePill').title) : openSettings('sharing');
   $('#healthPill').onclick = () => { renderHealthModal(); openModal('mHealth'); };
+  $('#scriptPill').onclick = () => openSettings('source');
+  $('#scorePill').onclick = () => openDrawer(todayIdx());
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); });
   // Today banner
   $('#todayCollapse').onclick = () => { UI.todayCollapsed = !UI.todayCollapsed; saveUI(); renderToday(); };
@@ -6471,10 +6487,10 @@ function wire(){
   };
   $('#presetSel').onchange = e => { const v = e.target.value; e.target.value = ''; if (v === '__save') savePreset(); else if (v !== '') applyPreset(+v); };
   // Tabs
-  $('#tabs').onclick = e => { const b = e.target.closest('.tab'); if (b) setView(b.dataset.v); };
+  $('#tabs').onclick = e => { const b = e.target.closest('.tab'); if (!b) return; if (b.dataset.more != null) openMore(); else setView(b.dataset.v); };
   $('#bbar').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.ql != null) openQuickLog(); else if (b.dataset.more != null) openMore(); else if (b.dataset.v) setView(b.dataset.v); };
   $('#moreList').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.v) return setView(b.dataset.v); closeMore();
-    if (b.dataset.act === 'report') $('#btnReport').click(); else if (b.dataset.act === 'settings') $('#btnSettings').click(); else if (b.dataset.act === 'tour') $('#btnHelp').click(); };
+    const a = b.dataset.act; if (a === 'report') $('#btnReport').click(); else if (a === 'settings') $('#btnSettings').click(); else if (a === 'tour') $('#btnHelp').click(); else if (a === 'lang') $('#btnLang').click(); else if (a === 'theme') { $('#btnTheme').click(); renderNav(); } else if (a === 'csv') $('#btnCsv').click(); };
   $('#moreClose').onclick = closeMore;
   $('#verPill').onclick = () => openSettings('about');
   renderVerPill();
