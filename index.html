@@ -1048,11 +1048,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.19';
+const APP_VERSION = '1.20';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.20', date:'2026-11-25',
+    en:['The Today section always shows every category: filters you set on other sections no longer hide today’s entries or today’s grid.', 'Quick Log: a new form always opens at the top instead of where the last one was scrolled to.'],
+    fr:['La section Aujourd’hui montre toujours toutes les catégories : les filtres réglés dans les autres sections ne masquent plus les entrées ni la grille du jour.', 'Ajout rapide : un nouveau formulaire s’ouvre toujours en haut au lieu de garder le défilement du précédent.'] },
   { v:'1.19', date:'2026-11-25',
     en:['Cleaner header: only Refresh and Settings stay. Report, the tour, language, dark mode and CSV import (only shown when no Sheet is connected) are under More.', 'Today’s routine score is in the header; tap it to see what’s helping and what isn’t.', 'The Apps Script update notice is now a small 🔧 pill next to the other warnings instead of a banner.'],
     fr:['En-tête allégé : seuls Actualiser et Paramètres restent. Le rapport, la visite guidée, la langue, le mode sombre et l’import CSV (affiché seulement sans feuille connectée) sont sous Plus.', 'Le score de routine du jour est dans l’en-tête; touchez-le pour voir ce qui aide et ce qui nuit.', 'L’avis de mise à jour de l’Apps Script est maintenant une petite pastille 🔧 à côté des autres avertissements au lieu d’un bandeau.'] },
@@ -3077,7 +3080,9 @@ const isNewFood = e => e.tags.some(t => /^(new|new-?food|first)$/.test(t)) || /f
 const DEFAULT_FILTER = { range:'last14', from:null, to:null, dayType:'all', q:'', hidden:[] };
 let F = Object.assign({ ...DEFAULT_FILTER }, lsGet(LS_FILTER, {}));
 const saveFilter = () => lsSet(LS_FILTER, F);
-const hiddenSet = () => new Set(F.hidden);
+/** Categories hidden by the filter bar. The Today section ignores them (it has no filter bar), so it always shows everything. */
+let IGNORE_FILTER = false;
+const hiddenSet = () => new Set(IGNORE_FILTER ? [] : F.hidden);
 const qMatch = e => { if (!F.q) return true; const q = F.q.toLowerCase(); return (e.notes || '').toLowerCase().includes(q) || e.tags.some(t => t.includes(q)); };
 function dataSpan(){ const ks = [...DAYS.keys()]; return ks.length ? [Math.min(...ks), Math.max(...ks)] : [todayIdx(), todayIdx()]; }
 function ensureCustomRange(){ const [a,b] = dataSpan(); if (F.from == null) F.from = a; if (F.to == null) F.to = b; }
@@ -3582,7 +3587,7 @@ function renderTodayPlan(){
 /** Today's entries: everything logged today, newest first, ready to fix. */
 function renderTodayEntries(){
   const box = $('#todayEv'); if (!box) return;
-  const D = todayIdx(), m = DAYS.get(D), hid = hiddenSet();
+  const D = todayIdx(), m = DAYS.get(D), hid = new Set();   // Today ignores the filter bar
   const carry = DATA.events.filter(e => e.t != null && e.d < D && e.t > D * DAY && !hid.has(e.cat));
   const own = (m?.evs || []).filter(e => !hid.has(e.cat)).sort((a, b) => (b.allDay ? -1 : 0) - (a.allDay ? -1 : 0) || b.s - a.s);
   const all = [...own.map(e => [e, false]), ...carry.map(e => [e, true])], open = !!UI.todayEvAll, N = 8;
@@ -3592,6 +3597,10 @@ function renderTodayEntries(){
 }
 /** Today tab: the live banner, today's plan, today's entries and today's row on the 24-hour grid. */
 function renderTodayView(){
+  IGNORE_FILTER = true;
+  try { renderTodayView0(); } finally { IGNORE_FILTER = false; }
+}
+function renderTodayView0(){
   renderTomorrowCard(); renderTodayPlan(); renderTodayEntries();
   $('#btnCopyDay').textContent = L('📋 Copy for AI', '📋 Copier pour l’IA'); $('#btnCopyDay').title = L('Copy today’s entries as text to paste into an AI assistant', 'Copier les entrées du jour en texte pour un assistant IA');
   const m = DAYS.get(todayIdx());
@@ -5309,6 +5318,7 @@ function qlPresets(){
   return P;
 }
 function renderQuickLog(){
+  if (QL !== renderQuickLog.last) { renderQuickLog.last = QL; [$('#qlog'), $('#qlBody'), $('#qlBody')?.parentElement].forEach(el => { if (el) el.scrollTop = 0; }); }   // a new form starts at the top
   $('#qlDest').textContent = S.endpoint ? '→ Google Sheet' : '→ this device only';
   $('#qlDest').className = 'pill ' + (S.endpoint ? 'live' : 'local');
   if (!QL) {

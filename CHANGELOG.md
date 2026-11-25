@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.20 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Today ignores category filters:** the Today section has no filter bar, so it no longer applies the categories hidden on other sections. Today's entries and today's grid always show everything; Timeline and the analysis tabs still follow the filter line at the top.
+- **Quick Log forms open at the top** instead of keeping the scroll position of the previous form or the button list.
+
 ## v1.19 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Leaner header:** only Refresh and Settings remain as buttons. Report, the guided tour, English / Français, dark mode and *Import CSV* (only when no Sheet is connected) are under **More** (bottom bar on phones, last item of the sidebar or tabs on a computer). Language and theme are also in *Settings → Display*.
