@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.14 — 2026-11-25 · Apps Script v1.1 (no script change)
+
+- **Today's entries:** the Today section lists everything logged today (newest first, 8 shown with *Show all*), each with ✏️ to fix or delete it right away; press and hold works too. Tap a row to open it in the day panel.
+
 ## v1.13 — 2026-11-25 · Apps Script v1.1 (no script change)
 
 - **Version in the top right corner:** tap it for Settings → About & changes (what's new and the full changelog). Hover or long-press shows the dashboard and Apps Script versions.

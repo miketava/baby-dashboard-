@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.13** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.14** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -39,7 +39,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 **Sections** (a sidebar on a computer; on a phone, a bottom bar with Today, Timeline, ＋ Log, Check-ins and More)
 | Section | What it shows |
 |---|---|
-| 📅 Today | The live banner (asleep or awake, next nap window, today's totals), **today's plan** from your template with notes, what's now and next, and upcoming calendar visits, and today on the 24-hour grid. |
+| 📅 Today | The live banner (asleep or awake, next nap window, today's totals), **today's plan** from your template with notes, what's now and next, and upcoming calendar visits; **today's entries** with ✏️ to fix any of them; and today on the 24-hour grid. |
 | 🗓️ Timeline | Every day on a 24-hour colour-coded grid with your schedule targets overlaid. Click a day for the full breakdown. |
 | 📊 Routine & Visits | Daily **routine score** (how closely the day followed *your* routine), plain-language findings, and on the placement path: before / during / after-visit analysis, visit-by-visit table, cocooning. |
 | 😴 Sleep | Averages, wake windows, daytime sleep vs night wakings, how long bedtime takes, effect of outings and car rides. |
