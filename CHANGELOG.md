@@ -8,6 +8,19 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.6 — 2026-11-24 · Apps Script v1.0 (no script change)
+
+- **New navigation.** Computer: a sidebar grouped as *Daily* (Today, Timeline, Check-ins), *Analysis* (Routine & Visits, Sleep, Feeding, Health & Growth), *Placement* (Birth Family) and *Data*. Phone: a bottom bar with Today, Timeline, a centre **＋** to log, Check-ins and **More** (every other section, plus Report, Settings and the tour). Medium screens keep top tabs, now with icons.
+- **Today** is its own section: the live banner plus today's row on the 24-hour grid. **Timeline** holds the day-by-day history.
+- **Filters** fold into one summary line (range, day type, search, hidden categories) that turns coloured when anything is filtered, with ✕ to reset. On a phone they open as a panel from the bottom; on a computer the category chips sit behind a 🏷 Categories button. No filters on the Today section.
+- On a phone, the timeline's display options (rows/columns, sort, target overlay, legend) are behind **⚙︎ Display**.
+- The end-of-day check-in reminder time is also in **Settings → Reminders** (it was only on the Check-ins tab).
+
+## v1.5 — 2026-11-24 · Apps Script v1.0 (no script change)
+
+- **Visit days follow the real visit time:** when an off-site visit starts 15 min to 4 h away from the template's visit time, the visit band and the car naps right before and after it slide by the same amount for scoring and the timeline overlay. Meals, the bridge nap, the cutoff and bedtimes stay put. The day panel shows the shift.
+- **Bedtime range:** on a template with an optional bridge nap and two bedtimes (Late-Morning Visit Day: 19:00 without the bridge, 20:00 with it), any bedtime in between counts as on target. Skipping the bridge nap makes 19:00 the suggestion, not a penalty for a 20:00 bedtime.
+
 ## v1.4 — 2026-11-24 · Apps Script v1.0 (no script change)
 
 - **Repeat & visit-day questions** (Family Contact tab): flags a topic the family asks again within 24 hours (the window is adjustable) and requests for photos, video or an update on a visit day, noting whether it came before, during or after the visit. “How did the visit go?” is not flagged.
