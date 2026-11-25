@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.15 — 2026-11-25 · **Apps Script v1.2** (update needed)
+
+- **Visits from shared calendars:** the script now reads every calendar ticked in your Google Calendar, including shared ones like a family calendar, instead of only your main one. A visit that's in two calendars counts once. To limit it, set `CALENDARS` to a list of names or IDs, e.g. `['primary', 'Famille']`.
+- `checkCalendar` (▸ Run in the editor) now logs which calendars it read and, for each visit found, its title and calendar. That's visible only to you in the editor and never sent to the dashboard.
+  - **To update:** paste the new `Code.gs` (keep your `SECRET` and `VIEWERS`), run `checkCalendar` once, then *Deploy → Manage deployments → ✏️ → New version → Deploy*. Same URL.
+
 ## v1.14 — 2026-11-25 · Apps Script v1.1 (no script change)
 
 - **Today's entries:** the Today section lists everything logged today (newest first, 8 shown with *Show all*), each with ✏️ to fix or delete it right away; press and hold works too. Tap a row to open it in the day panel.

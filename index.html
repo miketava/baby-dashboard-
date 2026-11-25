@@ -1026,11 +1026,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.14';
+const APP_VERSION = '1.15';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
-const REQUIRED_SCRIPT = '1.1';
+const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.15', date:'2026-11-25',
+    en:['Calendar visits now come from every calendar shown in your Google Calendar, including shared ones such as a family calendar (Apps Script v1.2). A visit that appears in two calendars counts once.'],
+    fr:['Les visites viennent maintenant de tous les agendas affichés dans votre Google Agenda, y compris les agendas partagés comme un agenda familial (Apps Script v1.2). Une visite présente dans deux agendas ne compte qu’une fois.'] },
   { v:'1.14', date:'2026-11-25',
     en:['Today’s entries: the Today section lists everything logged today, newest first, with ✏️ to fix or delete an entry right away (or press and hold it).'],
     fr:['Entrées d’aujourd’hui : la section Aujourd’hui liste tout ce qui a été noté aujourd’hui, les plus récentes d’abord, avec ✏️ pour corriger ou supprimer une entrée tout de suite (ou appui long).'] },
@@ -1542,15 +1545,17 @@ const ALLERGENS = [
 /* ════════════════════════════════════════════════════════════════════════════
    APPS SCRIPT — read (doGet) + Quick Log append (doPost). Shown in Settings → Setup guide.
    ════════════════════════════════════════════════════════════════════════════ */
-const APPS_SCRIPT = `// Baby Routine Dashboard — Apps Script v1.1 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+const APPS_SCRIPT = `// Baby Routine Dashboard — Apps Script v1.2 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.1';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.2';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
-// end are sent: never titles, places or descriptions, and never to viewer keys. Set CALENDAR_ID = '' to turn it off.
-const CALENDAR_ID = 'primary';                      // or a calendar's ID from Google Calendar → Settings → Integrate calendar
+// end are sent: never titles, places or descriptions, and never to viewer keys.
+// CALENDARS: 'shown' = every calendar ticked in your Google Calendar (your own and shared ones, e.g. a family calendar);
+// or a list of calendar names or IDs, e.g. ['primary', 'Famille']; or '' to turn it off.
+const CALENDARS = 'shown';
 const VISIT_MATCH = /\\bvisit|\\bvisite/i;            // titles that count as an off-site visit…
 const NOT_VISIT = /home visit|visite à domicile|à domicile|cancel|annul/i;   // …unless they also match this
 
@@ -1582,17 +1587,27 @@ function loggedCol_(sh) {
   return c;
 }
 
-function plannedVisits_() {
-  if (!CALENDAR_ID) return [];
-  const cal = CALENDAR_ID === 'primary' ? CalendarApp.getDefaultCalendar() : CalendarApp.getCalendarById(CALENDAR_ID);
-  if (!cal) return [];
-  const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p);
-  return cal.getEvents(new Date(now - 60 * 864e5), new Date(now + 60 * 864e5))
-    .filter(ev => !ev.isAllDayEvent() && VISIT_MATCH.test(ev.getTitle()) && !NOT_VISIT.test(ev.getTitle()))
-    .map(ev => ({ date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm') }));
+function calendars_() {
+  if (!CALENDARS) return [];
+  if (CALENDARS === 'shown') return CalendarApp.getAllCalendars().filter(c => !c.isHidden() && c.isSelected());
+  return [].concat(CALENDARS).flatMap(k => k === 'primary' ? [CalendarApp.getDefaultCalendar()]
+    : [CalendarApp.getCalendarById(k)].concat(CalendarApp.getCalendarsByName(k))).filter(Boolean);
 }
-// Run once from the editor (▸ Run) to approve calendar access and see which events count as visits.
-function checkCalendar() { Logger.log(JSON.stringify(plannedVisits_(), null, 1)); }
+function plannedVisits_(withTitles) {
+  const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
+  calendars_().forEach(cal => cal.getEvents(new Date(now - 60 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
+    if (ev.isAllDayEvent() || !VISIT_MATCH.test(ev.getTitle()) || NOT_VISIT.test(ev.getTitle())) return;
+    const v = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm') };
+    const key = v.date + ' ' + v.start + ' ' + v.end; if (seen[key]) return; seen[key] = 1;   // same visit in two calendars counts once
+    out.push(withTitles ? Object.assign(v, { title: ev.getTitle(), calendar: cal.getName() }) : v);
+  }));
+  return out.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+}
+// Run once from the editor (▸ Run) to approve calendar access and see which events count as visits, and from which calendar.
+function checkCalendar() {
+  Logger.log('Calendars read: ' + calendars_().map(c => c.getName()).join(', '));
+  Logger.log(JSON.stringify(plannedVisits_(true), null, 1));
+}
 
 // READ — GET …/exec?token=SECRET  →  { ok, headers, rows, planned }
 function doGet(e) {
