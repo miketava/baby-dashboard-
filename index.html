@@ -870,7 +870,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
     </div>
     <div class="grid2" style="margin-top:14px">
       <div class="card" data-mod="growth">
-        <div class="card-head"><div><h2>Growth</h2><div class="sub" id="growthSub"></div></div>
+        <div class="card-head"><div><h2>Growth</h2><div class="sub" id="growthSub"></div></div><button class="btn sm" id="btnPastMeasure" data-noi18n></button>
           <div class="seg" id="growthSeg"><button data-g="weight">Weight</button><button data-g="length">Length</button><button data-g="head">Head</button></div></div>
         <div class="chartbox tall"><canvas id="chGrowth"></canvas></div>
         <div id="growthBox"></div>
@@ -1044,11 +1044,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.16';
+const APP_VERSION = '1.17';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.17', date:'2026-11-25',
+    en:['Vaccines: “✓ Log date” on each schedule row opens a pre-filled Vaccine entry; set the date from the vaccination booklet and save.', 'Growth: “＋ Past measurement” adds a weight, length or head size with any date, e.g. from the health booklet.'],
+    fr:['Vaccins : « ✓ Noter la date » sur chaque ligne du calendrier ouvre une entrée Vaccine préremplie; indiquez la date du carnet et enregistrez.', 'Croissance : « ＋ Mesure passée » ajoute un poids, une taille ou un tour de tête à n’importe quelle date, p. ex. d’après le carnet de santé.'] },
   { v:'1.16', date:'2026-11-25',
     en:[
       'Quick Log: “Suggested now” offers the 2–3 entries you usually log at this hour or that today’s plan expects.',
@@ -5303,7 +5306,7 @@ function renderQuickLog(){
   const f = QL, catKindNow = f.row['Category'] ? catKind(f.row['Category']) : '';
   const ocOpts = f.op === 'end' ? (isSleep({ k: catKindNow }) ? OUTCOMES.sleep : []) : catKindNow === 'contact' ? OUTCOMES.contact : catKindNow === 'meal' ? OUTCOMES.meal : (catKindNow === 'nap' || catKindNow === 'night') ? OUTCOMES.sleep : (catKindNow === 'incident' || catKindNow === 'medical') ? OUTCOMES.incident : catKindNow === 'handover' ? OUTCOMES.handover : catKindNow === 'behaviour' ? OUTCOMES.behaviour : [];
   const sugg = catKindNow === 'behaviour' || catKindNow === 'awake' ? [...REACT_NEG.slice(0, 10), ...REACT_POS.slice(0, 5)] : catKindNow === 'handover' ? [...HANDOVER_TAGS, 'upset-at-handover', 'calm'] : catKindNow === 'milestone' ? ['motor','speech','feeding','social'] : catKindNow === 'meal' ? ['new-food','accepted','refused','self-fed'] : [];
-  $('#qlTitle').textContent = f.both ? L('Log wet + poop diaper', 'Noter couche pipi + caca') : f.op === 'update' ? L('Edit entry', 'Modifier l’entrée') : f.op === 'end' ? `End ${f.row['Category']}` : f.row['Category'] ? `Log ${f.row['Category']}` : 'Custom entry';
+  $('#qlTitle').textContent = f.both ? L('Log wet + poop diaper', 'Noter couche pipi + caca') : f.op === 'update' ? L('Edit entry', 'Modifier l’entrée') : f.op === 'end' ? `End ${f.row['Category']}` : f.row['Category'] ? L(`Log ${f.row['Category']}`, `Noter : ${catL(f.row['Category'])}`) : 'Custom entry';
   const known = [...new Set([...Object.keys(DEFAULT_CATS), ...CATS.keys()])];
   const v = h => esc(f.row[h] ?? '');
   $('#qlBody').innerHTML = `<form class="qform" id="qlForm" autocomplete="off">
@@ -5571,6 +5574,7 @@ function postVaxNotes(v){
     ...inc.slice(0, 2).map(e => `${esc(e.notes || catL(e.cat))} (${L('day', 'jour')} ${e.d - v.got.d})`), beh.length ? L(`${beh.length} difficult-behaviour note${beh.length > 1 ? 's' : ''}`, `${plural(beh.length, '', '', 'note de comportement difficile', 'notes de comportement difficile')}`) : ''].filter(Boolean);
 }
 function renderVaccines(){
+  const pm = $('#btnPastMeasure'); if (pm) { pm.textContent = L('＋ Past measurement', '＋ Mesure passée'); pm.classList.toggle('hidden', viewOnly()); }
   const box = $('#vaxBox'), card = $('#vaxCard'); if (!box) return;
   const st = vaxStatus(); card.classList.toggle('hidden', !st);
   if (!st) return;
@@ -5579,7 +5583,8 @@ function renderVaccines(){
     const age = s.to ? L('4–6 y', '4–6 ans') : L(`${s.mo} mo`, `${s.mo} mois`);
     const state = s.got ? `<span class="pl-did">✓ ${esc(fmtDayShort(s.got.d))}</span>` : s.due > T0 ? `<span class="faint">${L('due', 'prévu')} ${esc(fmtDayShort(s.due))}</span>` : `<b style="color:var(--warn)">${L('due since', 'prévu depuis le')} ${esc(fmtDayShort(s.due))}</b>`;
     const after = s.got ? (postVaxNotes(s).join(' · ') || `<span class="faint">${L('nothing logged', 'rien de noté')}</span>`) : '';
-    return `<tr><td>${age}</td><td>${esc(s.v)}</td><td>${state}</td><td>${after}</td></tr>`; }).join('')}</tbody></table></div>
+    const btn = !s.got && !viewOnly() ? ` <button class="btn sm" data-vaxlog="${s.mo}">✓ ${L('Log date', 'Noter la date')}</button>` : '';
+    return `<tr><td>${age}</td><td>${esc(s.v)}</td><td>${state}${btn}</td><td>${after}</td></tr>`; }).join('')}</tbody></table></div>
     <p class="hint">${L('A Vaccine row on or after the due date (or up to 30 days before) counts for that visit. “After” lists fevers, health notes and difficult days logged in the 3 days after (14 days for the 12- and 18-month doses, whose measles-varicella reactions can come later). Vaccines given before you started logging (from the vaccination booklet) can be added as Vaccine rows with their real date. Book through your CLSC or Québec.ca/vaccination; Info-Santé 811 for questions.', 'Une ligne Vaccine à la date prévue ou après (ou jusqu’à 30 jours avant) compte pour cette visite. « Après » liste les fièvres, notes de santé et journées difficiles notées dans les 3 jours suivants (14 jours pour les doses de 12 et 18 mois, dont les réactions rougeole-varicelle peuvent venir plus tard). Les vaccins reçus avant le début du journal (voir le carnet de vaccination) peuvent être ajoutés comme lignes Vaccine à leur vraie date. Rendez-vous au CLSC ou sur Québec.ca/vaccination; Info-Santé 811 pour les questions.')}</p>`;
 }
 function vaxCallouts(){
@@ -5649,6 +5654,20 @@ async function copyDayLog(){
     await navigator.clipboard.writeText(txt); toast(L('Today’s log copied — paste it into your AI assistant', 'Journal du jour copié — collez-le dans votre assistant IA'));
   } catch (err) { if (err?.name === 'AbortError') return;
     const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast(L('Today’s log copied', 'Journal du jour copié')); } finally { ta.remove(); } }
+}
+
+/** “✓ Log date” on a vaccine row: Quick Log pre-filled with a Vaccine row (date = due date, change it to the booklet's date). */
+function logVaccineFromSchedule(mo){
+  const s = (vaxStatus() || []).find(x => String(x.mo) === String(mo)); if (!s) return;
+  const D = Math.min(s.due, todayIdx());
+  openQuickLogWith({ 'Date': isoOf(D), 'Start Time':'', 'End Time':'', 'Category':'Vaccine', 'Notes': (s.to ? L('4–6 year vaccines: ', 'Vaccins de 4–6 ans : ') : L(`${s.mo}-month vaccines: `, `Vaccins de ${s.mo} mois : `)) + s.v, 'Tags': `${s.to ? '4-6y' : s.mo + 'mo'}, qc-schedule`, 'Outcome / Rating':'Resolved' });
+  toast(L('Set the date from the booklet, then Save', 'Indiquez la date du carnet, puis Enregistrer'));
+}
+
+/** “＋ Past measurement” on the Growth card: Quick Log for a Weight / Height / Head row with an editable date (e.g. from the health booklet). */
+function logPastMeasurement(kind = 'Weight'){
+  openQuickLogWith({ 'Date': isoOf(todayIdx()), 'Start Time':'', 'End Time':'', 'Category': kind, 'Value':'', 'Notes': L('From the health booklet', 'D’après le carnet de santé') });
+  toast(L('Set the date and the measurement, then Save. Change Category to Height or Head Circumference for the other measures.', 'Indiquez la date et la mesure, puis Enregistrer. Changez la catégorie pour Height ou Head Circumference pour les autres mesures.'));
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -6459,6 +6478,8 @@ function wire(){
   $('#todayEv').onclick = e => { if (e.target.closest('#todayEvMore')) { UI.todayEvAll = !UI.todayEvAll; saveUI(); renderTodayEntries(); return; }
     const li = e.target.closest('li[data-ev]'); if (li && !e.target.closest('[data-edit]')) { const ev = evById(li.dataset.ev); if (ev) openDrawer(ev.d, ev.id); } };
   $('#btnCopyDay').onclick = () => copyDayLog();
+  $('#btnPastMeasure').onclick = () => logPastMeasurement();
+  $('#vaxBox').onclick = e => { const b = e.target.closest('[data-vaxlog]'); if (b) logVaccineFromSchedule(b.dataset.vaxlog); };
   document.addEventListener('click', e => { const g = e.target.closest?.('[data-goview]'); if (g) setView(g.dataset.goview); });
   $('#btnTodayDay').onclick = () => { if (DAYS.has(todayIdx())) openDrawer(todayIdx()); };
   // Timeline toolbar

@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.17 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Vaccines from the booklet:** each not-yet-logged row of the Québec schedule has **✓ Log date**, which opens a Vaccine entry pre-filled with that visit's vaccines; set the date from the vaccination booklet and save.
+- **Past measurements:** **＋ Past measurement** on the Growth card opens a Weight entry with an editable date (switch Category to Height or Head Circumference for the others), so the WHO curves can include measurements from before you started logging.
+
 ## v1.16 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 All of these read only what you already log (or your calendar); nothing new to record.
