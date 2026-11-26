@@ -8,6 +8,14 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.25.0 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Swipe between sections** (phones): swipe left / right on the page to go to the next / previous section in menu order: Today → Timeline → Check-ins → Routine → Sleep → Feeding → Health → Birth Family → Data (sections you've turned off are skipped).
+  - The page follows your finger and slides out, and the new section slides in. A dark label at the top shows where you're going while you drag ("Sleep ›"), then names the section with a row of dots for its position. The bottom bar highlights it as well.
+  - Stops at Today and at Data (the page springs back and the label shows where you are).
+  - Sideways-scrolling things keep their swipe until they reach their edge: on the Timeline grid, swiping left scrolls the grid first; once it's at the end, the next swipe moves on. Form fields never trigger it, and swipes starting at the very edge of the screen are left to the phone's own back gesture.
+  - On by default; turn it off in *Settings → General → Display*. Kept on each device.
+
 ## v1.24.4 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Swipe between days in the day panel** (the score breakdown and day details), on phones: swipe left for the next day, right for the previous one. The page follows your finger, slides out, and the new day slides in from the other side, so the change is obvious. It stops at today and at the first day logged, with a small bounce and a short note.
