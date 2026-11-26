@@ -4222,8 +4222,10 @@ function syncScoreWeights(){
     r.querySelector('[data-d^="-"]').disabled = v <= 0; r.querySelector('[data-d]:not([data-d^="-"])').disabled = left <= 0 || v >= SW_MAX;
     r.classList.toggle('zero', !v); inp.style.setProperty('--p', (Math.min(v, SW_MAX) / SW_MAX * 100) + '%'); });
   const pool = $('#swPool');
-  pool.className = 'sw-pool ' + (left > 0 ? 'warn' : 'ok');
-  pool.innerHTML = left > 0
+  pool.className = 'sw-pool ' + (left ? 'warn' : 'ok');
+  pool.innerHTML = left < 0
+    ? `<b>${-left}</b> ${L(`point${left < -1 ? 's' : ''} over 100`, `point${left < -1 ? 's' : ''} de trop`)}<span>${L(`The parts add up to ${tot}. Lower some of them until the total is 100.`, `Les volets totalisent ${tot}. Baissez-en quelques-uns jusqu’à un total de 100.`)}</span>`
+    : left > 0
     ? `<b>${left}</b> ${L(`point${left > 1 ? 's' : ''} left to assign`, `point${left > 1 ? 's' : ''} à répartir`)}<span>${L(`The parts add up to ${tot} of 100. Scores still work (they’re scaled to what you assigned), but each number only reads as a share of the score once all 100 are used.`, `Les volets totalisent ${tot} sur 100. Le score fonctionne quand même (il est ajusté à ce qui est attribué), mais chaque nombre ne correspond à une part du score qu’une fois les 100 points utilisés.`)}</span>`
     : `✓ ${L('All 100 points assigned', 'Les 100 points sont attribués')}<span>${L('To raise a part, lower another first.', 'Pour monter un volet, baissez-en d’abord un autre.')}</span>`;
 }
