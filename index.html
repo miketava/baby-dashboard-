@@ -549,7 +549,7 @@ svg.teeth .tooth.in rect{fill:#fffbeb;stroke:#d97706;stroke-width:1.8;stroke-das
 .medstrip{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap} .medstrip i{width:12px;height:14px;border-radius:3px;background:var(--border)}
 .medstrip i.ok{background:var(--good)} .medstrip i.part{background:var(--warn)} .medstrip i.miss{background:var(--bad)} .medstrip i.today{background:transparent;border:1px dashed var(--muted)}
 .medrow{padding:10px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
-.pips{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap} .pips i{width:13px;height:9px;border-radius:3px;background:var(--border);overflow:hidden;display:block} .pips i b{display:block;height:100%} .pips.na i{background:transparent;border:1px dashed var(--border)}
+.pips{display:flex;gap:2px;margin-top:5px;flex-wrap:wrap} .pips i{width:7px;height:10px;border-radius:2px;background:var(--border);overflow:hidden;display:block} .pips i b{display:block;height:100%} .pips.na i{background:transparent;border:1px dashed var(--border)}
 header.app .actions [data-tucked]{display:none!important}
 .pill.score{font-weight:700;cursor:pointer;border:1px solid transparent} .pill.score:hover{border-color:currentColor}
 .smartrow{margin:0 0 12px;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--accent) 7%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 25%,var(--border))}
@@ -1066,11 +1066,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.21.1';
+const APP_VERSION = '1.21.2';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.21.2', date:'2026-11-25',
+    en:['Score breakdown: one small pip per point (a 20-point part shows 20 pips) instead of one per 5 points.'],
+    fr:['Détail du score : une petite pastille par point (une partie de 20 points en affiche 20) au lieu d’une par 5 points.'] },
   { v:'1.21.1', date:'2026-11-25',
     en:['Optional date fields (a medication’s “until”, the placement date, a viewer key’s start…) have a ✕ to clear them, since phone date pickers often can’t.', 'Settings shows “✓ Saved” after each change, and each medication has a ✓ Save button that checks it and confirms what was saved.', 'Quick Log → Meds: buttons for your scheduled medications and ones logged recently fill in the name, tag and dose; the form now has a Dose field.'],
     fr:['Les champs de date facultatifs (« jusqu’au » d’un médicament, date de placement, début d’une clé de lecture…) ont un ✕ pour les effacer, car les sélecteurs de date des téléphones ne le permettent souvent pas.', 'Les Paramètres affichent « ✓ Enregistré » après chaque changement, et chaque médicament a un bouton ✓ Enregistrer qui le vérifie et confirme ce qui a été enregistré.', 'Ajout rapide → Médicaments : des boutons pour vos médicaments prévus et ceux notés récemment remplissent le nom, l’étiquette et la dose; le formulaire a maintenant un champ Dose.'] },
@@ -3572,10 +3575,10 @@ function renderTimeline(){
     $('#timeline').innerHTML = `<div class="tl h">${axisHTML()}${list.map(m => dayRowHTML(m)).join('')}</div>`;
   }
 }
-/** Score pips: one pip per 5 points of weight (20 pips for a 100-point score); partly earned pips fill partly. */
+/** Score pips: one small pip per point of weight (a 20-point part has 20); partly earned pips fill partly. */
 function pipsHTML(v, w){
-  if (v == null) return `<div class="pips na">${'<i></i>'.repeat(Math.max(1, Math.round(w / 5)))}</div>`;   // not scored yet
-  const n = Math.max(1, Math.round(w / 5)), earned = v * n, col = v >= .8 ? 'var(--good)' : v >= .5 ? 'var(--warn)' : 'var(--bad)';
+  if (v == null) return `<div class="pips na">${'<i></i>'.repeat(Math.max(1, Math.round(w)))}</div>`;   // not scored yet
+  const n = Math.max(1, Math.round(w)), earned = v * n, col = v >= .8 ? 'var(--good)' : v >= .5 ? 'var(--warn)' : 'var(--bad)';
   return `<div class="pips" title="${+(v * w).toFixed(1)} / ${w}">${Array.from({ length:n }, (_, i) => `<i><b style="width:${clamp(earned - i, 0, 1) * 100}%;background:${col}"></b></i>`).join('')}</div>`;
 }
 /** One entry row (day panel and Today's entries): time, category, amounts, ✏️; press and hold / right-click to edit. */

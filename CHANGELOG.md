@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.21.2 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- Score breakdown: one small pip per point (a 20-point part shows 20, a 10-point part 10; 100 in all) instead of one pip per 5 points.
+
 ## v1.21.1 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Clear a date:** every optional date field (a medication's *until*, the placement date, a viewer key's start date, report anchor…) has a ✕ to empty it, because phone date pickers often can't.
