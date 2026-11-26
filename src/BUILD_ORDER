@@ -66,6 +66,7 @@ ui/info-buttons.js
 ui/date-clear.js
 ui/sheet-swipe.js
 ui/nav-swipe.js
+ui/settings-swipe.js
 settings/settings-core.js
 settings/data-health.js
 settings/sharing.js

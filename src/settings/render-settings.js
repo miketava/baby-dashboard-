@@ -73,7 +73,7 @@ function renderSettings(){
       <label class="field">Dashboard title<input type="text" data-set="title" value="${esc(S.title)}" placeholder="e.g. Maya's Routine"></label>
       <label class="field">Theme<select data-set="theme">${['auto','light','dark'].map(v => `<option ${S.theme === v ? 'selected' : ''} value="${v}">${v[0].toUpperCase() + v.slice(1)}</option>`).join('')}</select></label>
     </div>
-    <div style="margin-top:8px">${chk('swipeNav', L('Phones: swipe left / right to move between sections (Today → Timeline → … → Data)', 'Téléphones : glisser à gauche / à droite pour passer d’une section à l’autre (Aujourd’hui → Chronologie → … → Données)'))}</div>
+    <div style="margin-top:8px">${chk('swipeNav', L('Phones: swipe left / right to move between sections (Today → Timeline → … → Data) and between Settings pages', 'Téléphones : glisser à gauche / à droite pour passer d’une section à l’autre (Aujourd’hui → Chronologie → … → Données) et d’une page de Réglages à l’autre'))}</div>
     <h4>Day logic</h4>
     <div class="fgrid">
       <label class="field">Day boundary<select data-set="dayBoundary" data-num><option value="360" ${+S.dayBoundary === 360 ? 'selected' : ''}>06:00 — night belongs to the evening before</option><option value="0" ${+S.dayBoundary === 0 ? 'selected' : ''}>00:00 — calendar date</option></select></label>

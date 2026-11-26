@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.28.1 — 2026-11-26 · Apps Script v1.5 (no script change)
+
+- **Swipe between Settings pages** (phones): left for the next tab, right for the previous one (Child & features → Data source → … → About & changes). The page slides out and in, and the tab row scrolls the new page's tab into view and flashes it; the first and last pages spring back. Sideways-scrolling code blocks keep their swipe until their edge, and form fields never trigger it. Uses the same switch as the section swipe (*Settings → General → Display*).
+
 ## v1.28.0 — 2026-11-26 · Apps Script v1.5 · **Reminders v2** (re-paste the Reminders file)
 
 - **Lock-screen reminders (ntfy) rebuilt.** The add-on now reads your templates and medications from the Sheet's Config and Medications tabs, so editing them in the dashboard changes the reminders with no re-pasting. It follows the same day as the dashboard:
