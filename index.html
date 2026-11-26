@@ -1144,11 +1144,14 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.25.2';
+const APP_VERSION = '1.25.3';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.25.3', date:'2026-11-26',
+    en:['The filter button only appears on sections the filters actually change. Removed from Growth, Teeth, Medications, Vaccines, Allergen upkeep, Trends to watch and Cocooning, which always use their own window (every measurement, the last 30 days, the settling-in period…).'],
+    fr:['Le bouton de filtre n’apparaît que sur les sections que les filtres changent vraiment. Retiré de Croissance, Dents, Médicaments, Vaccins, Suivi des allergènes, Tendances à surveiller et Cocooning, qui utilisent toujours leur propre période (toutes les mesures, les 30 derniers jours, la période d’adaptation…).'] },
   { v:'1.25.2', date:'2026-11-25',
     en:['Guided tour updated (37 steps): grouped Quick Log with the Milk and Meal buttons, swipe down to close, and Who am I; swiping between sections and between days; the timeline’s display options and compact labels; medications; score sliders and settings kept in the Sheet.'],
     fr:['Visite guidée mise à jour (37 étapes) : saisie rapide par groupes avec les boutons Lait et Repas, glisser vers le bas pour fermer, et Qui suis-je; glisser entre les sections et entre les jours; options d’affichage et étiquettes compactes de la chronologie; médicaments; curseurs du score et réglages gardés dans la feuille.'] },
@@ -6789,11 +6792,14 @@ function normTime(s){
 /* ── Section descriptions behind ⓘ ──
    Subtitles that are instructions or legends (how to read a chart, what a column means) fold into an ⓘ button at the top right.
    Subtitles that carry numbers (counts, coverage, the current week) or live controls are marked data-keep and stay visible. */
+const NO_FILTER_CARDS = ['#chGrowth', '#teethBox', '#medCard', '#vaxCard', '#allergyBox', '#trendCard', '#cocoonBox'];
 (function infoButtons(){
   const FUNNEL = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></svg>';
   const fix = root => root.querySelectorAll?.('main .card-head').forEach(h => {
-    // filter button on every section the filters apply to (all but Today)
-    if (!h.querySelector(':scope > .fbtn') && !h.closest('#v-today')) {
+    // filter button on every section the filters apply to: not Today, and not the cards that always use their own window
+    // (growth curves use every measurement, medications the last 30 days, cocooning its settling-in period…) — audited v1.25.3
+    const card = h.closest('.card');
+    if (!h.querySelector(':scope > .fbtn') && !h.closest('#v-today') && !(card && NO_FILTER_CARDS.some(sel => card.matches(sel) || card.querySelector(sel)))) {
       const f = document.createElement('button'); f.type = 'button'; f.className = 'fbtn'; f.innerHTML = FUNNEL + '<i></i>'; f.setAttribute('data-noi18n', '');
       f.onclick = e => { e.stopPropagation(); $('#filterbar').classList.toggle('open'); };
       h.appendChild(f); if (typeof syncFilterBtns === 'function') syncFilterBtns();

@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.25.3 — 2026-11-26 · Apps Script v1.3 (no script change)
+
+- **Filter button only where filters apply.** An audit changed each filter (range, day type, search, categories) and checked which sections changed. The funnel is removed from the seven that never do, because they always use their own window: Growth (every measurement, for the WHO curves), Teeth, Medications (last 30 days), Vaccines (the Québec schedule), Allergen upkeep, Trends to watch (last days vs the two weeks before) and Cocooning (the settling-in period). Every other section keeps it.
+
 ## v1.25.2 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Guided tour updated** (37 steps, phone and computer, English and French):
