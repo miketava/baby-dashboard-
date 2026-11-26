@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.20.2 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- Quick Log: the water amount accepts 5 ml steps (it only allowed multiples of 10).
+
 ## v1.20.1 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Filter button:** filters open from a funnel button next to ⓘ on every section they apply to (all but Today), as a panel (from the bottom on phones). The funnel turns blue with a dot when something is filtered, and its tooltip says what (range, day type, hidden categories). The filter line at the top of the page is gone. Back or tapping outside closes the panel.

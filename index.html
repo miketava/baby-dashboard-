@@ -1056,11 +1056,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.20.1';
+const APP_VERSION = '1.20.2';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.20.2', date:'2026-11-25',
+    en:['Quick Log: water amounts can be entered in 5 ml steps (was 10 ml).'],
+    fr:['Ajout rapide : l’eau se saisit maintenant par tranches de 5 ml (au lieu de 10 ml).'] },
   { v:'1.20.1', date:'2026-11-25',
     en:['Filters are now a funnel button next to ⓘ on every section they apply to. It turns blue with a dot when something is filtered, and its tooltip says what. The old filter line at the top is gone.'],
     fr:['Les filtres sont maintenant un bouton entonnoir à côté de ⓘ sur chaque section concernée. Il devient bleu avec un point quand quelque chose est filtré, et son infobulle indique quoi. L’ancienne ligne de filtres en haut a disparu.'] },
@@ -5358,7 +5361,7 @@ function renderQuickLog(){
       ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
       <label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>
       ${['pump','growth','temp'].includes(catKindNow) ? `<label class="field">${catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
-      <label class="field">Water (ml)<input type="number" step="10" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
+      <label class="field">Water (ml)<input type="number" step="5" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
       ${catKindNow === 'meal' && f.op === 'append' ? `<div class="full tchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
