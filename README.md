@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.21.4** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.21.5** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 

@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.21.5 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Sleep vs plan on each entry:** naps say which planned nap they matched and how far off they were ("Nap 1: down 17m late · woke 23m early"); night sleep says "to bed 25m late" or "bedtime on target". Shown in Today's entries and the day panel; anything over 20 minutes is in orange. Today's plan adds the same as start / end minutes, e.g. "✓ 10:32–11:07 (+17m / −23m)". Within 5 minutes counts as on time.
+
 ## v1.21.4 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Graded nap cutoff:** “No nap past cutoff” keeps full points up to 10 minutes past the cutoff, then slides to none at an hour past (15 min over = 9 of 10, 30 min = 6, 45 min = 3), instead of 0 for any overrun. The detail says how far past it ran. The bridge nap is still exempt.

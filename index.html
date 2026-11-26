@@ -544,6 +544,7 @@ svg.teeth .tooth.in rect{fill:#fffbeb;stroke:#d97706;stroke-width:1.8;stroke-das
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+.vsplan{color:var(--good)} .vsplan.bad{color:var(--warn)}
 .savedchip{font-size:12px;font-weight:600;color:var(--good);opacity:0;transition:opacity .25s;margin-right:8px} .savedchip.on{opacity:1}
 .dx{display:flex;gap:6px;align-items:stretch} .dx input{flex:1;min-width:0} .dx .dxb{flex:none;padding:0 10px} .dx.empty .dxb{visibility:hidden}
 .medstrip{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap} .medstrip i{width:12px;height:14px;border-radius:3px;background:var(--border)}
@@ -1077,11 +1078,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.21.4';
+const APP_VERSION = '1.21.5';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.21.5', date:'2026-11-25',
+    en:['Sleep entries say how they compared with the plan: “Nap 2: down 15m late · woke 10m early”, or “to bed 25m late” for the night. Today’s plan shows the same as +/− minutes next to each nap.'],
+    fr:['Les entrées de sommeil indiquent l’écart avec le plan : « Nap 2 : endormie 15 min plus tard · réveillée 10 min plus tôt », ou « couchée 25 min plus tard » pour la nuit. Le plan du jour affiche la même chose en +/− minutes à côté de chaque sieste.'] },
   { v:'1.21.4', date:'2026-11-25',
     en:['Routine score: “No nap past cutoff” is graded. Up to 10 minutes past the cutoff costs nothing, then the points slide to none at an hour past, and the detail says by how much.'],
     fr:['Score de routine : « Aucune sieste après l’heure limite » est noté progressivement. Jusqu’à 10 minutes de dépassement ne coûtent rien, puis les points baissent jusqu’à zéro à une heure de dépassement; le détail indique de combien.'] },
@@ -3601,19 +3605,35 @@ function pipsHTML(v, w){
   const n = Math.max(1, Math.round(w)), earned = v * n, col = v >= .8 ? 'var(--good)' : v >= .5 ? 'var(--warn)' : 'var(--bad)';
   return `<div class="pips" title="${+(v * w).toFixed(1)} / ${w}">${Array.from({ length:n }, (_, i) => `<i><b style="width:${clamp(earned - i, 0, 1) * 100}%;background:${col}"></b></i>`).join('')}</div>`;
 }
+/** How a sleep entry compares with the day's plan: for a nap, the closest planned nap's start and end; for night sleep, bedtime vs target. */
+function sleepVsPlan(e){
+  const m = DAYS.get(e.d); if (!m?.tpl || e.st == null || !(isSleep(e))) return null;
+  const fmt = (off, early, late) => Math.abs(off) <= 5 ? '' : (off > 0 ? late : early)(fmtDur(Math.abs(Math.round(off))));
+  if (isNight(e)) { const r = bedRange(m); if (!r) return null; const off = e.st < r[0] ? e.st - r[0] : e.st > r[1] ? e.st - r[1] : 0;
+    const s = fmt(off, x => L(`to bed ${x} early`, `couchée ${x} plus tôt`), x => L(`to bed ${x} late`, `couchée ${x} plus tard`));
+    return { txt: s || L('bedtime on target', 'coucher à l’heure'), bad: Math.abs(off) > 20 }; }
+  const bands = tplItems(m.tpl, 'nap').filter(b => b.end).map(b => ({ a: parseTime(b.start), b: parseTime(b.end), lbl: b.label, opt: b.optional })).filter(b => b.a != null && Math.abs(e.st - b.a) <= 120).sort((x, y) => Math.abs(e.st - x.a) - Math.abs(e.st - y.a));
+  const bd = bands[0]; if (!bd) return { txt: L('not in the plan', 'hors plan'), bad: false };
+  const so = e.st - bd.a, eo = e.ongoing || e.t == null ? null : (e.st + (e.dur || 0)) - bd.b;
+  const parts = [fmt(so, x => L(`down ${x} early`, `endormie ${x} plus tôt`), x => L(`down ${x} late`, `endormie ${x} plus tard`)),
+    eo == null ? '' : fmt(eo, x => L(`woke ${x} early`, `réveillée ${x} plus tôt`), x => L(`woke ${x} late`, `réveillée ${x} plus tard`))].filter(Boolean);
+  return { txt: `${bd.lbl}${bd.opt ? ' (' + L('optional', 'facultative') + ')' : ''}: ${parts.length ? parts.join(' · ') : L('on time', 'à l’heure')}`, bad: Math.abs(so) > 20 || (eo != null && Math.abs(eo) > 20) };
+}
 /** One entry row (day panel and Today's entries): time, category, amounts, ✏️; press and hold / right-click to edit. */
 function evLi(e, D, cont, hitId){
     const col = catColor(e.cat);
     const tm = e.allDay ? 'All day' : cont ? `00:00 – ${fmtTime(e.t - D*DAY)}` : e.t == null ? fmtTime(e.st) : `${fmtTime(e.st)} – ${e.ongoing ? 'now' : fmtTime(e.t - e.d*DAY)}`;
     const bits = [e.t != null ? fmtDur(cont ? e.t - D*DAY : e.dur) + (e.ongoing ? ' so far' : '') : e.allDay ? '' : 'instant', e.milk != null ? fmtOz(e.milk) : '', e.water != null ? fmtMl(e.water) : '',
       cont ? L(`continued from ${fmtTime(e.st)} the night before`, `suite de ${fmtTime(e.st)} la veille`) : e.cross && !e.ongoing ? L('continues past midnight', 'se poursuit après minuit') : '', e.local ? L('not in Sheet yet', 'pas encore dans la feuille') : ''].filter(Boolean).join(' · ');
-    return `<li class="${e.id === hitId ? 'hit' : ''}" data-ev="${e.id}"><div class="tm">${tm}</div><div><div class="c"><i style="background:${col}"></i>${cat(e.cat).icon} ${esc(e.cat)} ${ocPill(e.outcome)}${e.editedAt ? ` <span class="faint" title="Edited At">✎ ${L('edited', 'modifié')}</span>` : ''}${viewOnly() || DATA.source === 'demo' ? '' : `<button class="evedit" data-edit="${e.id}" title="${L('Edit or delete', 'Modifier ou supprimer')}" aria-label="${L('Edit', 'Modifier')}">✏️</button>`}</div><div class="x">${bits}</div>${e.tags.length ? `<div class="x">${e.tags.map(t => `<span class="tagchip">${esc(t)}</span>`).join(' ')}</div>` : ''}${e.notes ? `<div class="x" style="color:var(--text);margin-top:2px">${esc(e.notes)}</div>` : ''}${Object.entries(e.extra||{}).map(([k,v]) => `<div class="x">${esc(k)}: ${esc(v)}</div>`).join('')}</div></li>`;
+    return `<li class="${e.id === hitId ? 'hit' : ''}" data-ev="${e.id}"><div class="tm">${tm}</div><div><div class="c"><i style="background:${col}"></i>${cat(e.cat).icon} ${esc(e.cat)} ${ocPill(e.outcome)}${e.editedAt ? ` <span class="faint" title="Edited At">✎ ${L('edited', 'modifié')}</span>` : ''}${viewOnly() || DATA.source === 'demo' ? '' : `<button class="evedit" data-edit="${e.id}" title="${L('Edit or delete', 'Modifier ou supprimer')}" aria-label="${L('Edit', 'Modifier')}">✏️</button>`}</div><div class="x">${bits}</div>${(v => v ? `<div class="x vsplan ${v.bad ? 'bad' : ''}">🎯 ${esc(v.txt)}</div>` : '')(mod('schedule') && !cont ? sleepVsPlan(e) : null)}${e.tags.length ? `<div class="x">${e.tags.map(t => `<span class="tagchip">${esc(t)}</span>`).join(' ')}</div>` : ''}${e.notes ? `<div class="x" style="color:var(--text);margin-top:2px">${esc(e.notes)}</div>` : ''}${Object.entries(e.extra||{}).map(([k,v]) => `<div class="x">${esc(k)}: ${esc(v)}</div>`).join('')}</div></li>`;
   }
 /** Today's plan: the template for today as a list (time · what · notes), with what actually happened next to past items. */
 function planActual(it, m, used){
   const a = parseTime(it.start), b = it.end ? parseTime(it.end) : null;
   if (it.kind === 'nap' && b != null) { const n = m.naps.find(n => !used.has(n) && n.st != null && n.st < b + 45 && n.st + (n.dur || 0) > a - 45);
-    if (n) { used.add(n); return n.ongoing ? L(`asleep since ${fmtTime(n.st)}`, `endormie depuis ${fmtTime(n.st)}`) : `${fmtTime(n.st)}–${fmtTime((n.st + (n.dur || 0)) % DAY)}`; } return null; }
+    if (n) { used.add(n); const so = n.st - a, eo = n.ongoing ? null : n.st + (n.dur || 0) - b, d = x => Math.abs(x) <= 5 ? '' : (x > 0 ? '+' : '−') + fmtDur(Math.abs(Math.round(x)));
+      const dev = [d(so), eo == null ? '' : d(eo)]; const dv = dev.some(Boolean) ? ` <span class="faint" title="${esc(L('start / end vs plan', 'début / fin par rapport au plan'))}">(${dev.map(x => x || '✓').join(' / ')})</span>` : '';
+      return n.ongoing ? L(`asleep since ${fmtTime(n.st)}`, `endormie depuis ${fmtTime(n.st)}`) + dv : `${fmtTime(n.st)}–${fmtTime((n.st + (n.dur || 0)) % DAY)}` + dv; } return null; }
   if (it.kind === 'wake') return m.wake != null ? fmtTime(m.wake) : null;
   if (it.kind === 'bedtime') return m.bed != null ? fmtTime(m.bed % DAY) : null;
   if (it.kind === 'visit') return m.visit && m.visitStart != null ? fmtTime(m.visitStart) : null;
@@ -3634,7 +3654,7 @@ function renderTodayPlan(){
   const rows = items.map((it, k) => {
     const act = planActual(it, m, used), past = isPast(it), cur = isNow(it), next = k === nextI;
     const st = cur ? `<span class="pl-tag now">${L('now', 'en cours')}</span>` : next ? `<span class="pl-tag next">${L(`in ${fmtDur(it.a - now)}`, `dans ${fmtDur(it.a - now)}`)}</span>` : '';
-    const did = act ? `<span class="pl-did">✓ ${esc(act)}</span>` : past && ['nap', 'meal', 'wake'].includes(it.kind) ? `<span class="pl-miss">${it.optional ? L('skipped', 'sautée') : L('not logged', 'non noté')}</span>` : '';
+    const did = act ? `<span class="pl-did">✓ ${act.replace(/<(?!\/?span\b)/g, '&lt;')}</span>` : past && ['nap', 'meal', 'wake'].includes(it.kind) ? `<span class="pl-miss">${it.optional ? L('skipped', 'sautée') : L('not logged', 'non noté')}</span>` : '';
     return `<div class="pl-row${past && !cur ? ' past' : ''}${cur ? ' cur' : ''}${next ? ' nxt' : ''}" style="--k:${KIND_STYLE[it.kind]?.color || '#64748b'}">
       <div class="pl-time">${fmtTime(it.a)}${it.b != null ? `<span>–${fmtTime(it.b)}</span>` : ''}</div>
       <div class="pl-what"><b>${esc(it.label)}</b>${it.beforeBed ? ` <span class="faint">· ${L(`${it.beforeBed} min before bedtime`, `${it.beforeBed} min avant le coucher`)}</span>` : ''}${it.optional ? ` <span class="faint">(${L('optional', 'facultatif')})</span>` : ''} ${st}${it.note ? `<div class="pl-note">${esc(it.note)}</div>` : ''}</div>
