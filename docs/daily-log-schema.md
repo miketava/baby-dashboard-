@@ -1,4 +1,4 @@
-# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.9)
+# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.21)
 
 Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions.
 
@@ -86,6 +86,7 @@ A checkup with measurements is **several rows**: one Medical / Appointment row p
   - positive: `happy, settled, calm, playful, content, smiling, engaged, affectionate`
 - **Handover:** `drop-off` or `pick-up`; who transported only if the note says (`agency`, `parent`, `caregiver`); `on-time` or `late`.
 - **Milestones:** `motor, speech, feeding, social`.
+- **Meds:** Notes = the medication and dose as written (e.g. `Amoxicillin 2 ml`), Tags = the medication name in lowercase with hyphens (e.g. `amoxicillin`), Value = the dose. The dashboard uses the name to check off scheduled doses.
 - **Diaper - Poop:** the consistency if described, one of `hard` (separate hard lumps, lumpy), `formed` (sausage-shaped, soft blobs), `loose` (mushy, ragged), `watery` (no solid pieces). These are the Brussels Infant and Toddler Stool Scale groups. A diaper that was both wet and dirty is **two rows**, `Diaper - Wet` and `Diaper - Poop`, with the same time.
 - **Health:** short descriptors, e.g. `head-bump, rash, mild, ear, teething`.
 - **Family Contact:** see section 7.

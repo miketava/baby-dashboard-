@@ -8,6 +8,15 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.21.0 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Medication schedule** (*Settings → Reminders → Medications*): name, dose, time(s), from, until (blank = ongoing) and a note, per child.
+  - At dose time: a notification and a 💊 line in the Today banner with **✓ Given**; it turns red if still not checked off an hour later.
+  - Today's plan lists each dose with ✓ Given, or the time it was given.
+  - ✓ Given writes a `Meds` row: Notes "Amoxicillin 2 ml", Tags `amoxicillin`, Value `2 ml`. A Meds row typed in the Sheet or added by Gemini counts too if it names the medication.
+  - Health → **Medications**: a 30-day strip (green given, red not checked, dashed today) and the dates not checked off. Counting starts from the *From* date.
+  - The list is saved on the device; export the config to give it to other caregivers.
+
 ## v1.20.3 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Score pips:** the routine score breakdown (tap the score in the header, or any day) shows each part as pips, one pip per 5 points, 20 in all, with partly earned pips partly filled and parts not scored yet as dashed outlines. Points show as earned / possible (e.g. 8.3 / 10) instead of percentages.

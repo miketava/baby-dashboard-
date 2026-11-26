@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.20.3** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.21.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -34,6 +34,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 - **Today banner:** what's happening now (asleep or awake, and for how long; current feed and side), the next nap window based on today's actual wake-up, what's coming up, and today's totals against your targets.
 - **＋ Quick Log:** one-tap buttons that write straight to the Sheet: start/end a nap, breastfeed (left, right, switch), bottle, diaper, meal, play, weight, temperature, milestone, family contact. It works offline and sends entries when you're back online.
 - **Fix mistakes:** press and hold any entry in any tab (right-click on a computer) to edit or delete it. The change is stamped *Edited At*; the original *Logged At* time is kept.
+- **Medications:** set a regular medication (dose, time, until when or ongoing) and get a reminder with a one-tap **✓ Given** check-off, plus a 30-day history.
 - **Reminders:** browser notifications before naps, meals and feeds, plus optional lock-screen phone reminders through the free *ntfy* app.
 
 **Sections** (a sidebar on a computer; on a phone, a bottom bar with Today, Timeline, ＋ Log, Check-ins and More)
