@@ -1,4 +1,4 @@
-# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.21)
+# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.22)
 
 Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions.
 
@@ -26,7 +26,7 @@ One row per event. Columns, in this order (leave a cell empty when it doesn't ap
 | **Noted At** | If the note has its own timestamp (when it was written): `YYYY-MM-DD HH:MM`. Reports then show the entry came from a note written at the time. |
 | **Child** | Only when the family tracks more than one child (see section 6). |
 
-**Never fill** `Logged At` or `Edited At`. The Sheet stamps them automatically.
+**Never fill** `Logged At`, `Edited At` or `Logged By` (the dashboard signs entries made from each caregiver's device). The Sheet stamps them automatically.
 
 **Overnight sleep:** one row dated the evening it started, e.g. `2026-11-21, 20:05, 06:40` (the end is earlier than the start, so it means the next morning). A wake-up after midnight is its own `Awake / Restless` row dated the new day.
 

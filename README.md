@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.21.5** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.22.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -43,7 +43,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 | 📅 Today | The live banner (asleep or awake, next nap window, today's totals), **today's plan** from your template with notes, what's now and next, and upcoming calendar visits; **today's entries** with ✏️ to fix any of them; and today on the 24-hour grid. |
 | 🗓️ Timeline | Every day on a 24-hour colour-coded grid with your schedule targets overlaid. Click a day for the full breakdown. |
 | 📊 Routine & Visits | **Trends to watch** (three-day shifts in sleep or eating, nap-transition hints), daily **routine score** (how closely the day followed *your* routine), plain-language findings, and on the placement path: before / during / after-visit analysis, visit-by-visit table, cocooning. |
-| 😴 Sleep | Averages, wake windows, daytime sleep vs night wakings, how long bedtime takes, effect of outings and car rides. |
+| 😴 Sleep | Sleep per day, wake windows against your targets, which days lead to calmer nights, the last wake window that gives the easiest bedtime, and the effect of outings, visits and car rides. |
 | 🍼 Feeding | Newborn feeds (gaps, longest stretch, left/right balance, cluster feeding), milk by time of day, fluids, foods offered and accepted, **allergen upkeep** (when each allergen group was last offered), allergen groups. |
 | 🩺 Health & Growth | Milestones, appointments and health notes, temperatures, vaccines, diapers and meds, **growth** (WHO percentiles), the **Québec vaccine schedule** with post-vaccine notes, **teething vs sleep** and a **tooth chart**. |
 | 📝 Check-ins | The **end-of-day check-in** (see below): which days are done and a running summary per area. |

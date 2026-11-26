@@ -8,6 +8,16 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.22.0 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Sleep tab redone** (same data, easier to read; each card opens with a one-line takeaway in bold):
+  - **Sleep per day:** night sleep and naps stacked per day, with a 7-day average line. Only days whose night is logged are shown.
+  - **Wake windows:** one row per window. The bar is her usual range (middle half of days), the dark line the typical value, and the green shading your target ± 15 min.
+  - **Naps and the night after** (replaces the scatter plot): average time awake at night after days with less / normal / more day sleep, or after an early / on-time / late last nap.
+  - **Easiest bedtime** (replaces the scatter plot): minutes to fall asleep by final wake window (around your target), and how often she woke within an hour.
+  - **Outings & travel:** cells noticeably worse than a quiet home day are orange, better ones green.
+- **Logged by:** *Settings → General → On this device → Who am I* (first name and role). It stays on each device and isn't exported with the config. Entries added from that device get a `Logged By` column in the Sheet (added automatically), and the name shows small under each entry's time. It's also included in Copy for AI.
+
 ## v1.21.5 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Sleep vs plan on each entry:** naps say which planned nap they matched and how far off they were ("Nap 1: down 17m late · woke 23m early"); night sleep says "to bed 25m late" or "bedtime on target". Shown in Today's entries and the day panel; anything over 20 minutes is in orange. Today's plan adds the same as start / end minutes, e.g. "✓ 10:32–11:07 (+17m / −23m)". Within 5 minutes counts as on time.
