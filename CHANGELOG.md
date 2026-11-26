@@ -8,6 +8,17 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.25.2 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Guided tour updated** (37 steps, phone and computer, English and French):
+  - *Quick Log:* groups, the 🍼 Milk amounts and 🍽 Meal picker, forms showing only the fields that fit, the first-name prompt, and swipe down to close.
+  - *Sections:* swipe left / right on the page to move between sections (and where to turn it off).
+  - *New step, Display options:* what the timeline's display button changes vs. the filter, including compact / all labels and the colour key.
+  - *Badges:* explains the compact stacked badge.
+  - *Calendar & routine score:* ‹ › or a swipe moves between days in the day panel.
+  - *New step, Medications* (when one is set up).
+  - *Make it yours:* score sliders (100 points) and settings kept in the Sheet's Config and Medications tabs.
+
 ## v1.25.1 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Compact day labels on the Timeline** (default on phones): a day's milestones, notes, measurements and check-ins are stacked into one badge of icons (with a count when there are several of a kind), e.g. "⚖️ 📏 ⭐ 💗"; hover or long-press for the text, tap the day for the full list. **All labels** shows each one as before (default on computers). Switch in the timeline's display options.
