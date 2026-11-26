@@ -663,6 +663,9 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
 .sw-b{width:28px;height:28px;padding:0!important;font-size:17px;line-height:1;border:1px solid var(--border)!important;border-radius:50%!important;display:grid;place-items:center}.sw-b:disabled{opacity:.3}
 .sw-row input[type=range]{width:100%;accent-color:var(--accent)}
 @media (max-width:520px){.sw-row{grid-template-columns:30px 1fr 30px 32px;padding:5px 0}.sw-row .sw-l{grid-column:1/-1;margin-bottom:-2px}}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+.qlwho{font-size:12px;margin:10px 0 0;text-align:center}
+.qlwho-form{border:1px solid var(--accent);background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -1108,11 +1111,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.23.1';
+const APP_VERSION = '1.23.2';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.23.2', date:'2026-11-25',
+    en:['Who am I is now in Quick Log: until a name is set, Quick Log asks “Who’s logging on this device?” (first name and role; Not now hides it for the session). Once set, the bottom of Quick Log shows “Logging as Mike · Father” with a change link. Still also in Settings → General.'],
+    fr:['« Qui suis-je » est maintenant dans la saisie rapide : tant qu’aucun nom n’est réglé, elle demande « Qui note sur cet appareil? » (prénom et rôle; Plus tard le cache pour la session). Ensuite, le bas de la saisie rapide indique « Noté par Mike · Père » avec un lien pour modifier. Toujours aussi dans Paramètres → Général.'] },
   { v:'1.23.1', date:'2026-11-25',
     en:['Routine score weights are now a 100-point pool: a slider with − / + for each part and a counter of points left. A part can’t go up once all 100 are used (lower another first), and a warning shows while points are unspent. “Default split” and “Clear all” buttons. The “how each part is scored” notes now describe the graded nap timing and cutoff.'],
     fr:['Les poids du score de routine forment maintenant une réserve de 100 points : un curseur avec − / + pour chaque volet et un compteur des points restants. Un volet ne peut plus monter quand les 100 points sont utilisés (baissez-en un autre d’abord), et un avertissement s’affiche tant qu’il reste des points. Boutons « Répartition par défaut » et « Tout remettre à 0 ». Les explications des volets décrivent maintenant le pointage progressif des siestes et de l’heure limite.'] },
@@ -5548,6 +5554,18 @@ function qlPresets(){
   P.push({ e:'🛁', label:'Bath', cat:'Bath', start:true }, { e:'🚗', label:'Car Ride', cat:'Car Ride', start:true }, { e:'🛒', label:'Outing', cat:'Outing / Excursion', start:true }, ...(mod('checkins') ? [{ e:'📝', label:L('Day check-in', 'Bilan du jour'), checkin:true }] : []), { e:'🧸', label:L('Play', 'Jeu'), cat:'Play', start:true }, ...(mod('familyContact') ? [{ e:'💬', label:L('Family contact', 'Contact famille'), cat:'Family Contact', tags: S.lastContactTags || 'text, from-family' }] : []), ...(mod('cocooning') ? [{ e:'👥', label:'Guests', cat:'Guest', start:true }] : []), { e:'✏️', label:'Custom…', cat:'' });
   return P;
 }
+/* v1.23.2 — Who am I, right in Quick Log (it was only in Settings → General). */
+const ME_ROLES = () => [['', '—'], ['father', L('Father', 'Père')], ['mother', L('Mother', 'Mère')], ['parent', L('Parent', 'Parent')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]];
+const meRoleOpts = () => ME_ROLES().map(([v, t]) => `<option value="${v}" ${ME.role === v ? 'selected' : ''}>${t}</option>`).join('');
+let QL_WHO_EDIT = false;
+function qlWhoHTML(){
+  if (ME.name && !QL_WHO_EDIT) { const role = ME_ROLES().find(r => r[0] === ME.role && r[0]); return `<p class="qlwho faint">👤 ${L('Logging as', 'Noté par')} <b>${esc(ME.name)}</b>${role ? ' · ' + role[1] : ''} <button class="linkbtn" data-qlwho="edit">${L('change', 'modifier')}</button></p>`; }
+  if (!ME.name && !QL_WHO_EDIT && sessionStorage.getItem('bld.whoLater')) return `<p class="qlwho faint">👤 <button class="linkbtn" data-qlwho="edit">${L('Sign entries with your name', 'Signer les entrées avec votre nom')}</button></p>`;
+  return `<div class="qlwho-form"><b>👤 ${L('Who’s logging on this device?', 'Qui note sur cet appareil?')}</b>
+    <div class="row" style="gap:6px;margin-top:6px"><input type="text" id="qlMeName" value="${esc(ME.name || '')}" placeholder="${esc(L('First name', 'Prénom'))}" maxlength="24" style="flex:2;min-width:0"><select id="qlMeRole" style="flex:1;min-width:0">${meRoleOpts()}</select></div>
+    <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm primary" data-qlwho="save">✓ ${L('Save', 'Enregistrer')}</button><button class="btn sm ghost" data-qlwho="later">${L('Not now', 'Plus tard')}</button></div>
+    <p class="hint" style="margin:6px 0 0">${L('Your entries get a “Logged By” column in the Sheet. Kept on this device only; also in Settings → General.', 'Vos entrées reçoivent une colonne « Logged By » dans la feuille. Gardé sur cet appareil seulement; aussi dans Paramètres → Général.')}</p></div>`;
+}
 function renderQuickLog(){
   if (QL !== renderQuickLog.last) { renderQuickLog.last = QL; [$('#qlog'), $('#qlBody'), $('#qlBody')?.parentElement].forEach(el => { if (el) el.scrollTop = 0; }); }   // a new form starts at the top
   $('#qlDest').textContent = S.endpoint ? '→ Google Sheet' : '→ this device only';
@@ -5556,8 +5574,8 @@ function renderQuickLog(){
     $('#qlTitle').textContent = 'Quick Log';
     const P = qlPresets(); window.__qlp = P;
     const queued = QUEUE.length ? `<p class="queue-note">${QUEUE.length} entr${QUEUE.length>1?'ies':'y'} not yet in the Sheet${S.endpoint ? ' — they retry on every sync.' : ' (no Sheet connected).'}</p>` : '';
-    $('#qlBody').innerHTML = `${qlKidPickerHTML()}${smartRowHTML(P)}<div class="presets">${P.map((p,i) => `<button class="preset ${p.live ? 'live' : ''}" data-p="${i}"><span class="e">${p.e}</span>${esc(p.label)}${p.sub ? `<span class="faint" style="font-size:11px">${p.sub}</span>` : ''}</button>`).join('')}</div>${queued}
-      ${!S.endpoint ? '<p class="queue-note">Connect your Sheet (Settings → Data source) and redeploy the Apps Script with <b>doPost</b> to save straight into Google Sheets.</p>' : ''}`;
+    $('#qlBody').innerHTML = `${!ME.name || QL_WHO_EDIT ? qlWhoHTML() : ''}${qlKidPickerHTML()}${smartRowHTML(P)}<div class="presets">${P.map((p,i) => `<button class="preset ${p.live ? 'live' : ''}" data-p="${i}"><span class="e">${p.e}</span>${esc(p.label)}${p.sub ? `<span class="faint" style="font-size:11px">${p.sub}</span>` : ''}</button>`).join('')}</div>${queued}
+      ${!S.endpoint ? '<p class="queue-note">Connect your Sheet (Settings → Data source) and redeploy the Apps Script with <b>doPost</b> to save straight into Google Sheets.</p>' : ''}${ME.name && !QL_WHO_EDIT ? qlWhoHTML() : ''}`;
     return;
   }
   const f = QL, catKindNow = f.row['Category'] ? catKind(f.row['Category']) : '';
@@ -6871,7 +6889,7 @@ function renderSettings(){
     <h4>${L('On this device', 'Sur cet appareil')}</h4>
     <div class="fgrid">
       <label class="field">${L('Who am I (first name)', 'Qui suis-je (prénom)')}<input type="text" id="meName" value="${esc(ME.name || '')}" placeholder="${esc(L('e.g. Mike', 'p. ex. Mike'))}" maxlength="24"></label>
-      <label class="field">${L('Role', 'Rôle')}<select id="meRole">${[['', L('—', '—')], ['father', L('Father', 'Père')], ['mother', L('Mother', 'Mère')], ['parent', L('Parent', 'Parent')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]].map(([v, t]) => `<option value="${v}" ${ME.role === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label class="field">${L('Role', 'Rôle')}<select id="meRole">${meRoleOpts()}</select></label>
     </div>
     <p class="hint">${L('Entries you add from this device are signed with this name (a “Logged By” column in the Sheet), shown small under each entry’s time. It stays on this device and isn’t included when you export the config, so each person sets their own.', 'Les entrées ajoutées depuis cet appareil sont signées de ce nom (colonne « Logged By » de la feuille), affiché en petit sous l’heure de chaque entrée. Il reste sur cet appareil et n’est pas inclus quand vous exportez la configuration : chaque personne règle le sien.')}</p>
     <h4>Display</h4>
@@ -7096,7 +7114,11 @@ function wire(){
     const mp = e.target.closest('[data-medpick]'); if (mp) { pickMedInForm(+mp.dataset.medpick); return; }
     const sv = e.target.closest('[data-set-v]'); if (sv) { const i = $(`#qlForm [name="${sv.closest('[data-for]').dataset.for}"]`); i.value = sv.dataset.setV; $$('#qlForm [data-set-v]').forEach(b => b.classList.toggle('off', b !== sv)); return; }
     const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
-  $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid); });
+  $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid);
+    const w = e.target.closest('[data-qlwho]'); if (!w) return;
+    if (w.dataset.qlwho === 'edit') { QL_WHO_EDIT = true; renderQuickLog(); }
+    else if (w.dataset.qlwho === 'save') { const n = $('#qlMeName').value.trim(); if (!n) { $('#qlMeName').focus(); return; } ME = { name: n, role: $('#qlMeRole').value }; saveMe(); QL_WHO_EDIT = false; renderQuickLog(); toast(L(`Entries from this device are now signed “${n}”`, `Les entrées de cet appareil sont maintenant signées « ${n} »`)); }
+    else if (w.dataset.qlwho === 'later') { QL_WHO_EDIT = false; sessionStorage.setItem('bld.whoLater', '1'); renderQuickLog(); } });
   $('#kidSeg').addEventListener('click', onKidSeg);
   wireEditGestures();
   $('#ciBody').addEventListener('click', onCheckinClick);

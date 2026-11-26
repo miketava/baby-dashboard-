@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.23.2 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Who am I in Quick Log:** until a name is set on a device, Quick Log opens with "Who's logging on this device?" (first name and role). *Not now* hides it for the session. Once set, the bottom of Quick Log shows "Logging as Mike · Father" with a *change* link. It's still in *Settings → General → On this device* too.
+
 ## v1.23.1 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Routine score weights as a 100-point pool** (*Settings → Routine score*): each part has a slider with − / +, and a counter shows the points left. Once all 100 are used, a part can only go up after another goes down. While points are unspent, a warning says how many (scores still work in the meantime, scaled to what's assigned). **Default split** and **Clear all** buttons.
