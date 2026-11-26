@@ -370,6 +370,7 @@ body.viewonly .fab{display:none!important}
 .preset.live{border-color:var(--good);background:var(--good-soft)}
 .qform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
 .qform .full{grid-column:1/-1}
+@media (max-width:560px){.qform .field{grid-column:1/-1}}   /* phones: one field per line (date, start, end each with their quick-time chips under them) */
 .qform input,.qform select,.qform textarea{width:100%}
 .queue-note{font-size:12.5px;color:var(--muted);margin:10px 0 0}
 /* Printable report */
@@ -1126,11 +1127,16 @@ html:has(.scrim.on), html:has(.sheet.on), html:has(.filterbar.open){overflow:hid
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.24.0';
+const APP_VERSION = '1.24.1';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.24.1', date:'2026-11-25',
+    en:['Quick Log forms only show the fields that fit the category: Milk for milk and bottles, Water for water and meals, Outcome / Rating only where there are ratings (meals, sleep, handovers, health, mood, family contact). A field that already has a value always shows. Custom entries keep everything.',
+        'Phones: one field per line in Quick Log, so Date, Start time and End time each get their own line with their quick-time buttons under them.'],
+    fr:['Les formulaires de saisie rapide n’affichent que les champs utiles à la catégorie : Lait pour le lait et les biberons, Eau pour l’eau et les repas, Résultat / évaluation seulement là où il y a des choix (repas, sommeil, transitions, santé, humeur, contact famille). Un champ déjà rempli reste toujours affiché. Les entrées personnalisées gardent tout.',
+        'Téléphones : un champ par ligne dans la saisie rapide; Date, Début et Fin ont chacun leur ligne avec leurs boutons d’heure rapide en dessous.'] },
   { v:'1.24.0', date:'2026-11-25',
     en:['Quick Log buttons are grouped under small headings: Sleep, Feeding, Diapers, Health & growth, Activities, Visits & family, Other. Something in progress (End night, End nap…) stays first in its group, highlighted.',
         'Drop-off and Pick-up have their own icons: 👋 Drop-off, 🤗 Pick-up.'],
@@ -5636,27 +5642,32 @@ function renderQuickLog(){
   $('#qlTitle').textContent = f.both ? L('Log wet + poop diaper', 'Noter couche pipi + caca') : f.op === 'update' ? L('Edit entry', 'Modifier l’entrée') : f.op === 'end' ? `End ${f.row['Category']}` : f.row['Category'] ? L(`Log ${f.row['Category']}`, `Noter : ${catL(f.row['Category'])}`) : 'Custom entry';
   const known = [...new Set([...Object.keys(DEFAULT_CATS), ...CATS.keys()])];
   const v = h => esc(f.row[h] ?? '');
+  // v1.24.1 — only the fields that make sense for this category (a field that already has a value always shows)
+  const has = h => f.row[h] !== '' && f.row[h] != null, custom = !catKindNow || catKindNow === 'other';
+  const showMilk = custom || catKindNow === 'milk' || has('Milk (oz)');
+  const showWater = custom || catKindNow === 'water' || catKindNow === 'meal' || has('Water (ml)');
+  const showOutcome = ocOpts.length > 0 || has('Outcome / Rating');
   $('#qlBody').innerHTML = `<form class="qform" id="qlForm" autocomplete="off">
     ${f.op === 'end' ? `<div class="full callout info">Ending <b>${esc(f.row['Category'])}</b> that started at ${fmtTime(f.target.st)} (${fmtDur(nowAbs() - f.target.s)} so far).</div>
       <label class="field">End time<input type="time" name="End Time" value="${v('End Time')}" required></label>
       ${agoChips('End Time', L('Ended', 'Fin'))}`
     : `<label class="field full">Category<input type="text" name="Category" list="qlCats" value="${v('Category')}" required placeholder="e.g. Lunch, Sleep - Nap, Milestone"><datalist id="qlCats">${known.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
-      <label class="field">Date<input type="date" name="Date" value="${v('Date')}" required></label>
-      <label class="field">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
+      <label class="field tfield">Date<input type="date" name="Date" value="${v('Date')}" required></label>
+      <label class="field tfield">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
       ${f.op === 'append' ? agoChips('Start Time', L('Started', 'Début')) : ''}
-      <label class="field">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
+      <label class="field tfield">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
       ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
-      <label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>
+      ${showMilk ? `<label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>` : ''}
       ${/milk|bottle/i.test(f.row['Category'] || '') ? `<div class="full tchips" data-for="Milk (oz)">${milkChips().map(a => `<button type="button" class="chip ${f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null && Math.abs(toDisp(+f.row['Milk (oz)']) - a) < .01 ? '' : f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null ? 'off' : ''}" data-set-v="${a}">${a} ${MU()}</button>`).join('')}</div>` : ''}
       ${['pump','growth','temp','meds'].includes(catKindNow) ? `<label class="field">${catKindNow === 'meds' ? L('Dose', 'Dose') : catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'meds' ? L('e.g. 2 ml', 'p. ex. 2 ml') : catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
-      <label class="field">Water (ml)<input type="number" step="5" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
+      ${showWater ? `<label class="field">Water (ml)<input type="number" step="5" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>` : ''}
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
       ${catKindNow === 'meal' && f.op === 'append' ? `<div class="full tchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       ${catKindNow === 'meds' ? medPickHTML(f.row) : ''}
       ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
-    <label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${ocOpts.map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>
+    ${showOutcome ? `<label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${[...ocOpts, ...(has('Outcome / Rating') && !ocOpts.includes(f.row['Outcome / Rating']) ? [f.row['Outcome / Rating']] : [])].map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>` : ''}
     <label class="field full">Notes<textarea name="Notes" rows="2" placeholder="${catKindNow === 'milestone' ? 'e.g. First steps!' : catKindNow === 'incident' ? 'What happened?' : ''}">${v('Notes')}</textarea></label>
     ${f.op === 'update' ? `<div class="full faint" style="font-size:12px">${L(`Sheet row ${f.ev.sheetRow ?? '—'} · first logged ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. Saving stamps “Edited At”; the original entry time is kept.`, `Ligne ${f.ev.sheetRow ?? '—'} de la feuille · saisie le ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. L’enregistrement ajoute « Edited At »; l’heure de saisie originale est conservée.`)}</div>` : ''}
     <div class="full row sp">${f.op === 'update' ? `<button type="button" class="btn danger" id="qlDelete">🗑 ${L('Delete', 'Supprimer')}</button>` : `<button type="button" class="btn" id="qlBack">← Back</button>`}<button type="submit" class="btn primary">${f.op === 'update' ? L('Save changes', 'Enregistrer') : `Save ${S.endpoint ? 'to Sheet' : 'on device'}`}</button></div>

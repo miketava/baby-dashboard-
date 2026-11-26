@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.24.1 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Quick Log shows only the fields that fit:** Milk for milk and bottles, Water for water and meals, Outcome / Rating only where there are ratings (meals, sleep, handovers, health, mood, family contact). Pump, meds, weight, length and temperature keep their own value field. Tags (with the category's suggested chips) and Notes are always there. A field that already has a value always shows, so editing never hides data. Custom entries keep everything.
+- **Phones:** one field per line in Quick Log; Date, Start time and End time each get their own line, with the now / −5 / −15 / −30 min / −1 h buttons right under them.
+
 ## v1.24.0 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Quick Log groups:** the buttons sit under small headings with a divider: Sleep, Feeding, Diapers, Health & growth, Activities, Visits & family, Other. Anything in progress (End night, End nap, breastfeeding switch / end) stays first in its group, highlighted. *Suggested now* is unchanged at the top.
