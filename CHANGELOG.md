@@ -8,6 +8,18 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.30.0 — 2026-11-26 · **Apps Script v1.7** (update it)
+
+- **No secret in the script any more.** The secret and the viewer keys live in the script's *Script properties* (⚙ Project Settings), not in its code, so setting up is: paste the script, deploy, paste its URL into *Settings → Data source*.
+  - The first dashboard to connect to a new script **claims** it: it sends a secret (its existing one if it has one, or a new random one) and the viewer keys. A script that's already claimed refuses another claim.
+  - Upgrading from v1.6: paste v1.7 over everything and deploy a new version. On the next sync the dashboard sees an unclaimed script and stores the secret it already uses, so other phones keep working. (A secret shorter than 16 characters is replaced by a new one; reconnect the other phones with the link below.)
+  - `resetConnection` (▸ Run in the editor) disconnects everything so a dashboard can claim the script again.
+- **Connect another phone** (*Settings → Data source*): a link holding the script URL and the secret. Opening it connects that phone and removes the secret from the address bar. Send it privately.
+- **Viewer keys** take effect as soon as they're created in *Settings → Sharing*, and stop as soon as they're removed. No lines to paste, no redeploy.
+- **One-tap script updates (optional).** Turned on only from the Apps Script editor (▸ Run `allowOneTapUpdates`), plus the Apps Script API switched on and the `appsscript.json` manifest from the Setup guide. Then *Update script* in *Settings → Data source* replaces `Code.gs` (and `Reminders`, keeping its settings block) with the versions this dashboard carries and redeploys the same URL. Each update sends a note to your ntfy topic, if reminders are set up. `stopOneTapUpdates` turns it off.
+- New file: `apps-script/appsscript.json` (the manifest, with the permissions one-tap updates need). Only needed for one-tap updates.
+- **To update:** Settings → Setup guide → *Copy script* → paste over everything in `Code.gs` → *Manage deployments → ✏️ → New version*. Reminders don't need re-pasting.
+
 ## v1.29.1 — 2026-11-26 · Apps Script v1.6 (no script change)
 
 - **Upcoming visits by type** in Today's plan: 🚗 **Parent visits** (away, from the calendar), 🏠 **Home visits** and 🩺 **Appointments** (the ones marked for the child), each on its own line, up to three each.

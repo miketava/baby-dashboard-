@@ -1,24 +1,16 @@
-// ══════════════════════════════════════════════════════════════════════════════════════════════
-//  YOUR SETTINGS: keep these two when you update the script (or use “Copy script” in the dashboard,
-//  Settings → Setup guide, which fills them in for you).
-// ══════════════════════════════════════════════════════════════════════════════════════════════
-const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
-
-// Optional read-only viewer keys (e.g. for a caseworker). A viewer key can only read, never add rows.
-// Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's
-// dashboard and reports show a "Not included: …" line naming those categories.
-// Create a line in the dashboard (Settings → Sharing) and paste it between the braces:
-const VIEWERS = {
-  // 'long-random-viewer-key': { label: 'Caseworker', exclude: ['Guest', 'Outing / Excursion'], from: '2026-10-01' },
-  // With several children, add  child: ['ava'], childName: 'Ava', blank: true  to share only that child's rows.
-};
-
-// ══════════════════════════════════════════════════════════════════════════════════════════════
-//  To update: replace everything from here down with the new version.
-// ══════════════════════════════════════════════════════════════════════════════════════════════
-// Baby Routine Dashboard — Apps Script v1.6 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Baby Routine Dashboard — Apps Script v1.7 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Nothing personal lives in this code. The secret and the viewer keys are kept in this project's Script Properties
+// (⚙ Project Settings → Script properties), set by the dashboard the first time it connects and by its Sharing screen.
+// To update the script: replace ALL of this file with the new version (or use “Update script” in the dashboard).
+const props_ = () => PropertiesService.getScriptProperties();
+const secret_ = () => props_().getProperty('SECRET') || '';
+const viewers_ = () => { try { return JSON.parse(props_().getProperty('VIEWERS') || '{}') || {}; } catch (err) { return {}; } };
+const SECRET_MIN = 16;
+// Optional read-only viewer keys (e.g. for a caseworker), created in the dashboard (Settings → Sharing) and stored here.
+// Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's dashboard and reports
+// show a "Not included: …" line naming those categories. Each key: { label, exclude: [...], from, child, childName, blank }.
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.6';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.7';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -151,7 +143,9 @@ function checkCalendar() {
 // READ — GET …/exec?token=SECRET  →  { ok, headers, rows, planned }
 function doGet(e) {
   const p = (e && e.parameter) || {};
-  const viewer = p.token && p.token !== SECRET ? VIEWERS[p.token] : null;
+  const SECRET = secret_();
+  if (!SECRET) return out_({ ok: false, unclaimed: true, scriptVersion: SCRIPT_VERSION, error: 'Not connected yet: paste this script’s URL into the dashboard (Settings → Data source).' }, p.callback);
+  const viewer = p.token && p.token !== SECRET ? viewers_()[p.token] : null;
   if (p.token !== SECRET && !viewer) return out_({ ok: false, error: 'Unauthorized: token mismatch' }, p.callback);
   const sh = sheet_();
   if (!sh) return out_({ ok: false, error: 'Tab "' + SHEET_NAME + '" not found' }, p.callback);
@@ -177,6 +171,7 @@ function doGet(e) {
   let appts = [];
   if (!viewer) try { appts = appointments_(); } catch (err) { calError = calError || String(err.message || err); }
   const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_(), appts: appts };
+  if (!viewer) shared.selfUpdate = props_().getProperty('ALLOW_SELF_UPDATE') === 'true';
   return out_(Object.assign({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
 }
 
@@ -184,9 +179,24 @@ function doGet(e) {
 // 'end' fills End Time on the most recent row of that Category that has no End Time yet.
 function doPost(e) {
   const p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-  if (p.token !== SECRET) return out_({ ok: false, error: VIEWERS[p.token] ? 'This is a read-only viewer key' : 'Unauthorized: token mismatch' });
   const lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
+    if (p.action === 'claim') {                                     // first connection: the dashboard sets the secret (and viewer keys)
+      if (secret_()) return out_({ ok: false, claimed: true, error: 'This script is already connected to a dashboard. To start over: ⚙ Project Settings → Script properties → delete SECRET.' });
+      if (!p.secret || String(p.secret).length < SECRET_MIN) return out_({ ok: false, error: 'The secret must be at least ' + SECRET_MIN + ' characters.' });
+      props_().setProperty('SECRET', String(p.secret));
+      if (p.viewers && typeof p.viewers === 'object') props_().setProperty('VIEWERS', JSON.stringify(p.viewers));
+      return out_({ ok: true, claimed: true, scriptVersion: SCRIPT_VERSION });
+    }
+    const SECRET = secret_();
+    if (!SECRET) return out_({ ok: false, unclaimed: true, error: 'Not connected yet: paste this script’s URL into the dashboard.' });
+    if (p.token !== SECRET) return out_({ ok: false, error: viewers_()[p.token] ? 'This is a read-only viewer key' : 'Unauthorized: token mismatch' });
+    if (p.action === 'viewers') { props_().setProperty('VIEWERS', JSON.stringify(p.viewers && typeof p.viewers === 'object' ? p.viewers : {})); return out_({ ok: true, viewers: Object.keys(viewers_()).length }); }
+    if (p.action === 'secret') {                                    // change the secret (every phone needs the new one)
+      if (!p.newSecret || String(p.newSecret).length < SECRET_MIN) return out_({ ok: false, error: 'The secret must be at least ' + SECRET_MIN + ' characters.' });
+      props_().setProperty('SECRET', String(p.newSecret)); return out_({ ok: true });
+    }
+    if (p.action === 'selfUpdate') return out_(selfUpdate_(p.files || {}));
     if (p.action === 'config') return out_({ ok: true, updated: writeConfig_(p.items || [], p.by) });
     if (p.action === 'meds') return out_({ ok: true, updated: writeMeds_(p.rows || [], p.by) });
     const sh = sheet_(), row = p.row || {};
@@ -281,4 +291,50 @@ function markExistingRows() {
   if (n < 1) return;
   const r = sh.getRange(2, c, n, 1), v = r.getValues();
   r.setValues(v.map(x => [x[0] === '' ? 'before tracking' : x[0]]));
+}
+
+// ── One-tap updates (optional) ─────────────────────────────────────────────────────────────────
+// Lets the dashboard's “Update script” button replace this code with the version it carries. Off until you turn it on
+// here, in the editor (a secret alone can't turn it on). Needs, once: the Google Apps Script API switched on at
+// script.google.com/home/usersettings, and the project manifest (appsscript.json) from the dashboard's setup guide.
+function allowOneTapUpdates() { props_().setProperty('ALLOW_SELF_UPDATE', 'true'); Logger.log('One-tap updates are on. Turn them off with stopOneTapUpdates.'); }
+function stopOneTapUpdates() { props_().deleteProperty('ALLOW_SELF_UPDATE'); Logger.log('One-tap updates are off.'); }
+/** ▸ Run to disconnect every dashboard (the next one to connect sets a new secret). Viewer keys are kept. */
+function resetConnection() { props_().deleteProperty('SECRET'); Logger.log('Disconnected. Paste this script’s URL into the dashboard to connect again.'); }
+
+function selfUpdate_(files) {
+  if (props_().getProperty('ALLOW_SELF_UPDATE') !== 'true') return { ok: false, error: 'One-tap updates are off. In Apps Script, ▸ Run allowOneTapUpdates once (see the setup guide).' };
+  const code = files.Code;
+  if (!code || code.indexOf('function doGet(') < 0 || !/const SCRIPT_VERSION = '([\d.]+)'/.test(code)) return { ok: false, error: 'That doesn’t look like this script.' };
+  const ver = code.match(/const SCRIPT_VERSION = '([\d.]+)'/)[1];
+  const id = ScriptApp.getScriptId(), api = 'https://script.googleapis.com/v1/projects/' + id, auth = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  const call = (method, path, body) => {
+    const r = UrlFetchApp.fetch(api + path, { method: method, headers: auth, contentType: 'application/json', payload: body ? JSON.stringify(body) : undefined, muteHttpExceptions: true });
+    let j = {}; try { j = JSON.parse(r.getContentText() || '{}'); } catch (err) {}
+    if (r.getResponseCode() >= 300) throw new Error((j.error && j.error.message) || ('HTTP ' + r.getResponseCode()));
+    return j;
+  };
+  try {
+    const cur = call('get', '/content');
+    // keep each file's “YOUR SETTINGS” block (e.g. the reminders topic) when replacing it
+    const keep = (oldSrc, newSrc) => { const re = /(\/\/ +YOUR SETTINGS[^\n]*\n)([\s\S]*?)(\n\/\/ ═+)/; const o = String(oldSrc).match(re); return o ? String(newSrc).replace(re, (m, a, b, c) => a + o[2] + c) : newSrc; };
+    let touched = 0;
+    const next = cur.files.map(f => {
+      const src = String(f.source || '');
+      if (f.type === 'SERVER_JS' && src.indexOf('function doGet(') >= 0) { touched++; return { name: f.name, type: f.type, source: code }; }
+      if (f.type === 'SERVER_JS' && files.Reminders && src.indexOf('function sendReminders(') >= 0) { touched++; return { name: f.name, type: f.type, source: keep(src, files.Reminders) }; }
+      return { name: f.name, type: f.type, source: src };
+    });
+    if (!touched) return { ok: false, error: 'Couldn’t find the main script file.' };
+    call('put', '/content', { files: next });
+    const v = call('post', '/versions', { description: 'Dashboard update to v' + ver });
+    const dep = (ScriptApp.getService().getUrl() || '').match(/\/s\/([^/]+)\/(?:exec|dev)/);
+    if (!dep) return { ok: false, error: 'Code updated, but couldn’t find this deployment: use Deploy → Manage deployments → New version.' };
+    call('put', '/deployments/' + dep[1], { deploymentConfig: { scriptId: id, versionNumber: v.versionNumber, manifestFileName: 'appsscript', description: 'v' + ver } });
+    if (typeof NTFY_TOPIC !== 'undefined' && !/CHANGE-ME/.test(NTFY_TOPIC))   // a heads-up on your phones, so an update you didn't make stands out
+      UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: 'The dashboard script was updated to v' + ver + '.', headers: { Title: 'Baby dashboard', Tags: 'gear' }, muteHttpExceptions: true });
+    return { ok: true, version: ver, versionNumber: v.versionNumber };
+  } catch (err) {
+    return { ok: false, error: String(err.message || err) + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' (switch on the Google Apps Script API at script.google.com/home/usersettings)' : '') };
+  }
 }

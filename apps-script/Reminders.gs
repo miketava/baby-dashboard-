@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 //  Optional add-on: lock-screen phone reminders through ntfy.sh (they arrive with the dashboard closed).
-//  Reminders v2.1 — needs Code.gs v1.6 in the same Apps Script project.
+//  Reminders v2.1 — needs Code.gs v1.6 or later in the same Apps Script project.
 //
 //  Setup: ＋ → Script, name it Reminders, paste this file (next to Code.gs, not over it), Save,
 //  choose installReminderTrigger in the toolbar ▸ Run once and approve. Subscribe to NTFY_TOPIC in the ntfy app.

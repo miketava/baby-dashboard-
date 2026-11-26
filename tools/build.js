@@ -5,15 +5,17 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..'), src = path.join(root, 'src');
 const order = fs.readFileSync(path.join(src, 'BUILD_ORDER'), 'utf8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
 const gs = fs.readFileSync(path.join(root, 'apps-script', 'Code.gs'), 'utf8'), rem = fs.readFileSync(path.join(root, 'apps-script', 'Reminders.gs'), 'utf8');
+const manifest = fs.readFileSync(path.join(root, 'apps-script', 'appsscript.json'), 'utf8');
 const fail = msg => { console.error('BUILD FAILED: ' + msg); process.exit(1); };
-if (!/const SECRET = 'change-me-to-a-long-random-phrase'/.test(gs)) fail('apps-script/Code.gs must keep the placeholder SECRET (never commit the real one)');
+if (/const SECRET\s*=\s*'/.test(gs) || !/getProperty\('SECRET'\)/.test(gs)) fail('apps-script/Code.gs must read the secret from Script Properties, never hold one');
 try { new vm.Script(gs, { filename: 'apps-script/Code.gs' }); new vm.Script(rem, { filename: 'apps-script/Reminders.gs' }); } catch (e) { fail(e.stack); }
+try { JSON.parse(manifest); } catch (e) { fail('apps-script/appsscript.json: ' + e.message); }
 if (!/const NTFY_TOPIC = 'baby-routine-CHANGE-ME'/.test(rem)) fail('apps-script/Reminders.gs must keep the placeholder NTFY_TOPIC');
 // Code.gs as a JS template literal: escape \ ` and ${ so the string is exactly the file
 const asLiteral = s => '`' + s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${') + '`';
 const seen = new Set();
 const html = order.map(f => {
-  if (f === '@apps-script') return `const APPS_SCRIPT = ${asLiteral(gs)};\n`;
+  if (f === '@apps-script') return `const APPS_SCRIPT = ${asLiteral(gs)};\nconst APPS_MANIFEST = ${asLiteral(manifest)};\n`;
   if (f === '@reminders') return `const REMINDERS_GS = ${asLiteral(rem)};\n`;
   const p = path.join(src, f); if (!fs.existsSync(p)) fail(`${f} is listed in BUILD_ORDER but doesn't exist`);
   seen.add(path.normalize(f)); return fs.readFileSync(p, 'utf8');

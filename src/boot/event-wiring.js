@@ -222,10 +222,10 @@ function wire(){
       case 'clearQueue': if (confirm(`Discard ${QUEUE.length} quick-log entr${QUEUE.length>1?'ies':'y'} that are not in the Sheet?`)) { QUEUE = []; saveQueue(); reingest(); renderSettings(); } break;
       case 'csv': $('#csvInput').click(); break;
       case 'demo': loadDemo(); lsSet(LS_CACHE, null); renderSettings(); toast('Demo data loaded'); break;
-      case 'copyScript': { const c = scriptWithSettings();
-        toast(!(await copyText(c.text)) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')
-          : c.secret ? L(`Script copied with your secret${c.viewers ? ` and ${c.viewers} viewer key${c.viewers > 1 ? 's' : ''}` : ''}. In Apps Script, select all and paste over it. Viewer lines you added by hand aren’t included.`, `Script copié avec votre secret${c.viewers ? ` et ${c.viewers} clé${c.viewers > 1 ? 's' : ''} de lecture` : ''}. Dans Apps Script, sélectionnez tout et collez par-dessus. Les lignes de lecture ajoutées à la main ne sont pas incluses.`)
-          : L('Script copied. Set SECRET at the top before deploying.', 'Script copié. Changez SECRET en haut avant de déployer.')); break; }
+      case 'copyScript': toast(await copyText(APPS_SCRIPT) ? L('Script copied. In Apps Script, select everything in Code.gs and paste over it.', 'Script copié. Dans Apps Script, sélectionnez tout le contenu de Code.gs et collez par-dessus.') : L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')); break;
+      case 'copyManifest': toast(await copyText(manifestText()) ? L('Manifest copied: paste it over everything in appsscript.json', 'Manifeste copié : collez-le à la place de tout le contenu d’appsscript.json') : L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')); break;
+      case 'connectLink': await shareConnectLink(); break;
+      case 'updateScript': await updateScript(); break;
       case 'copyNtfy': toast(!(await copyText(ntfySnippet())) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main') : S.ntfyTopic ? L('Reminders add-on copied with your topic. Paste it as a second script file named Reminders.', 'Module copié avec votre sujet. Collez-le dans un deuxième fichier de script nommé Reminders.') : L('Copied. Pick a topic first, or change NTFY_TOPIC at the top before saving.', 'Copié. Choisissez d’abord un sujet, ou changez NTFY_TOPIC en haut avant d’enregistrer.')); break;
       case 'genTopic': S.ntfyTopic = 'baby-' + [...crypto.getRandomValues(new Uint8Array(9))].map(x => x.toString(36).padStart(2,'0')).join('').slice(0, 16); saveSettings(); renderSettings(); break;
       case 'testRem': chime(); if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); if ('Notification' in window && Notification.permission === 'granted') new Notification('Test reminder', { body:'Reminders are working 👍' }); else toast('🔔 Test reminder — notifications unavailable here, showing in-page'); renderSettings(); break;
@@ -262,10 +262,11 @@ function wire(){
         const vk = multiKid() ? (VDRAFT.kid ?? kidIdx()) : null;
         S.share.viewers = [...(S.share.viewers || []), { key, label: VDRAFT.label.trim() || 'Viewer', exclude: VDRAFT.exclude.slice(), from: VDRAFT.from, created: Date.now(),
           ...(vk != null ? { kidId: S.kids[vk].id, child: { name: kidName(vk), keys: kidKeys(vk), blank: (S.blankKid ?? 0) === vk } } : {}) }];
-        saveSettings(); renderSettings(); toast('Viewer key created — add the line to your Apps Script'); break; }
+        saveSettings(); renderSettings();
+        toast(await pushViewers() ? L('Viewer key created and active. Export its config file to send it.', 'Clé lecteur créée et active. Exportez son fichier de configuration pour l’envoyer.') : L('Viewer key created — add the line to your Apps Script', 'Clé lecteur créée — ajoutez la ligne à votre Apps Script')); break; }
       case 'vCopy': toast(await copyText(viewerLine(S.share.viewers[+b.dataset.i])) ? 'Line copied' : 'Copy failed — select it manually'); break;
       case 'vExport': { const v = S.share.viewers[+b.dataset.i]; download(`baby_dashboard_viewer_${(v.label || 'viewer').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(viewerConfig(v), null, 2), 'application/json'); break; }
-      case 'vRemove': if (confirm('Remove this viewer key from the list? Also delete its line from VIEWERS in Apps Script and deploy a new version to revoke access.')) { S.share.viewers.splice(+b.dataset.i, 1); saveSettings(); renderSettings(); } break;
+      case 'vRemove': if (confirm(scriptAtLeast('1.7') ? L('Remove this viewer key? It stops working right away.', 'Supprimer cette clé lecteur ? Elle cesse de fonctionner tout de suite.') : 'Remove this viewer key from the list? Also delete its line from VIEWERS in Apps Script and deploy a new version to revoke access.')) { S.share.viewers.splice(+b.dataset.i, 1); saveSettings(); renderSettings(); if (await pushViewers()) toast(L('Viewer key revoked', 'Clé lecteur révoquée')); } break;
       case 'clearCache': localStorage.removeItem(LS_CACHE); toast('Cached data cleared'); break;
       case 'resetAll': if (confirm('Reset all settings to defaults on this device?')) { localStorage.removeItem(LS_SETTINGS); localStorage.removeItem(LS_FILTER); S = structuredClone(DEFAULT_SETTINGS); S.schema = 2; F = { ...DEFAULT_FILTER }; applyTheme(); analyze(); ensureCustomRange(); setupAutoRefresh(); renderAll(); renderSettings(); toast('Settings reset'); } break;
     }

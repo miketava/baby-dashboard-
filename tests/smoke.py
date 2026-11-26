@@ -165,10 +165,64 @@ async def settling(b):
   check('logged asleep time and soothing tag are used', e == [15, 68, True], e)
   check('no page errors', not errs, errs[:3]); await ctx.close()
 
+async def connect(b):
+  print('Connecting: claim, another phone, viewer keys, script update (script v1.7)')
+  EP = 'https://script.google.com/macros/s/TESTDEPLOY/exec'
+  st = {'secret': None, 'viewers': {}, 'posts': []}
+  async def fake(route):
+    req = route.request
+    if req.method == 'POST':
+      body = json.loads(req.post_data or '{}'); st['posts'].append(body.get('action')); a = body.get('action')
+      if a == 'claim':
+        if st['secret']: r = {'ok': False, 'claimed': True, 'error': 'already'}
+        else: st['secret'] = body['secret']; st['viewers'] = body.get('viewers') or {}; r = {'ok': True}
+      elif body.get('token') != st['secret']: r = {'ok': False, 'error': 'Unauthorized: token mismatch'}
+      elif a == 'viewers': st['viewers'] = body.get('viewers') or {}; r = {'ok': True}
+      elif a == 'selfUpdate': r = {'ok': 'function doGet(' in body['files']['Code'] and 'sendReminders' in body['files'].get('Reminders', ''), 'version': '1.7'}
+      else: r = {'ok': True}
+    else:
+      tok = re.search(r'[?&]token=([^&]*)', req.url); tok = tok.group(1) if tok else ''
+      cb = re.search(r'[?&]callback=([^&]*)', req.url)
+      if not st['secret']: r = {'ok': False, 'unclaimed': True, 'scriptVersion': '1.7'}
+      elif tok != st['secret']: r = {'ok': False, 'error': 'Unauthorized: token mismatch'}
+      else: r = {'ok': True, 'headers': ['Date', 'Start Time', 'End Time', 'Duration (min)', 'Category', 'Milk (oz)', 'Notes'], 'rows': [], 'scriptVersion': '1.7', 'selfUpdate': True, 'config': {}, 'meds': None}
+      if cb: return await route.fulfill(body=f'{cb.group(1)}({json.dumps(r)})', content_type='application/javascript')
+    await route.fulfill(body=json.dumps(r), content_type='application/json', headers={'Access-Control-Allow-Origin': '*'})
+  ctx, pg, errs = await open_page(b, 'placement', 'en', PHONE)
+  await pg.route('https://script.google.com/**', fake)
+  await pg.evaluate(f"S.endpoint={json.dumps(EP)}; S.token=''; saveSettings()")
+  ok = await pg.evaluate("syncLive({quiet:true})")
+  tok = await pg.evaluate("S.token")
+  check('a new script is claimed with a generated secret', ok and st['secret'] == tok and len(tok) >= 16, [ok, st['posts']])
+  check('then the dashboard syncs live', await pg.evaluate("DATA.source") == 'live')
+  await pg.evaluate("openSettings('source')"); await pg.wait_for_timeout(200)
+  check('Data source shows “Connect another phone”', await pg.locator('[data-act=connectLink]').count() == 1)
+  link = await pg.evaluate("connectLink()")
+  ctx2 = await b.new_context(viewport={'width': PHONE[0], 'height': PHONE[1]})
+  await ctx2.add_init_script("if(!sessionStorage.t){sessionStorage.t=1;localStorage.setItem('bld.settings.v1',JSON.stringify({seenVersion:%s,lang:'en',profile:%s}))}" % (json.dumps(VERSION), PROFILES['placement']))
+  await ctx2.route('**/*', lambda r: libs(r) if r.request.url.startswith('http') and 'script.google' not in r.request.url else r.continue_())
+  await ctx2.route('https://script.google.com/**', fake)
+  pg2 = await ctx2.new_page(); await pg2.goto(PAGE + link[link.index('#'):]); await pg2.wait_for_timeout(1200)
+  got = await pg2.evaluate("[S.endpoint, S.token, location.hash, DATA.source]")
+  check('the connect link sets up another phone and leaves the address bar', got == [EP, tok, '', 'live'], got); await ctx2.close()
+  await pg.evaluate("openSettings('sharing')"); await pg.wait_for_timeout(200)
+  await pg.locator('[data-act=vCreate]').click(); await pg.wait_for_timeout(400)
+  key = await pg.evaluate("S.share.viewers.at(-1).key")
+  check('a new viewer key is pushed to the script', key in st['viewers'] and st['viewers'][key]['exclude'], st['viewers'])
+  check('no “paste this line” steps on script v1.7', await pg.locator('[data-act=vCopy]').count() == 0)
+  pg.once('dialog', lambda d: asyncio.ensure_future(d.accept()))
+  await pg.locator('[data-act=vRemove]').last.click(); await pg.wait_for_timeout(400)
+  check('removing it revokes it on the script', key not in st['viewers'])
+  pg.once('dialog', lambda d: asyncio.ensure_future(d.accept()))
+  await pg.evaluate("updateScript()"); await pg.wait_for_timeout(300)
+  check('Update script sends the code and reminders this dashboard carries', 'selfUpdate' in st['posts'])
+  check('the copied script holds no secret', await pg.evaluate("!/const SECRET\\s*=\\s*'/.test(APPS_SCRIPT) && APPS_MANIFEST.includes('script.deployments')"))
+  check('no page errors', not [e for e in errs if 'Failed to load resource' not in e], errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(**({'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {}))
-    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling): await t(b)
+    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling, connect): await t(b)
     await b.close()
   bad = [r for r in results if not r[1]]
   print(f'\n{len(results) - len(bad)} / {len(results)} checks passed' + (f' · FAILED: {", ".join(r[0] for r in bad)}' if bad else ''))

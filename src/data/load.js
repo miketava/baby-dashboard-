@@ -112,11 +112,18 @@ async function syncLive({ quiet=false, skipFlush=false } = {}){
   try {
     if (!skipFlush) await flushQueue({ quiet:true });
     const url = new URL(S.endpoint.trim()); url.searchParams.set('token', S.token || ''); url.searchParams.set('_', Date.now());
-    let data;
-    try { const r = await fetch(url, { cache:'no-store', redirect:'follow' }); if (!r.ok) throw new Error('HTTP ' + r.status); data = JSON.parse(await r.text()); }
-    catch (e1) {
-      try { data = await jsonp(url); }
-      catch (e2) { throw new Error(e1 instanceof SyntaxError ? 'Endpoint did not return JSON — is the Web App access set to "Anyone"?' : 'Could not reach endpoint (' + e1.message + ')'); }
+    const get = async () => {
+      url.searchParams.set('token', S.token || ''); url.searchParams.set('_', Date.now());
+      try { const r = await fetch(url, { cache:'no-store', redirect:'follow' }); if (!r.ok) throw new Error('HTTP ' + r.status); return JSON.parse(await r.text()); }
+      catch (e1) {
+        try { return await jsonp(url); }
+        catch (e2) { throw new Error(e1 instanceof SyntaxError ? 'Endpoint did not return JSON — is the Web App access set to "Anyone"?' : 'Could not reach endpoint (' + e1.message + ')'); }
+      }
+    };
+    let data = await get();
+    if (data?.unclaimed) {                                   // script v1.7+, just deployed: this device sets its secret
+      await claimScript(); data = await get();
+      toast(L('Connected. To add the other caregiver’s phone: Settings → Data source → Connect another phone.', 'Connecté. Pour ajouter le téléphone de l’autre parent : Réglages → Source de données → Relier un autre téléphone.'));
     }
     if (!data || data.ok === false) throw new Error(data?.error || 'Endpoint returned an error');
     let headers = data.headers, records = data.rows ?? data.data ?? data;
@@ -124,7 +131,7 @@ async function syncLive({ quiet=false, skipFlush=false } = {}){
     if (!Array.isArray(records)) throw new Error('Unexpected response shape');
     if (data.calError) toast(L('Calendar: ', 'Agenda : ') + data.calError, true);
     ingest({ headers: headers || Object.keys(records[0] || {}), records, planned: Array.isArray(data.planned) ? data.planned : null, appts: Array.isArray(data.appts) ? data.appts : null }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
-    SCRIPT_SEEN = data.scriptVersion || '0'; renderNotice(); if (typeof renderVerPill === 'function') renderVerPill();
+    SCRIPT_SEEN = data.scriptVersion || '0'; SCRIPT_CAN_UPDATE = !!data.selfUpdate; renderNotice(); if (typeof renderVerPill === 'function') renderVerPill();
     if (typeof cfgOnSync === 'function') cfgOnSync(data).catch(e => console.warn('config sync', e));
     if (!quiet) toast(`Synced ${DATA.events.length} events`);
     return true;

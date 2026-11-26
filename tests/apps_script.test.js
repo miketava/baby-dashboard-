@@ -50,7 +50,7 @@ t('appointments: matched, titled, visits kept apart', () => {
   assert.deepStrictEqual(g2.planned.map(v => v.start), ['12:00'], 'only the parents’ visit is a visit (not “Visite médicale”)');
   assert.deepStrictEqual(g2.appts.map(a => a.title), ['Dentiste Ava', 'Doctor appointment', 'Visite médicale CLSC'], 'cancelled and all-day ones are left out');
   assert.ok(g2.appts.every(a => a.id && a.calendar && /^\d\d:\d\d$/.test(a.start)));
-  assert.strictEqual(g2.scriptVersion, '1.6');
+  assert.strictEqual(g2.scriptVersion, '1.7');
 });
 t('the part before a dash decides: home visit, family visit, appointment', () => {
   const day = (h, d) => { const x = new Date(Date.now() + d * 864e5); x.setUTCHours(h, 0, 0, 0); return x; };
@@ -63,5 +63,77 @@ t('the part before a dash decides: home visit, family visit, appointment', () =>
 t('viewer keys get no appointments or settings', () => {
   const code = require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
   assert.ok(/const shared = viewer \? \{\} :/.test(code));
+});
+
+// ── v1.7: secret and viewer keys in Script Properties; claim; one-tap updates ──
+t('a fresh script is unclaimed until a dashboard claims it', () => {
+  const g = load({ claim: false });
+  const r = JSON.parse(g.api.doGet({ parameter: { token: '' } }));
+  assert.strictEqual(r.ok, false); assert.strictEqual(r.unclaimed, true); assert.strictEqual(r.scriptVersion, '1.7');
+  assert.strictEqual(g.raw({ action: 'append', token: 'x', row: { Category: 'Meds' } }).unclaimed, true, 'no writes before claim');
+  assert.strictEqual(g.raw({ action: 'claim', secret: 'too-short' }).ok, false);
+  assert.ok(g.raw({ action: 'claim', secret: 'a-long-enough-secret-123', viewers: { 'view-abc': { label: 'TS', exclude: ['Guest'] } } }).ok);
+  assert.strictEqual(g.store.SECRET, 'a-long-enough-secret-123');
+  const again = g.raw({ action: 'claim', secret: 'someone-elses-secret-99999' });
+  assert.strictEqual(again.ok, false); assert.strictEqual(again.claimed, true); assert.strictEqual(g.store.SECRET, 'a-long-enough-secret-123');
+  assert.strictEqual(JSON.parse(g.api.doGet({ parameter: { token: 'a-long-enough-secret-123' } })).ok, true);
+});
+t('viewer keys come from Script Properties and can be replaced or revoked', () => {
+  const g = load();
+  g.post({ action: 'append', row: { Date: '2026-11-25', 'Start Time': '10:00', Category: 'Guest' } });
+  g.post({ action: 'append', row: { Date: '2026-11-25', 'Start Time': '11:00', Category: 'Meds' } });
+  assert.strictEqual(g.get({ token: 'view-1' }).ok, false);
+  assert.ok(g.post({ action: 'viewers', viewers: { 'view-1': { label: 'TS', exclude: ['Guest'] } } }).ok);
+  const v = g.get({ token: 'view-1' });
+  assert.ok(v.ok); assert.deepStrictEqual(v.rows.map(r => r.Category), ['Meds']); assert.strictEqual(v.viewer.label, 'TS'); assert.strictEqual(v.config, undefined);
+  assert.strictEqual(g.raw({ action: 'append', token: 'view-1', row: { Category: 'Meds' } }).error, 'This is a read-only viewer key');
+  assert.strictEqual(g.raw({ action: 'viewers', token: 'view-1', viewers: {} }).ok, false, 'a viewer can’t change keys');
+  g.post({ action: 'viewers', viewers: {} });
+  assert.strictEqual(g.get({ token: 'view-1' }).ok, false, 'revoked');
+});
+t('the secret can be changed; resetConnection lets a dashboard claim again', () => {
+  const g = load();
+  assert.ok(g.post({ action: 'secret', newSecret: 'brand-new-secret-abcdefgh' }).ok);
+  assert.strictEqual(g.get().ok, false); assert.ok(g.get({ token: 'brand-new-secret-abcdefgh' }).ok);
+  g.api.resetConnection(); assert.strictEqual(g.get().unclaimed, true);
+});
+const NEW_CODE = "// v9\nconst SCRIPT_VERSION = '9.0';\nfunction doGet(e) {}\n";
+const NEW_REM = "// ═══\n//  YOUR SETTINGS (filled in)\nconst NTFY_TOPIC = 'baby-routine-CHANGE-ME';\n// ═══\nfunction sendReminders() {} // v3\n";
+t('self-update is off until switched on in the editor', () => {
+  const g = load();
+  assert.strictEqual(g.get().selfUpdate, false);
+  const r = g.post({ action: 'selfUpdate', files: { Code: NEW_CODE } });
+  assert.strictEqual(r.ok, false); assert.ok(/off/.test(r.error)); assert.strictEqual(g.apiCalls.length, 0);
+  g.api.allowOneTapUpdates(); assert.strictEqual(g.get().selfUpdate, true);
+  assert.strictEqual(g.get({ token: 'nope' }).selfUpdate, undefined);
+  assert.strictEqual(g.raw({ action: 'selfUpdate', token: 'wrong', files: { Code: NEW_CODE } }).ok, false);
+  assert.strictEqual(g.apiCalls.length, 0, 'a wrong secret never reaches the API');
+});
+t('self-update replaces the code, keeps reminder settings and redeploys the same URL', () => {
+  const project = { files: [
+    { name: 'appsscript', type: 'JSON', source: '{"timeZone":"America/Toronto"}' },
+    { name: 'Code', type: 'SERVER_JS', source: "const SCRIPT_VERSION = '1.7';\nfunction doGet(e) {}" },
+    { name: 'Reminders', type: 'SERVER_JS', source: "// ═══\n//  YOUR SETTINGS (filled in)\nconst NTFY_TOPIC = 'baby-ours-xyz';\nconst LEAD_MIN = 10;\n// ═══\nfunction sendReminders() {} // v2" },
+    { name: 'Notes', type: 'SERVER_JS', source: '// mine' } ] };
+  const g = load({ props: { ALLOW_SELF_UPDATE: 'true' }, project });
+  assert.strictEqual(g.post({ action: 'selfUpdate', files: { Code: 'not a script' } }).ok, false);
+  const r = g.post({ action: 'selfUpdate', files: { Code: NEW_CODE, Reminders: NEW_REM } });
+  assert.ok(r.ok, r.error); assert.strictEqual(r.version, '9.0'); assert.strictEqual(r.versionNumber, 8);
+  const by = Object.fromEntries(g.project.files.map(f => [f.name, f.source]));
+  assert.strictEqual(by.Code, NEW_CODE); assert.strictEqual(by.appsscript, '{"timeZone":"America/Toronto"}'); assert.strictEqual(by.Notes, '// mine');
+  assert.ok(/baby-ours-xyz/.test(by.Reminders) && /LEAD_MIN = 10/.test(by.Reminders) && /\/\/ v3/.test(by.Reminders), 'new reminders code, old settings');
+  assert.deepStrictEqual(g.apiCalls.map(c => c.method + ' ' + c.path), ['get /content', 'put /content', 'post /versions', 'put /deployments/DEPLOY_ID']);
+  assert.strictEqual(g.apiCalls[3].body.deploymentConfig.versionNumber, 8); assert.strictEqual(g.apiCalls[0].auth, 'Bearer oauth-tok');
+});
+t('self-update explains a switched-off Apps Script API', () => {
+  const g = load({ props: { ALLOW_SELF_UPDATE: 'true' }, apiError: 'Apps Script API has not been used in project 123 before or it is disabled.' });
+  const r = g.post({ action: 'selfUpdate', files: { Code: NEW_CODE } });
+  assert.strictEqual(r.ok, false); assert.ok(/usersettings/.test(r.error));
+});
+t('the code holds no secret', () => {
+  const code = require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
+  assert.ok(!/const SECRET\s*=\s*'/.test(code) && !/const VIEWERS\s*=/.test(code));
+  const m = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', 'appsscript.json'), 'utf8'));
+  assert.ok(m.oauthScopes.includes('https://www.googleapis.com/auth/script.projects') && m.oauthScopes.includes('https://www.googleapis.com/auth/spreadsheets.currentonly'));
 });
 console.log(`apps_script: ${n} checks passed`);

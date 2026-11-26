@@ -8,19 +8,12 @@ function shareCats(){
   return names.map(n => ({ name:n, n: present.get(n) || 0, icon: CATS.get(n)?.icon || '•' }));
 }
 const q1 = x => "'" + String(x).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, '\\n') + "'";   // a safe single-quoted JS string
-/** The Apps Script with this family's SECRET (the connection token) and viewer keys filled in, so updating is copy, paste over everything, deploy (v1.27.1). */
-function scriptWithSettings(){
-  let s = APPS_SCRIPT;
-  if (S.token) s = s.replace("const SECRET = 'change-me-to-a-long-random-phrase';", `const SECRET = ${q1(S.token)};`);
-  const vs = S.share?.viewers || [];
-  if (vs.length) s = s.replace(/const VIEWERS = \{([\s\S]*?)\n\};/, (m, body) => `const VIEWERS = {${body}\n${vs.map(viewerLine).join('\n')}\n};`);
-  return { text: s, secret: !!S.token, viewers: vs.length };
-}
+/** A viewer key as a line for VIEWERS in scripts before v1.7 (v1.7+ gets the keys from the dashboard). */
 const viewerLine = v => `  ${q1(v.key)}: { label: ${q1(v.label || 'Viewer')}, exclude: [${v.exclude.map(q1).join(', ')}]${v.from ? `, from: '${v.from}'` : ''}${v.child ? `, child: [${v.child.keys.map(q1).join(', ')}], childName: ${q1(v.child.name)}, blank: ${!!v.child.blank}` : ''} },`;
 function sharingPaneHTML(){
   const cats = shareCats(), ex = new Set((S.share.exclude || []).map(exclKey));
   if (!VDRAFT) VDRAFT = { label:'Caseworker', exclude: VDEF.slice(), from:'' };
-  const vw = DATA.viewer;
+  const vw = DATA.viewer, v17 = scriptAtLeast('1.7');
   return `${vw ? `<div class="scopenote">You're connected with a <b>read-only viewer key</b>${vw.label ? ' (' + esc(vw.label) + ')' : ''}. ${vw.excluded?.length ? 'Not included in this view: ' + esc(vw.excluded.join(', ')) + '.' : 'All categories are included.'}${vw.from ? ' Entries before ' + esc(vw.from) + ' are not shared.' : ''}</div>` : ''}
     <h4>Leave out of analysis on this device</h4>
     <p class="hint" style="margin-top:0">Ticked categories are removed from every chart, finding and report <b>on this device only</b> — the Sheet is untouched. A “Not included: …” line on the dashboard and on every report names them, so nothing is silently missing.</p>
@@ -37,13 +30,13 @@ function sharingPaneHTML(){
     ${(S.share.viewers || []).map((v, i) => `<div class="vcard">
       <div><b>${esc(v.label || 'Viewer')}</b>${v.child ? ' · ' + esc(v.child.name) : ''} <span class="faint">· created ${esc(new Date(v.created).toLocaleDateString(LOC()))}</span></div>
       <div class="sub">Not included: ${v.exclude.length ? esc(v.exclude.join(', ')) : 'nothing'}${v.from ? ' · from ' + esc(v.from) : ''}</div>
-      <ol class="hint">
-        <li>In Apps Script, paste this line between the braces of <span class="mono">const VIEWERS = { … }</span> at the top (or use <b>Copy script</b> in the Setup guide, which includes it):<pre class="code">${esc(viewerLine(v))}</pre></li>
-        <li>Save, then <b>Deploy → Manage deployments → ✏️ → Version: New version → Deploy</b> (same URL).</li>
-        <li>Send them the link to your dashboard and this viewer config file — it holds the viewer key, never your main secret.</li></ol>
-      <div class="row wrap"><button class="btn sm" data-act="vCopy" data-i="${i}">Copy line</button><button class="btn sm primary" data-act="vExport" data-i="${i}">Export viewer config</button><button class="btn sm danger" data-act="vRemove" data-i="${i}">Remove</button></div>
+      ${v17 ? `<p class="hint">${L('Active on your script. Send them the link to your dashboard and this viewer config file — it holds the viewer key, never your main secret.', 'Active sur votre script. Envoyez-leur le lien de votre tableau de bord et ce fichier de configuration — il contient la clé lecteur, jamais votre secret.')}</p>` : `<ol class="hint">
+        <li>In Apps Script, paste this line between the braces of <span class="mono">const VIEWERS = { … }</span> at the top:<pre class="code">${esc(viewerLine(v))}</pre></li>
+        <li>Save, then <b>Deploy → Manage deployments → ✏️ → Version: New version → Deploy</b> (same URL). <span class="faint">${L('Script v1.7 and later skip these steps: the key is active as soon as you create it.', 'À partir du script v1.7, ces étapes disparaissent : la clé est active dès sa création.')}</span></li>
+        <li>Send them the link to your dashboard and this viewer config file — it holds the viewer key, never your main secret.</li></ol>`}
+      <div class="row wrap">${v17 ? '' : `<button class="btn sm" data-act="vCopy" data-i="${i}">Copy line</button>`}<button class="btn sm primary" data-act="vExport" data-i="${i}">Export viewer config</button><button class="btn sm danger" data-act="vRemove" data-i="${i}">Remove</button></div>
     </div>`).join('')}
-    <p class="hint">To revoke access, delete the line from <span class="mono">VIEWERS</span> and deploy a new version — the key stops working immediately.</p>`}`;
+    <p class="hint">${v17 ? L('To revoke access, tap Remove: the key stops working immediately.', 'Pour retirer l’accès, touchez Supprimer : la clé cesse aussitôt de fonctionner.') : 'To revoke access, delete the line from <span class="mono">VIEWERS</span> and deploy a new version — the key stops working immediately.'}</p>`}`;
 }
 const clText = e => FRL() && e.fr ? e.fr : e.en;
 /** Settings → About & changes: versions and the changelog. */

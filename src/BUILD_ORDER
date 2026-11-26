@@ -55,6 +55,7 @@ features/smart.js
 features/meds.js
 features/appointments.js
 sync/config-sync.js
+sync/connect.js
 ui/nav.js
 features/age-bands.js
 ui/notices.js

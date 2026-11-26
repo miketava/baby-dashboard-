@@ -9,6 +9,7 @@
   const cache = S.cacheData ? lsGet(LS_CACHE, null) : null;
   if (cache && (cache.records?.length || cache.source === 'local')) ingest({ headers: cache.headers, records: cache.records, planned: cache.planned || null, appts: cache.appts || null }, cache.source, cache.label, { synced: cache.synced, viewer: cache.viewer || null });
   else loadDemo();
+  readConnectLink();                                      // “Connect another phone” link (v1.30)
   if (S.endpoint) syncLive({ quiet:true });
   setupAutoRefresh();
   if (!S.profile.onboarded) setTimeout(openWizard, 300);   // first run: set up the profile before anything else
