@@ -202,11 +202,11 @@ function renderTodayPlan(){
   const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && k !== nextI).length, open = !!UI.planPast;
   $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
   const pv = !m.visit ? plannedVisit(m.D) : null, ap = !m.visit && !pv ? apptOn(m.D) : null;
-  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · 🩺 ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
+  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
-        const ua = upcomingAppts(3); const apl = ua.length ? `<div class="pl-up">🩺 <b>${L('Appointments', 'Rendez-vous')}:</b> ${ua.map(a => `<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
+        const ua = upcomingAppts(3); const apl = ua.length ? `<div class="pl-up">🩺 <b>${L('Appointments', 'Rendez-vous')}:</b> ${ua.map(a => `${a.home ? '🏠 ' : ''}<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
         return apl + `<div class="pl-up">🗓️ <b>${L('Next visits', 'Prochaines visites')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>`; })();
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */

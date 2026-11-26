@@ -16,9 +16,9 @@ const VIEWERS = {
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 //  To update: replace everything from here down with the new version.
 // ══════════════════════════════════════════════════════════════════════════════════════════════
-// Baby Routine Dashboard — Apps Script v1.5 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Baby Routine Dashboard — Apps Script v1.6 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.5';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.6';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -27,7 +27,22 @@ const SCRIPT_VERSION = '1.5';                       // the dashboard checks this
 // or a list of calendar names or IDs, e.g. ['primary', 'Famille']; or '' to turn it off.
 const CALENDARS = 'shown';
 const VISIT_MATCH = /\bvisit|\bvisite/i;            // titles that count as an off-site visit…
-const NOT_VISIT = /home visit|visite à domicile|à domicile|cancel|annul/i;   // …unless they also match this
+const NOT_VISIT = /cancel|annul/i;                  // …unless they also match this
+// Visits at home (e.g. the social worker coming over): put “à domicile” or “à la maison” in the title. They're not
+// time away: the dashboard treats them like an appointment at home (no car naps) and asks once if they're for the child.
+const HOME_VISIT = /domicile|[àa] la maison|chez nous|at home|home[ -]?visit/i;
+// What a title means is decided by the part before a dash, so “Home visit - Marie (TS)” or “Visite parents et Ava - Julie”
+// can carry names or notes after it without changing anything; if that part says nothing, the whole title is used.
+function eventKind_(t) {
+  if (NOT_VISIT.test(t)) return null;
+  const head = String(t).split(/\s+[-–—]\s+/)[0];
+  for (const p of head === t ? [t] : [head, t]) {
+    if (HOME_VISIT.test(p)) return 'home';
+    if (APPOINTMENTS && APPT_MATCH.test(p)) return 'appt';
+    if (VISIT_MATCH.test(p)) return 'visit';
+  }
+  return null;
+}
 // Appointments (v1.4): timed events that look like a doctor, dentist, clinic or vaccine appointment, from the same calendars.
 // The dashboard asks once whether each one is for the child; only then does it plan the day around it. For that question it
 // needs the title and calendar name, so those are sent for these events only, to the family's key only (never to viewer keys).
@@ -104,7 +119,7 @@ function calendars_() {
 function plannedVisits_(withTitles) {
   const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
   calendars_().forEach(cal => cal.getEvents(new Date(now - 60 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
-    if (ev.isAllDayEvent() || !VISIT_MATCH.test(ev.getTitle()) || NOT_VISIT.test(ev.getTitle()) || (APPOINTMENTS && APPT_MATCH.test(ev.getTitle()))) return;   // “Visite médicale” is an appointment
+    if (ev.isAllDayEvent() || eventKind_(ev.getTitle()) !== 'visit') return;   // “Visite médicale” is an appointment; home visits aren't time away
     const v = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm') };
     const key = v.date + ' ' + v.start + ' ' + v.end; if (seen[key]) return; seen[key] = 1;   // same visit in two calendars counts once
     out.push(withTitles ? Object.assign(v, { title: ev.getTitle(), calendar: cal.getName() }) : v);
@@ -117,8 +132,9 @@ function appointments_() {
   const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
   calendars_().forEach(cal => cal.getEvents(new Date(now - 14 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
     const t = ev.getTitle();
-    if (ev.isAllDayEvent() || !APPT_MATCH.test(t) || /cancel|annul/i.test(t)) return;
-    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName() };
+    const kind = eventKind_(t), home = kind === 'home';
+    if (ev.isAllDayEvent() || !(kind === 'appt' || home)) return;
+    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName(), home: home };
     const key = a.date + ' ' + a.start + ' ' + t; if (seen[key]) return; seen[key] = 1;   // the same event in two calendars counts once
     a.id = hash_(String(ev.getId()) + '|' + a.date + ' ' + a.start);   // stable per event and time: moving it asks again
     out.push(a);

@@ -119,7 +119,18 @@ function libAdd(id){
 }
 
 /* ── Calendar appointments ── */
-const apptList = () => (Array.isArray(DATA.base?.appts) ? DATA.base.appts : []).map(a => ({ ...a, D: parseDate(a.date), st: parseTime(a.start), en: parseTime(a.end) > parseTime(a.start) ? parseTime(a.end) : null })).filter(a => a.D != null && a.st != null);
+const HOME_VISIT_RE = /domicile|[àa] la maison|chez nous|at home|home[ -]?visit/i;
+const apptList = () => (Array.isArray(DATA.base?.appts) ? DATA.base.appts : []).map(a => ({ ...a, home: a.home ?? HOME_VISIT_RE.test(String(a.title || '').split(/\s+[-–—]\s+/)[0]), D: parseDate(a.date), st: parseTime(a.start), en: parseTime(a.end) > parseTime(a.start) ? parseTime(a.end) : null })).filter(a => a.D != null && a.st != null);
+/** v1.28.2 — A visit at home (social worker, CLSC nurse… “à domicile” in the title): the Baseline day as it is, plus the
+    visit at its real time. No car naps, nothing moved; if it overlaps a nap, the block says so. Built each time, so it
+    always follows the current Baseline. */
+function homeVisitTpl(base, ap){
+  if (!base) return null;
+  const en = ap.en ?? ap.st + 60, naps = (base.items || []).filter(i => i.kind === 'nap' && !i.optional && parseTime(i.start) != null && parseTime(i.end) != null && parseTime(i.start) < en && parseTime(i.end) > ap.st);
+  const note = naps.length ? L(`At home · overlaps ${naps.map(n => `${n.label} (${n.start}–${n.end})`).join(', ')}: nap before or after the visit`, `À la maison · chevauche ${naps.map(n => `${n.label} (${n.start}–${n.end})`).join(', ')} : sieste avant ou après la visite`) : L('At home · naps stay as usual', 'À la maison · siestes comme d’habitude');
+  return { ...base, id: 'home-visit', name: L('Home Visit Day', 'Jour de visite à domicile'), virtual: true,
+    items: [...base.items, { label: L('Home visit', 'Visite à domicile'), kind: 'visit', start: fmtTime(ap.st), end: fmtTime(en), appt: true, home: true, note }] };
+}
 const apptKid = () => typeof kidCfgId === 'function' ? kidCfgId(kidIdx()) : 'main';
 const apptIgnored = a => (S.apptIgnoreCals || []).includes(a.calendar);
 const apptMine = a => (S.apptFor || {})[a.id] === apptKid();
@@ -138,18 +149,19 @@ function apptDecide(id, v){
 function apptCallouts(){
   if (!mod('schedule')) return [];
   const who = esc(S.profile.name || L('your child', 'votre enfant'));
-  return apptPending().slice(0, 2).map(a => ({ cls:'info', html: `📅 <b>${L('New on the calendar', 'Nouveau à l’agenda')}:</b> “${esc(a.title)}” · ${esc(relDay(a.D))} ${fmtTime(a.st)} <span class="faint">(${esc(a.calendar)})</span> — ${L(`for ${who}?`, `pour ${who}?`)}
+  return apptPending().slice(0, 2).map(a => ({ cls:'info', html: `${a.home ? '🏠' : '📅'} <b>${L('New on the calendar', 'Nouveau à l’agenda')}:</b> “${esc(a.title)}”${a.home ? ` <span class="faint">(${L('at home', 'à la maison')})</span>` : ''} · ${esc(relDay(a.D))} ${fmtTime(a.st)} <span class="faint">(${esc(a.calendar)})</span> — ${L(`for ${who}?`, `pour ${who}?`)}
     <span class="appt-btns"><button class="btn sm primary" data-appt="${esc(a.id)}" data-v="yes">✓ ${L('Yes, plan around it', 'Oui, planifier autour')}</button><button class="btn sm ghost" data-appt="${esc(a.id)}" data-v="no">✕ ${L('No', 'Non')}</button>${a.calendar ? `<button class="btn sm ghost" data-appt="${esc(a.id)}" data-v="ignore">${L('Ignore this calendar', 'Ignorer cet agenda')}</button>` : ''}</span>` }));
 }
 function apptPaneHTML(){
   if (!mod('schedule') || DATA.source !== 'live' || viewOnly()) return '';
   const head = `<h4>${L('Appointments from your calendar', 'Rendez-vous de votre agenda')}</h4>`;
+  const homeHint = `<p class="hint" style="margin-top:0">${L('Visits at home (e.g. the social worker coming over) are listed here too when their title says <b>à domicile</b> or <b>à la maison</b>: they use your normal day, with no car naps. Off-site visits with the family keep titles like “Visite parents et …”.', 'Les visites à la maison (p. ex. la travailleuse sociale qui vient) apparaissent ici aussi quand le titre contient <b>à domicile</b> ou <b>à la maison</b> : elles gardent votre journée habituelle, sans siestes en auto. Les visites à l’extérieur avec la famille gardent des titres comme « Visite parents et … ».')}</p>`;
   if (!SCRIPT_SEEN || cmpVer(SCRIPT_SEEN, '1.4') < 0) return head + `<p class="hint">${L('Update the Apps Script to v1.4 to have doctor, dentist and clinic appointments from your Google Calendar pick the appointment templates.', 'Mettez l’Apps Script à jour (v1.4) pour que les rendez-vous médicaux, dentaires et de clinique de votre agenda choisissent les modèles de rendez-vous.')}</p>`;
   const list = apptList().filter(a => a.D >= todayIdx() - 14).sort((x, y) => x.D - y.D || x.st - y.st);
   const ign = S.apptIgnoreCals || [];
   const st = a => apptIgnored(a) ? 'ign' : (S.apptFor || {})[a.id] === apptKid() ? 'yes' : (S.apptFor || {})[a.id] ? 'no' : '';
-  return head + `<p class="hint" style="margin-top:0">${L(`Calendar events that look like an appointment (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Only the ones marked for ${esc(S.profile.name || 'the child')} change the day’s template.`, `Les événements de l’agenda qui ressemblent à un rendez-vous (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Seuls ceux marqués pour ${esc(S.profile.name || 'l’enfant')} changent le modèle de la journée.`)}</p>
-    ${list.length ? `<table class="cmp appt-tbl"><tbody>${list.map(a => { const s = st(a); return `<tr class="${a.D < todayIdx() ? 'faint' : ''}"><td>${esc(fmtDayShort(a.D))} ${fmtTime(a.st)}</td><td><b>${esc(a.title)}</b><div class="faint" style="font-size:11.5px">${esc(a.calendar || '')}</div></td>
+  return head + homeHint + `<p class="hint" style="margin-top:0">${L(`Calendar events that look like an appointment (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Only the ones marked for ${esc(S.profile.name || 'the child')} change the day’s template.`, `Les événements de l’agenda qui ressemblent à un rendez-vous (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Seuls ceux marqués pour ${esc(S.profile.name || 'l’enfant')} changent le modèle de la journée.`)}</p>
+    ${list.length ? `<table class="cmp appt-tbl"><tbody>${list.map(a => { const s = st(a); return `<tr class="${a.D < todayIdx() ? 'faint' : ''}"><td>${esc(fmtDayShort(a.D))} ${fmtTime(a.st)}</td><td>${a.home ? '🏠 ' : ''}<b>${esc(a.title)}</b><div class="faint" style="font-size:11.5px">${esc(a.calendar || '')}${a.home ? ' · ' + L('at home', 'à la maison') : ''}</div></td>
       <td style="white-space:nowrap">${s === 'ign' ? `<span class="faint">${L('calendar ignored', 'agenda ignoré')}</span>` : `<div class="seg"><button class="${s === 'yes' ? 'on' : ''}" data-appt="${esc(a.id)}" data-v="yes">${L(`For ${esc(S.profile.name || 'the child')}`, `Pour ${esc(S.profile.name || 'l’enfant')}`)}</button><button class="${s === 'no' ? 'on' : ''}" data-appt="${esc(a.id)}" data-v="no">${L('Not for', 'Pas pour')} ${esc(S.profile.name || L('the child', 'l’enfant'))}</button></div>`}</td></tr>`; }).join('')}</tbody></table>`
       : `<p class="faint">${L('None found in the last 2 weeks or the next 60 days.', 'Aucun trouvé dans les 2 dernières semaines ni les 60 prochains jours.')}</p>`}
     ${ign.length ? `<p style="margin-top:8px">${L('Ignored calendars:', 'Agendas ignorés :')} ${ign.map(c => `<span class="chip">${esc(c)} <button class="linkbtn" data-unignore="${esc(c)}" aria-label="${esc(L('Stop ignoring', 'Ne plus ignorer'))}">✕</button></span>`).join(' ')}</p>` : ''}`;

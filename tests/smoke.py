@@ -141,6 +141,9 @@ async def templates_and_appointments(b):
   check('an accepted afternoon appointment picks its template', await pg.evaluate("templateFor({D:todayIdx()}).id") == 'appt-pm')
   await pg.locator('[data-appt=t2][data-v=ignore]').first.click(); await pg.wait_for_timeout(200)
   check('ignoring a calendar clears its questions', await pg.evaluate("apptPending().length") == 0)
+  await pg.evaluate("DATA.base.appts=[{id:'h1',date:isoOf(todayIdx()+1),start:'14:00',end:'15:00',title:'Visite TS à domicile',calendar:'Famille',home:true}]; S.apptFor={h1:'main'}; analyze()")
+  hv = await pg.evaluate("(()=>{const t=templateFor({D:todayIdx()+1}), b=tplById('baseline'); const v=t.items.find(i=>i.home); return [t.id, t.items.filter(i=>i.kind==='nap').map(i=>i.start).join()===b.items.filter(i=>i.kind==='nap').map(i=>i.start).join(), v&&v.start, v&&/Nap 2/.test(v.note)]})()")
+  check('a home visit keeps the usual naps and flags the overlap', hv == ['home-visit', True, '14:00', True], hv)
   check('no page errors', not errs, errs[:3]); await ctx.close()
   for prof, want in (('routine', {'baseline', 'appt-am', 'appt-midday', 'appt-pm'}), ('birth', {'baseline'})):
     ctx, pg, errs = await open_page(b, prof)

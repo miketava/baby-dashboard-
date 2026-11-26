@@ -8,6 +8,16 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.29.0 — 2026-11-26 · **Apps Script v1.6** · **Reminders v2.1** (update both)
+
+- **Visits at home** (e.g. the social worker coming over) are no longer counted as time away with car naps.
+  - Calendar events titled **"Home visit …"**, **"… à domicile"** or **"… à la maison"** come through like appointments: the Today banner asks once whether they're for the child (🏠), and Settings → Schedule templates lists them as *at home*.
+  - Accepted ones use a **Home Visit Day**: the Baseline Home Day as it is, plus the visit at its real time. No car naps, nothing moved. Built from the current Baseline each time, so it never goes stale. If the visit overlaps a nap, its block says so ("overlaps Nap 2 (14:45–16:00): nap before or after the visit").
+  - Off-site visits with the family keep titles like "Visite parents et …" and the visit days as before.
+- **Calendar titles:** what an event is depends on the part **before a dash**: "Home visit - Marie (TS)", "Visite parents et Ava - Julie" or "Home visit - Dr Martin" can carry who's coming or a note without changing the plan. If that part says nothing ("Ava - pédiatre"), the whole title is used. Full titles are shown only to you, never in reports or to viewer keys.
+- Lock-screen reminders (Reminders v2.1) follow home visits the same way ("Home visit at 14:00"), with naps unchanged.
+- **To update:** Settings → Setup guide → *Copy script* → paste over `Code.gs` → *Manage deployments → ✏️ → New version*. If you use ntfy reminders: Settings → Reminders → *Copy add-on* → paste over the `Reminders` file and save (no need to run anything).
+
 ## v1.28.1 — 2026-11-26 · Apps Script v1.5 (no script change)
 
 - **Swipe between Settings pages** (phones): left for the next tab, right for the previous one (Child & features → Data source → … → About & changes). The page slides out and in, and the tab row scrolls the new page's tab into view and flashes it; the first and last pages spring back. Sideways-scrolling code blocks keep their swipe until their edge, and form fields never trigger it. Uses the same switch as the section swipe (*Settings → General → Display*).

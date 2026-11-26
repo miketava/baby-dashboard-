@@ -54,6 +54,14 @@ t('medication at dose time, a nudge an hour later, nothing once given', () => {
   const h = setup({ rows: [{ 'Start Time': '19:28', Category: 'Meds', Notes: 'Septra 2 ml', Tags: 'septra' }] });
   assert.ok(!texts(h, '19:31').some(x => x.includes('Septra')));
 });
+t('a home visit keeps the usual day and adds the visit', () => {
+  const g = setup({ calendars: [{ name: 'Famille', events: [{ title: 'Visite TS à domicile', start: at('14:00'), end: at('15:00') }] }] });
+  assert.deepStrictEqual(g.get().planned, [], 'not a family visit');
+  const a = g.get().appts[0]; assert.ok(a.home);
+  g.post({ action: 'config', items: [{ key: 'apptFor', value: { [a.id]: 'main' } }] });
+  assert.deepStrictEqual(texts(g, '13:50'), ['Home visit at 14:00 (in 10 min)']);
+  assert.ok(texts(g, '14:35').some(x => x.startsWith('Nap 2 at 14:45')), 'naps unchanged');
+});
 t('previewReminders lists the day; install sends a test', () => {
   const g = setup(); g.api.previewReminders(); assert.ok(/Nap 1 at 10:15/.test(g.logs.join('\n')) && /Septra 2 ml at 19:30/.test(g.logs.join('\n')));
   g.sent.length = 0; g.api.installReminderTrigger(); assert.strictEqual(g.sent.length, 1);

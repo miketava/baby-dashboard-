@@ -50,7 +50,15 @@ t('appointments: matched, titled, visits kept apart', () => {
   assert.deepStrictEqual(g2.planned.map(v => v.start), ['12:00'], 'only the parents’ visit is a visit (not “Visite médicale”)');
   assert.deepStrictEqual(g2.appts.map(a => a.title), ['Dentiste Ava', 'Doctor appointment', 'Visite médicale CLSC'], 'cancelled and all-day ones are left out');
   assert.ok(g2.appts.every(a => a.id && a.calendar && /^\d\d:\d\d$/.test(a.start)));
-  assert.strictEqual(g2.scriptVersion, '1.5');
+  assert.strictEqual(g2.scriptVersion, '1.6');
+});
+t('the part before a dash decides: home visit, family visit, appointment', () => {
+  const day = (h, d) => { const x = new Date(Date.now() + d * 864e5); x.setUTCHours(h, 0, 0, 0); return x; };
+  const ev = (title, d) => ({ title, start: day(10, d), end: day(11, d) });
+  const g3 = load({ calendars: [{ name: 'Famille', events: [ev('Home visit - Marie (TS)', 2), ev('Home visit - Dr Martin', 3), ev('Visite parents et Ava - Julie TS', 4), ev('Ava - pédiatre', 5), ev('Visite à domicile CLSC', 6)] }] }).get();
+  assert.deepStrictEqual(g3.planned.length, 1, 'only the parents’ visit is time away');
+  const byT = Object.fromEntries(g3.appts.map(a => [a.title, a.home]));
+  assert.deepStrictEqual(byT, { 'Home visit - Marie (TS)': true, 'Home visit - Dr Martin': true, 'Ava - pédiatre': false, 'Visite à domicile CLSC': true });
 });
 t('viewer keys get no appointments or settings', () => {
   const code = require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');

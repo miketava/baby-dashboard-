@@ -1153,11 +1153,16 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.28.1';
+const APP_VERSION = '1.29.0';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
-const REQUIRED_SCRIPT = '1.5';
+const REQUIRED_SCRIPT = '1.6';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.29.0', date:'2026-11-26',
+    en:['Visits at home are no longer treated like time away. A calendar event titled “Home visit …”, “… à domicile” or “… à la maison” (e.g. the social worker coming over) is asked about once like an appointment, then uses a Home Visit Day: your usual schedule with the visit added at its real time, no car naps, nothing moved. If it overlaps a nap, the visit block says so. Off-site family visits keep titles like “Visite parents et …”.',
+        'Calendar titles: what an event is depends on the part before a dash, so “Home visit - Marie (TS)” can carry who’s coming without changing the plan. Apps Script v1.6 (and Reminders v2.1 for lock-screen reminders).'],
+    fr:['Les visites à la maison ne comptent plus comme du temps à l’extérieur. Un événement intitulé « Home visit … », « … à domicile » ou « … à la maison » (p. ex. la travailleuse sociale qui vient) est proposé une fois comme un rendez-vous, puis utilise un Jour de visite à domicile : votre horaire habituel avec la visite à sa vraie heure, sans siestes en auto, rien de déplacé. S’il chevauche une sieste, le bloc de la visite l’indique. Les visites familiales à l’extérieur gardent des titres comme « Visite parents et … ».',
+        'Titres d’agenda : le type d’un événement dépend de la partie avant le tiret, donc « Home visit - Marie (TS) » peut indiquer qui vient sans changer le plan. Apps Script v1.6 (et Rappels v2.1 pour les rappels sur l’écran verrouillé).'] },
   { v:'1.28.1', date:'2026-11-26',
     en:['Phones: swipe left / right in Settings to move between its pages, in tab order. The page slides and its tab scrolls into view and flashes. Same switch as the section swipe (Settings → General → Display).'],
     fr:['Téléphones : glissez à gauche / à droite dans les Réglages pour passer d’une page à l’autre, dans l’ordre des onglets. La page glisse et son onglet défile en vue et clignote. Même réglage que le glissement entre sections (Réglages → Général → Affichage).'] },
@@ -1851,9 +1856,9 @@ const VIEWERS = {
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 //  To update: replace everything from here down with the new version.
 // ══════════════════════════════════════════════════════════════════════════════════════════════
-// Baby Routine Dashboard — Apps Script v1.5 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Baby Routine Dashboard — Apps Script v1.6 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.5';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.6';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -1862,7 +1867,22 @@ const SCRIPT_VERSION = '1.5';                       // the dashboard checks this
 // or a list of calendar names or IDs, e.g. ['primary', 'Famille']; or '' to turn it off.
 const CALENDARS = 'shown';
 const VISIT_MATCH = /\\bvisit|\\bvisite/i;            // titles that count as an off-site visit…
-const NOT_VISIT = /home visit|visite à domicile|à domicile|cancel|annul/i;   // …unless they also match this
+const NOT_VISIT = /cancel|annul/i;                  // …unless they also match this
+// Visits at home (e.g. the social worker coming over): put “à domicile” or “à la maison” in the title. They're not
+// time away: the dashboard treats them like an appointment at home (no car naps) and asks once if they're for the child.
+const HOME_VISIT = /domicile|[àa] la maison|chez nous|at home|home[ -]?visit/i;
+// What a title means is decided by the part before a dash, so “Home visit - Marie (TS)” or “Visite parents et Ava - Julie”
+// can carry names or notes after it without changing anything; if that part says nothing, the whole title is used.
+function eventKind_(t) {
+  if (NOT_VISIT.test(t)) return null;
+  const head = String(t).split(/\\s+[-–—]\\s+/)[0];
+  for (const p of head === t ? [t] : [head, t]) {
+    if (HOME_VISIT.test(p)) return 'home';
+    if (APPOINTMENTS && APPT_MATCH.test(p)) return 'appt';
+    if (VISIT_MATCH.test(p)) return 'visit';
+  }
+  return null;
+}
 // Appointments (v1.4): timed events that look like a doctor, dentist, clinic or vaccine appointment, from the same calendars.
 // The dashboard asks once whether each one is for the child; only then does it plan the day around it. For that question it
 // needs the title and calendar name, so those are sent for these events only, to the family's key only (never to viewer keys).
@@ -1939,7 +1959,7 @@ function calendars_() {
 function plannedVisits_(withTitles) {
   const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
   calendars_().forEach(cal => cal.getEvents(new Date(now - 60 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
-    if (ev.isAllDayEvent() || !VISIT_MATCH.test(ev.getTitle()) || NOT_VISIT.test(ev.getTitle()) || (APPOINTMENTS && APPT_MATCH.test(ev.getTitle()))) return;   // “Visite médicale” is an appointment
+    if (ev.isAllDayEvent() || eventKind_(ev.getTitle()) !== 'visit') return;   // “Visite médicale” is an appointment; home visits aren't time away
     const v = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm') };
     const key = v.date + ' ' + v.start + ' ' + v.end; if (seen[key]) return; seen[key] = 1;   // same visit in two calendars counts once
     out.push(withTitles ? Object.assign(v, { title: ev.getTitle(), calendar: cal.getName() }) : v);
@@ -1952,8 +1972,9 @@ function appointments_() {
   const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
   calendars_().forEach(cal => cal.getEvents(new Date(now - 14 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
     const t = ev.getTitle();
-    if (ev.isAllDayEvent() || !APPT_MATCH.test(t) || /cancel|annul/i.test(t)) return;
-    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName() };
+    const kind = eventKind_(t), home = kind === 'home';
+    if (ev.isAllDayEvent() || !(kind === 'appt' || home)) return;
+    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName(), home: home };
     const key = a.date + ' ' + a.start + ' ' + t; if (seen[key]) return; seen[key] = 1;   // the same event in two calendars counts once
     a.id = hash_(String(ev.getId()) + '|' + a.date + ' ' + a.start);   // stable per event and time: moving it asks again
     out.push(a);
@@ -2103,7 +2124,7 @@ function markExistingRows() {
 }`;
 const REMINDERS_GS = `// ══════════════════════════════════════════════════════════════════════════════════════════════
 //  Optional add-on: lock-screen phone reminders through ntfy.sh (they arrive with the dashboard closed).
-//  Reminders v2 — needs Code.gs v1.5 in the same Apps Script project.
+//  Reminders v2.1 — needs Code.gs v1.6 in the same Apps Script project.
 //
 //  Setup: ＋ → Script, name it Reminders, paste this file (next to Code.gs, not over it), Save,
 //  choose installReminderTrigger in the toolbar ▸ Run once and approve. Subscribe to NTFY_TOPIC in the ntfy app.
@@ -2119,7 +2140,7 @@ const REMIND = { naps: true, meals: true, cutoff: true, routines: true, visits: 
 const MED_NUDGE_MIN = 60;                      // second reminder if a dose isn't checked off after this long (0 = never)
 const DASHBOARD_URL = '';                      // tapping a reminder opens this (your dashboard's address), if set
 // ══════════════════════════════════════════════════════════════════════════════════════════════
-const REMINDERS_VERSION = '2.0';
+const REMINDERS_VERSION = '2.1';
 
 const hm_ = m => { m = ((m % 1440) + 1440) % 1440; return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); };
 const mins_ = s => { const m = String(s || '').match(/(\\d{1,2})[:h](\\d{2})\\s*([AP])?/i); if (!m) return null;
@@ -2158,7 +2179,7 @@ function planFor_(cfg, kid, rows, today, nowMin, dow) {
   let appt = null;
   if (!anchor && typeof appointments_ === 'function') {
     try { const forKid = get('apptFor') || {};
-      appt = appointments_().filter(a => a.date === today && forKid[a.id] === kid.id).map(a => ({ st: mins_(a.start), en: mins_(a.end), title: a.title }))
+      appt = appointments_().filter(a => a.date === today && forKid[a.id] === kid.id).map(a => ({ st: mins_(a.start), en: mins_(a.end), title: a.title, home: !!a.home }))
         .filter(a => a.st >= 480 && a.st <= 990).sort((a, b) => a.st - b.st)[0] || null; } catch (err) {}
   }
   let tp = null;
@@ -2168,9 +2189,12 @@ function planFor_(cfg, kid, rows, today, nowMin, dow) {
     const cut = mins_(targets.earlyVisitCutoff) || 570, late = byId('late-visit'), vs = anchor.st;
     tp = vs <= cut ? byId('early-visit') : vs <= 690 ? late : vs <= 795 ? (byId('midday-visit') || late) : (byId('afternoon-visit') || late);
   }
+  let homeBand = null;   // a visit at home: the usual day plus the visit, nothing moved
+  if (!tp && appt && appt.home) { tp = byId('baseline') || tpls[0]; homeBand = { label: 'Home visit', kind: 'visit', start: hm_(appt.st), end: hm_(appt.en > appt.st ? appt.en : appt.st + 60), appt: true, home: true }; }
   if (!tp && appt) tp = appt.st < 660 ? byId('appt-am') : appt.st <= 795 ? (byId('appt-midday') || byId('appt-pm')) : byId('appt-pm');
   tp = tp || byId('baseline') || tpls[0];
   let items = tp.items.filter(i => onDay_(i, dow)).map(i => Object.assign({}, i));
+  if (homeBand) items.push(homeBand);
   // line the visit / appointment and the naps right around it up with the real time (15 min – 4 h off)
   const a = anchor || appt, band = a && items.filter(i => i.kind === 'visit' && !!i.appt === !!appt && mins_(i.start) != null && mins_(i.end) != null)[0];
   if (band) {
@@ -3474,6 +3498,7 @@ function autoTemplate(m){
     return (vs <= cut ? tplById('early-visit') : vs <= 690 ? late : vs <= 795 ? tplById('midday-visit') || late : tplById('afternoon-visit') || late) || base;
   }
   const ap = typeof apptOn === 'function' && m?.D != null ? apptOn(m.D) : null;   // an accepted calendar appointment
+  if (ap?.home) return homeVisitTpl(base, ap) || base;   // a visit at home: the usual day, plus the visit
   if (ap) return (ap.st < 660 ? tplById('appt-am') : ap.st <= 795 ? tplById('appt-midday') || tplById('appt-pm') : tplById('appt-pm')) || base;   // before 11:00 · until 13:15 · later
   return base;
 }
@@ -4114,11 +4139,11 @@ function renderTodayPlan(){
   const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && k !== nextI).length, open = !!UI.planPast;
   $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
   const pv = !m.visit ? plannedVisit(m.D) : null, ap = !m.visit && !pv ? apptOn(m.D) : null;
-  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · 🩺 ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
+  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
-        const ua = upcomingAppts(3); const apl = ua.length ? `<div class="pl-up">🩺 <b>${L('Appointments', 'Rendez-vous')}:</b> ${ua.map(a => `<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
+        const ua = upcomingAppts(3); const apl = ua.length ? `<div class="pl-up">🩺 <b>${L('Appointments', 'Rendez-vous')}:</b> ${ua.map(a => `${a.home ? '🏠 ' : ''}<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
         return apl + `<div class="pl-up">🗓️ <b>${L('Next visits', 'Prochaines visites')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>`; })();
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */
@@ -6693,7 +6718,18 @@ function libAdd(id){
 }
 
 /* ── Calendar appointments ── */
-const apptList = () => (Array.isArray(DATA.base?.appts) ? DATA.base.appts : []).map(a => ({ ...a, D: parseDate(a.date), st: parseTime(a.start), en: parseTime(a.end) > parseTime(a.start) ? parseTime(a.end) : null })).filter(a => a.D != null && a.st != null);
+const HOME_VISIT_RE = /domicile|[àa] la maison|chez nous|at home|home[ -]?visit/i;
+const apptList = () => (Array.isArray(DATA.base?.appts) ? DATA.base.appts : []).map(a => ({ ...a, home: a.home ?? HOME_VISIT_RE.test(String(a.title || '').split(/\s+[-–—]\s+/)[0]), D: parseDate(a.date), st: parseTime(a.start), en: parseTime(a.end) > parseTime(a.start) ? parseTime(a.end) : null })).filter(a => a.D != null && a.st != null);
+/** v1.28.2 — A visit at home (social worker, CLSC nurse… “à domicile” in the title): the Baseline day as it is, plus the
+    visit at its real time. No car naps, nothing moved; if it overlaps a nap, the block says so. Built each time, so it
+    always follows the current Baseline. */
+function homeVisitTpl(base, ap){
+  if (!base) return null;
+  const en = ap.en ?? ap.st + 60, naps = (base.items || []).filter(i => i.kind === 'nap' && !i.optional && parseTime(i.start) != null && parseTime(i.end) != null && parseTime(i.start) < en && parseTime(i.end) > ap.st);
+  const note = naps.length ? L(`At home · overlaps ${naps.map(n => `${n.label} (${n.start}–${n.end})`).join(', ')}: nap before or after the visit`, `À la maison · chevauche ${naps.map(n => `${n.label} (${n.start}–${n.end})`).join(', ')} : sieste avant ou après la visite`) : L('At home · naps stay as usual', 'À la maison · siestes comme d’habitude');
+  return { ...base, id: 'home-visit', name: L('Home Visit Day', 'Jour de visite à domicile'), virtual: true,
+    items: [...base.items, { label: L('Home visit', 'Visite à domicile'), kind: 'visit', start: fmtTime(ap.st), end: fmtTime(en), appt: true, home: true, note }] };
+}
 const apptKid = () => typeof kidCfgId === 'function' ? kidCfgId(kidIdx()) : 'main';
 const apptIgnored = a => (S.apptIgnoreCals || []).includes(a.calendar);
 const apptMine = a => (S.apptFor || {})[a.id] === apptKid();
@@ -6712,18 +6748,19 @@ function apptDecide(id, v){
 function apptCallouts(){
   if (!mod('schedule')) return [];
   const who = esc(S.profile.name || L('your child', 'votre enfant'));
-  return apptPending().slice(0, 2).map(a => ({ cls:'info', html: `📅 <b>${L('New on the calendar', 'Nouveau à l’agenda')}:</b> “${esc(a.title)}” · ${esc(relDay(a.D))} ${fmtTime(a.st)} <span class="faint">(${esc(a.calendar)})</span> — ${L(`for ${who}?`, `pour ${who}?`)}
+  return apptPending().slice(0, 2).map(a => ({ cls:'info', html: `${a.home ? '🏠' : '📅'} <b>${L('New on the calendar', 'Nouveau à l’agenda')}:</b> “${esc(a.title)}”${a.home ? ` <span class="faint">(${L('at home', 'à la maison')})</span>` : ''} · ${esc(relDay(a.D))} ${fmtTime(a.st)} <span class="faint">(${esc(a.calendar)})</span> — ${L(`for ${who}?`, `pour ${who}?`)}
     <span class="appt-btns"><button class="btn sm primary" data-appt="${esc(a.id)}" data-v="yes">✓ ${L('Yes, plan around it', 'Oui, planifier autour')}</button><button class="btn sm ghost" data-appt="${esc(a.id)}" data-v="no">✕ ${L('No', 'Non')}</button>${a.calendar ? `<button class="btn sm ghost" data-appt="${esc(a.id)}" data-v="ignore">${L('Ignore this calendar', 'Ignorer cet agenda')}</button>` : ''}</span>` }));
 }
 function apptPaneHTML(){
   if (!mod('schedule') || DATA.source !== 'live' || viewOnly()) return '';
   const head = `<h4>${L('Appointments from your calendar', 'Rendez-vous de votre agenda')}</h4>`;
+  const homeHint = `<p class="hint" style="margin-top:0">${L('Visits at home (e.g. the social worker coming over) are listed here too when their title says <b>à domicile</b> or <b>à la maison</b>: they use your normal day, with no car naps. Off-site visits with the family keep titles like “Visite parents et …”.', 'Les visites à la maison (p. ex. la travailleuse sociale qui vient) apparaissent ici aussi quand le titre contient <b>à domicile</b> ou <b>à la maison</b> : elles gardent votre journée habituelle, sans siestes en auto. Les visites à l’extérieur avec la famille gardent des titres comme « Visite parents et … ».')}</p>`;
   if (!SCRIPT_SEEN || cmpVer(SCRIPT_SEEN, '1.4') < 0) return head + `<p class="hint">${L('Update the Apps Script to v1.4 to have doctor, dentist and clinic appointments from your Google Calendar pick the appointment templates.', 'Mettez l’Apps Script à jour (v1.4) pour que les rendez-vous médicaux, dentaires et de clinique de votre agenda choisissent les modèles de rendez-vous.')}</p>`;
   const list = apptList().filter(a => a.D >= todayIdx() - 14).sort((x, y) => x.D - y.D || x.st - y.st);
   const ign = S.apptIgnoreCals || [];
   const st = a => apptIgnored(a) ? 'ign' : (S.apptFor || {})[a.id] === apptKid() ? 'yes' : (S.apptFor || {})[a.id] ? 'no' : '';
-  return head + `<p class="hint" style="margin-top:0">${L(`Calendar events that look like an appointment (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Only the ones marked for ${esc(S.profile.name || 'the child')} change the day’s template.`, `Les événements de l’agenda qui ressemblent à un rendez-vous (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Seuls ceux marqués pour ${esc(S.profile.name || 'l’enfant')} changent le modèle de la journée.`)}</p>
-    ${list.length ? `<table class="cmp appt-tbl"><tbody>${list.map(a => { const s = st(a); return `<tr class="${a.D < todayIdx() ? 'faint' : ''}"><td>${esc(fmtDayShort(a.D))} ${fmtTime(a.st)}</td><td><b>${esc(a.title)}</b><div class="faint" style="font-size:11.5px">${esc(a.calendar || '')}</div></td>
+  return head + homeHint + `<p class="hint" style="margin-top:0">${L(`Calendar events that look like an appointment (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Only the ones marked for ${esc(S.profile.name || 'the child')} change the day’s template.`, `Les événements de l’agenda qui ressemblent à un rendez-vous (médecin, pédiatre, dentiste, CLSC, vaccin, rendez-vous…). Seuls ceux marqués pour ${esc(S.profile.name || 'l’enfant')} changent le modèle de la journée.`)}</p>
+    ${list.length ? `<table class="cmp appt-tbl"><tbody>${list.map(a => { const s = st(a); return `<tr class="${a.D < todayIdx() ? 'faint' : ''}"><td>${esc(fmtDayShort(a.D))} ${fmtTime(a.st)}</td><td>${a.home ? '🏠 ' : ''}<b>${esc(a.title)}</b><div class="faint" style="font-size:11.5px">${esc(a.calendar || '')}${a.home ? ' · ' + L('at home', 'à la maison') : ''}</div></td>
       <td style="white-space:nowrap">${s === 'ign' ? `<span class="faint">${L('calendar ignored', 'agenda ignoré')}</span>` : `<div class="seg"><button class="${s === 'yes' ? 'on' : ''}" data-appt="${esc(a.id)}" data-v="yes">${L(`For ${esc(S.profile.name || 'the child')}`, `Pour ${esc(S.profile.name || 'l’enfant')}`)}</button><button class="${s === 'no' ? 'on' : ''}" data-appt="${esc(a.id)}" data-v="no">${L('Not for', 'Pas pour')} ${esc(S.profile.name || L('the child', 'l’enfant'))}</button></div>`}</td></tr>`; }).join('')}</tbody></table>`
       : `<p class="faint">${L('None found in the last 2 weeks or the next 60 days.', 'Aucun trouvé dans les 2 dernières semaines ni les 60 prochains jours.')}</p>`}
     ${ign.length ? `<p style="margin-top:8px">${L('Ignored calendars:', 'Agendas ignorés :')} ${ign.map(c => `<span class="chip">${esc(c)} <button class="linkbtn" data-unignore="${esc(c)}" aria-label="${esc(L('Stop ignoring', 'Ne plus ignorer'))}">✕</button></span>`).join(' ')}</p>` : ''}`;

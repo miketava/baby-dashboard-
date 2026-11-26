@@ -19,6 +19,7 @@ function autoTemplate(m){
     return (vs <= cut ? tplById('early-visit') : vs <= 690 ? late : vs <= 795 ? tplById('midday-visit') || late : tplById('afternoon-visit') || late) || base;
   }
   const ap = typeof apptOn === 'function' && m?.D != null ? apptOn(m.D) : null;   // an accepted calendar appointment
+  if (ap?.home) return homeVisitTpl(base, ap) || base;   // a visit at home: the usual day, plus the visit
   if (ap) return (ap.st < 660 ? tplById('appt-am') : ap.st <= 795 ? tplById('appt-midday') || tplById('appt-pm') : tplById('appt-pm')) || base;   // before 11:00 · until 13:15 · later
   return base;
 }

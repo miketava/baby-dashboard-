@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 //  Optional add-on: lock-screen phone reminders through ntfy.sh (they arrive with the dashboard closed).
-//  Reminders v2 — needs Code.gs v1.5 in the same Apps Script project.
+//  Reminders v2.1 — needs Code.gs v1.6 in the same Apps Script project.
 //
 //  Setup: ＋ → Script, name it Reminders, paste this file (next to Code.gs, not over it), Save,
 //  choose installReminderTrigger in the toolbar ▸ Run once and approve. Subscribe to NTFY_TOPIC in the ntfy app.
@@ -16,7 +16,7 @@ const REMIND = { naps: true, meals: true, cutoff: true, routines: true, visits: 
 const MED_NUDGE_MIN = 60;                      // second reminder if a dose isn't checked off after this long (0 = never)
 const DASHBOARD_URL = '';                      // tapping a reminder opens this (your dashboard's address), if set
 // ══════════════════════════════════════════════════════════════════════════════════════════════
-const REMINDERS_VERSION = '2.0';
+const REMINDERS_VERSION = '2.1';
 
 const hm_ = m => { m = ((m % 1440) + 1440) % 1440; return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); };
 const mins_ = s => { const m = String(s || '').match(/(\d{1,2})[:h](\d{2})\s*([AP])?/i); if (!m) return null;
@@ -55,7 +55,7 @@ function planFor_(cfg, kid, rows, today, nowMin, dow) {
   let appt = null;
   if (!anchor && typeof appointments_ === 'function') {
     try { const forKid = get('apptFor') || {};
-      appt = appointments_().filter(a => a.date === today && forKid[a.id] === kid.id).map(a => ({ st: mins_(a.start), en: mins_(a.end), title: a.title }))
+      appt = appointments_().filter(a => a.date === today && forKid[a.id] === kid.id).map(a => ({ st: mins_(a.start), en: mins_(a.end), title: a.title, home: !!a.home }))
         .filter(a => a.st >= 480 && a.st <= 990).sort((a, b) => a.st - b.st)[0] || null; } catch (err) {}
   }
   let tp = null;
@@ -65,9 +65,12 @@ function planFor_(cfg, kid, rows, today, nowMin, dow) {
     const cut = mins_(targets.earlyVisitCutoff) || 570, late = byId('late-visit'), vs = anchor.st;
     tp = vs <= cut ? byId('early-visit') : vs <= 690 ? late : vs <= 795 ? (byId('midday-visit') || late) : (byId('afternoon-visit') || late);
   }
+  let homeBand = null;   // a visit at home: the usual day plus the visit, nothing moved
+  if (!tp && appt && appt.home) { tp = byId('baseline') || tpls[0]; homeBand = { label: 'Home visit', kind: 'visit', start: hm_(appt.st), end: hm_(appt.en > appt.st ? appt.en : appt.st + 60), appt: true, home: true }; }
   if (!tp && appt) tp = appt.st < 660 ? byId('appt-am') : appt.st <= 795 ? (byId('appt-midday') || byId('appt-pm')) : byId('appt-pm');
   tp = tp || byId('baseline') || tpls[0];
   let items = tp.items.filter(i => onDay_(i, dow)).map(i => Object.assign({}, i));
+  if (homeBand) items.push(homeBand);
   // line the visit / appointment and the naps right around it up with the real time (15 min – 4 h off)
   const a = anchor || appt, band = a && items.filter(i => i.kind === 'visit' && !!i.appt === !!appt && mins_(i.start) != null && mins_(i.end) != null)[0];
   if (band) {
