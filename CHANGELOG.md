@@ -1,12 +1,16 @@
 # Changelog — Baby Routine Dashboard
 
-Versions follow `major.minor`. The dashboard (`index.html`) and the Apps Script (`Code.gs`) have separate version numbers; the dashboard shows both in **Settings → About & changes** and puts up a notice when your script is older than it needs.
+Versions follow `major.minor.patch`: a new minor number adds features, a patch number (e.g. 1.20.1) is a fix or tweak. The dashboard (`index.html`) and the Apps Script (`Code.gs`) have separate version numbers; the dashboard shows both in **Settings → About & changes** and puts up a notice when your script is older than it needs.
 
 The first time someone opens the app after an update, a **What's new** popup lists the changes since the version they last saw.
 
 **How to release a new version:** bump `APP_VERSION` and add an entry at the top of `CHANGELOG` (both in the dashboard's constants), in English and French. Only bump `SCRIPT_VERSION` in `Code.gs` and `REQUIRED_SCRIPT` in the dashboard when the script itself changes.
 
 ---
+
+## v1.20.1 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Filter button:** filters open from a funnel button next to ⓘ on every section they apply to (all but Today), as a panel (from the bottom on phones). The funnel turns blue with a dot when something is filtered, and its tooltip says what (range, day type, hidden categories). The filter line at the top of the page is gone. Back or tapping outside closes the panel.
 
 ## v1.20 — 2026-11-25 · Apps Script v1.2 (no script change)
 

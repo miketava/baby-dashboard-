@@ -528,7 +528,15 @@ svg.teeth .tooth.in rect{fill:#fffbeb;stroke:#d97706;stroke-width:1.8;stroke-das
 .tabs .tgrp{display:none}
 .bbar{display:none}
 #filterDone,#filterReset.hidden{display:none}
-body[data-view="today"] #filterbar{display:none}
+#filterbar:not(.open){display:none!important}
+.filterbar.open{position:fixed;z-index:76;background:var(--panel);overflow:auto;box-shadow:0 0 0 100vmax rgba(15,23,42,.35),0 12px 40px rgba(0,0,0,.25)}
+.filterbar.open #filterDone{display:inline-flex} .filterbar.open .chipline{display:flex} .filterbar.open #catToggle{display:none!important}
+@media (min-width:721px){ .filterbar.open{top:72px;right:24px;left:auto;width:min(640px,92vw);max-height:80vh;border-radius:14px;border:1px solid var(--border);padding:14px} }
+.fbtn{flex:none;position:relative;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;order:8;margin-left:auto}
+.fbtn:hover{color:var(--accent);border-color:var(--accent)}
+.fbtn i{display:none;position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+.fbtn.on{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))} .fbtn.on i{display:block}
+.card-head > .fbtn + .ibtn{margin-left:6px}
 .filterbar.active #filterToggle{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
 .more-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:4px 16px 18px;overflow:auto}
 .more-list button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;text-align:center}
@@ -1048,11 +1056,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.20';
+const APP_VERSION = '1.20.1';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.20.1', date:'2026-11-25',
+    en:['Filters are now a funnel button next to ⓘ on every section they apply to. It turns blue with a dot when something is filtered, and its tooltip says what. The old filter line at the top is gone.'],
+    fr:['Les filtres sont maintenant un bouton entonnoir à côté de ⓘ sur chaque section concernée. Il devient bleu avec un point quand quelque chose est filtré, et son infobulle indique quoi. L’ancienne ligne de filtres en haut a disparu.'] },
   { v:'1.20', date:'2026-11-25',
     en:['The Today section always shows every category: filters you set on other sections no longer hide today’s entries or today’s grid.', 'Quick Log: a new form always opens at the top instead of where the last one was scrolled to.'],
     fr:['La section Aujourd’hui montre toujours toutes les catégories : les filtres réglés dans les autres sections ne masquent plus les entrées ni la grille du jour.', 'Ajout rapide : un nouveau formulaire s’ouvre toujours en haut au lieu de garder le défilement du précédent.'] },
@@ -3172,7 +3183,7 @@ function renderFilterBar(){
   $('#filterSummary').textContent = `· ${fmtDayShort(a)}–${fmtDayShort(b)} · ${plural(n, 'day', 'days', 'jour', 'jours')}${F.dayType !== 'all' ? ' · ' + $('#fDayType').selectedOptions[0].text : ''}${F.q ? ' · “' + F.q + '”' : ''}${nh ? ' · ' + plural(nh, 'category hidden', 'categories hidden', 'catégorie masquée', 'catégories masquées') : ''}`;
   $('#catToggle').textContent = (nh ? L(`🏷 Categories · ${nh} hidden`, `🏷 Catégories · ${nh} masquée${nh > 1 ? 's' : ''}`) : L('🏷 Categories', '🏷 Catégories')) + (UI.catsOpen ? ' ▴' : ' ▾');
   $('#filterbar').classList.toggle('cats', !!UI.catsOpen);
-  $('#filterbar').classList.toggle('active', active); $('#filterReset').classList.toggle('hidden', !active);
+  $('#filterbar').classList.toggle('active', active); $('#filterReset').classList.toggle('hidden', !active); syncFilterBtns();
 }
 function renderAll(){ applyModules(); renderNotice(); renderHeader(); renderFilterBar(); renderToday(); renderView(); }
 function renderView(){
@@ -5934,7 +5945,7 @@ function tourSteps(){
     { tab:'today', el: cardOf('#todayEv'), title:L('Today’s entries', 'Entrées d’aujourd’hui'), body: () => L('Everything logged today, newest first. Tap ✏️ (or press and hold) to fix an entry you just made. <b>📋 Copy for AI</b> copies the day as text, ready to paste into an AI assistant for a written summary.', 'Tout ce qui a été noté aujourd’hui, les plus récentes d’abord. Touchez ✏️ (ou appui long) pour corriger une entrée. <b>📋 Copier pour l’IA</b> copie la journée en texte, à coller dans un assistant IA pour un résumé rédigé.') },
     { tab:'today', el: () => innerWidth <= 720 ? $('#bbar') : $('#tabs'), title:L('Sections', 'Sections'), body: () => innerWidth <= 720 ? L('Today, Timeline and Check-ins sit in the bar at the bottom, with ＋ in the middle for logging. <b>More</b> holds Routine, Sleep, Feeding, Health, Birth Family and Data.', 'Aujourd’hui, Chronologie et Bilans sont dans la barre du bas, avec ＋ au centre pour noter. <b>Plus</b> regroupe Routine, Sommeil, Alimentation, Santé, Famille biologique et Données.') : L('Every section in one place: <b>Daily</b> (today, the timeline, check-ins), <b>Analysis</b> (routine, sleep, feeding, health), and your raw <b>Data</b>.', 'Toutes les sections au même endroit : <b>Au quotidien</b> (aujourd’hui, chronologie, bilans), <b>Analyses</b> (routine, sommeil, alimentation, santé) et vos <b>Données</b> brutes.') },
     ...(multiKid() ? [{ el:'#kidSeg', title:L('Your children', 'Vos enfants'), body:L('Switch between children here. Each has their own profile, schedule, reports and check-ins; “All” stacks everyone’s days on one timeline. Quick Log asks which child an entry is for.', 'Passez d’un enfant à l’autre ici. Chacun a son profil, son horaire, ses rapports et ses bilans; « Tous » empile les journées de chacun sur une même chronologie. La saisie rapide demande à quel enfant l’entrée s’applique.') }] : []),
-    { tab:'timeline', el: () => innerWidth <= 720 ? $('#filterToggle') : $('#filterbar'), title:'Filters', body:'Choose a date range or a type of day, search notes and tags, or switch categories on and off. Every chart and table follows these filters.' },
+    { tab:'timeline', el: () => $('#v-timeline .fbtn'), title:'Filters', body:'Choose a date range or a type of day, search notes and tags, or switch categories on and off. Every chart and table follows these filters.' },
     { tab:'timeline', el: () => $('#timeline .tl-row'), title:'24-hour timeline',
       body: () => birth ? 'Each row is one day on a 24-hour grid: feeds, sleep and diapers as they happened. Click a day to see everything in order with daily totals.'
         : 'Each row is one day on a 24-hour grid. Overlapping events (a nap inside a car ride) get their own lane; dashed lines and shaded bands are your schedule targets. Click a day for the full breakdown.' },
@@ -6110,7 +6121,14 @@ function normTime(s){
    Subtitles that are instructions or legends (how to read a chart, what a column means) fold into an ⓘ button at the top right.
    Subtitles that carry numbers (counts, coverage, the current week) or live controls are marked data-keep and stay visible. */
 (function infoButtons(){
+  const FUNNEL = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></svg>';
   const fix = root => root.querySelectorAll?.('main .card-head').forEach(h => {
+    // filter button on every section the filters apply to (all but Today)
+    if (!h.querySelector(':scope > .fbtn') && !h.closest('#v-today')) {
+      const f = document.createElement('button'); f.type = 'button'; f.className = 'fbtn'; f.innerHTML = FUNNEL + '<i></i>'; f.setAttribute('data-noi18n', '');
+      f.onclick = e => { e.stopPropagation(); $('#filterbar').classList.toggle('open'); };
+      h.appendChild(f); if (typeof syncFilterBtns === 'function') syncFilterBtns();
+    }
     const sub = h.querySelector(':scope > div > .sub'); if (!sub || sub.hasAttribute('data-keep') || sub.classList.contains('sub-i')) return;
     sub.classList.add('sub-i');
     const b = document.createElement('button'); b.type = 'button'; b.className = 'ibtn'; b.textContent = 'i';
@@ -6128,6 +6146,12 @@ function renderVerPill(){
   b.innerHTML = `v${esc(APP_VERSION)}`;
   b.title = L(`Dashboard v${APP_VERSION}${typeof SCRIPT_SEEN !== 'undefined' && SCRIPT_SEEN ? ` · Apps Script v${SCRIPT_SEEN}` : ''} — what’s new and the full changelog`, `Tableau de bord v${APP_VERSION}${typeof SCRIPT_SEEN !== 'undefined' && SCRIPT_SEEN ? ` · Apps Script v${SCRIPT_SEEN}` : ''} — nouveautés et historique complet`);
   b.setAttribute('aria-label', b.title);
+}
+
+/** Filter buttons: highlighted with a dot when anything is filtered; the tooltip says what. */
+function syncFilterBtns(){
+  const fb = $('#filterbar'), on = fb?.classList.contains('active'), sum = ($('#filterSummary')?.textContent || '').replace(/^·\s*/, '');
+  $$('.fbtn').forEach(b => { b.classList.toggle('on', !!on); b.title = L('Filters', 'Filtres') + (sum ? ' · ' + sum : ''); b.setAttribute('aria-label', b.title); });
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -6483,7 +6507,7 @@ function wire(){
   $('#tlOpts').onclick = () => $('#tlOpts').closest('.card').classList.toggle('opts');
   $('#filterDone').onclick = () => $('#filterbar').classList.remove('open');
   $('#filterReset').onclick = () => { F = Object.assign({ ...DEFAULT_FILTER }); saveFilter(); renderAll(); toast(L('Filters reset', 'Filtres réinitialisés')); };
-  document.addEventListener('click', e => { const fb = $('#filterbar'); if (fb.classList.contains('open') && innerWidth <= 720 && !fb.contains(e.target)) fb.classList.remove('open'); }, true);
+  document.addEventListener('click', e => { const fb = $('#filterbar'); if (fb.classList.contains('open') && !fb.contains(e.target) && !e.target.closest?.('.fbtn')) fb.classList.remove('open'); }, true);
   $('#rangeSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; F.range = b.dataset.r; ensureCustomRange(); saveFilter(); renderAll(); };
   $('#fFrom').onchange = e => { const v = parseDate(e.target.value); if (v != null) { F.from = v; saveFilter(); renderAll(); } };
   $('#fTo').onchange = e => { const v = parseDate(e.target.value); if (v != null) { F.to = v; saveFilter(); renderAll(); } };
@@ -6753,7 +6777,7 @@ function navPushView(v){ if (NAV_FROM_POP) return; if (history.state?.o) history
     ['#qlog',      el => el.classList.contains('on'),                          () => closeQuickLog()],
     ['#moreSheet', el => el.classList.contains('on'),                          () => closeMore()],
     ['#drawer',    el => el.classList.contains('on'),                          () => closeDrawer()],
-    ['#filterbar', el => el.classList.contains('open') && innerWidth <= 720,   () => $('#filterbar').classList.remove('open')],
+    ['#filterbar', el => el.classList.contains('open'),   () => $('#filterbar').classList.remove('open')],
   ].filter(([sel]) => $(sel));
   const isOpen = new Map(OV.map(([sel, test]) => [sel, test($(sel))]));
   const stuck = () => $('#mWizard')?.classList.contains('on') && !S.profile?.onboarded;   // first-run setup can't be backed out of
