@@ -682,6 +682,7 @@ html:has(.scrim.on), html:has(.sheet.on), html:has(.filterbar.open){overflow:hid
 .qlgrp h5{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .qlgrp h5::after{content:'';flex:1;height:1px;background:var(--border)}
 .qlgrp:first-of-type h5{margin-top:6px}
+.mealchips{margin-top:-2px}.mealchips .chip{font-size:14px;padding:6px 12px}
 </style>
 </head>
 <body>
@@ -1127,11 +1128,14 @@ html:has(.scrim.on), html:has(.sheet.on), html:has(.filterbar.open){overflow:hid
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.24.1';
+const APP_VERSION = '1.24.2';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.24.2', date:'2026-11-25',
+    en:['One 🍽 Meal button in Quick Log (instead of a button named for the time of day plus Snack). The form opens with Breakfast / Lunch / Snack / Dinner at the top, the one for the time of day already picked. Picking an earlier meal (logging breakfast in the evening) sets the start time to that meal’s planned time today, unless you already changed the time.'],
+    fr:['Un seul bouton 🍽 Repas dans la saisie rapide (au lieu d’un bouton nommé selon l’heure plus Collation). Le formulaire s’ouvre avec Déjeuner / Dîner / Collation / Souper en haut, celui de l’heure déjà choisi. Choisir un repas plus tôt (noter le déjeuner en soirée) met l’heure de début à l’heure prévue de ce repas aujourd’hui, sauf si vous avez déjà changé l’heure.'] },
   { v:'1.24.1', date:'2026-11-25',
     en:['Quick Log forms only show the fields that fit the category: Milk for milk and bottles, Water for water and meals, Outcome / Rating only where there are ratings (meals, sleep, handovers, health, mood, family contact). A field that already has a value always shows. Custom entries keep everything.',
         'Phones: one field per line in Quick Log, so Date, Start time and End time each get their own line with their quick-time buttons under them.'],
@@ -5553,6 +5557,12 @@ function reportStandaloneHTML(){
    20. QUICK LOG (two-way: doPost to the Sheet, or device-only when not connected)
    ════════════════════════════════════════════════════════════════════════════ */
 let QL = null;   // current form state {op, row, target?}
+/** Planned start of a meal today (template), used when back-logging an earlier meal from the Meal form. */
+function plannedMealStart(cat){
+  const tp = typeof todayMetrics === 'function' ? todayMetrics()?.tpl : null;
+  const it = (tp?.items || []).find(x => x.kind === 'meal' && String(x.label).toLowerCase().startsWith(cat.toLowerCase()));
+  return it?.start || { Breakfast:'07:45', Lunch:'12:00', Snack:'15:30', Dinner:'17:45' }[cat] || null;
+}
 const mealByTime = m => m < 630 ? 'Breakfast' : m < 870 ? 'Lunch' : m < 1020 ? 'Snack' : 'Dinner';
 /** Visible statement of anything left out of this view, so a report never silently omits categories. */
 function scopeNoteHTML(){
@@ -5583,7 +5593,7 @@ function qlPresets(){
   P.push({ e:'⚡', label:'Awake / Restless', cat:'Awake / Restless', start:true });
   P.push({ e:'🍼', label:L('Milk', 'Lait'), cat:'Milk' });   // v1.23.6: one button; the amounts are chips in the form
   if (mod('hydration')) P.push({ e:'💧', label:'Water', cat:'Milk', water:true });
-  if (mod('food')) { P.push({ e:'🍽', label: mealByTime(now), cat: mealByTime(now), meal:true }); if (mealByTime(now) !== 'Snack') P.push({ e:'🍎', label:'Snack', cat:'Snack', meal:true, fixed:true }); }
+  if (mod('food')) P.push({ e:'🍽', label:L('Meal', 'Repas'), cat: mealByTime(now), meal:true });   // v1.24.2: one button; breakfast / lunch / snack / dinner are picked in the form
   if (mod('visits')) P.push({ e:'👋', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤗', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
   P.push({ e:'🙂', label:'Reaction / mood', cat:'Behaviour' });
   if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Poop', both:true, sub:L('two rows, same time', 'deux lignes, même heure') }, { e:'💊', label:'Meds', cat:'Meds' });
@@ -5652,6 +5662,7 @@ function renderQuickLog(){
       <label class="field">End time<input type="time" name="End Time" value="${v('End Time')}" required></label>
       ${agoChips('End Time', L('Ended', 'Fin'))}`
     : `<label class="field full">Category<input type="text" name="Category" list="qlCats" value="${v('Category')}" required placeholder="e.g. Lunch, Sleep - Nap, Milestone"><datalist id="qlCats">${known.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
+      ${catKindNow === 'meal' && f.op !== 'end' ? `<div class="full tchips mealchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       <label class="field tfield">Date<input type="date" name="Date" value="${v('Date')}" required></label>
       <label class="field tfield">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
       ${f.op === 'append' ? agoChips('Start Time', L('Started', 'Début')) : ''}
@@ -5663,7 +5674,6 @@ function renderQuickLog(){
       ${showWater ? `<label class="field">Water (ml)<input type="number" step="5" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>` : ''}
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
-      ${catKindNow === 'meal' && f.op === 'append' ? `<div class="full tchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       ${catKindNow === 'meds' ? medPickHTML(f.row) : ''}
       ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
@@ -5707,7 +5717,7 @@ async function pickPreset(i){
   if (p.tags) row['Tags'] = p.tags;
   if (p.notes) row['Notes'] = p.notes;
   row['Value'] = '';
-  QL = { op:'append', row, both: !!p.both }; renderQuickLog();
+  QL = { op:'append', row, both: !!p.both, autoStart: row['Start Time'], nowStart: row['Start Time'] }; renderQuickLog();
   setTimeout(() => $('#qlForm button[type=submit]')?.focus(), 50);
 }
 async function submitQuickLog(form){
@@ -7176,7 +7186,13 @@ function wire(){
       $(`#qlForm .tchips[data-for="${nb.dataset.now}"]`)?.querySelectorAll('[data-ago]').forEach(b => b.classList.toggle('off', b.dataset.ago !== '0'));
       i.dispatchEvent(new Event('change', { bubbles:true })); return; }
     const mp = e.target.closest('[data-medpick]'); if (mp) { pickMedInForm(+mp.dataset.medpick); return; }
-    const sv = e.target.closest('[data-set-v]'); if (sv) { const i = $(`#qlForm [name="${sv.closest('[data-for]').dataset.for}"]`); i.value = sv.dataset.setV; $$('#qlForm [data-set-v]').forEach(b => b.classList.toggle('off', b !== sv)); return; }
+    const sv = e.target.closest('[data-set-v]'); if (sv) { const grp = sv.closest('[data-for]'), fld = grp.dataset.for, i = $(`#qlForm [name="${fld}"]`); i.value = sv.dataset.setV; grp.querySelectorAll('[data-set-v]').forEach(b => b.classList.toggle('off', b !== sv));
+      if (fld === 'Category') {   // meal type: an earlier meal logged later takes its planned time (unless the start time was changed by hand)
+        const st = $('#qlForm [name="Start Time"]'), pl = plannedMealStart(sv.dataset.setV);
+        if (st && QL?.op === 'append' && st.value === (QL.autoStart || '') && pl) { const pm = parseTime(pl), now = nowMin(); const v = sv.dataset.setV === mealByTime(now) || pm == null || pm >= now ? (QL.nowStart || QL.autoStart) : pl; st.value = v; QL.autoStart = v; }
+        i.dispatchEvent(new Event('change', { bubbles:true }));   // re-render for the new category (title, outcome choices)
+      }
+      return; }
     const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid);
     const w = e.target.closest('[data-qlwho]'); if (!w) return;

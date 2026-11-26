@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.24.2 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **One 🍽 Meal button** in Quick Log instead of a button named for the time of day plus a separate Snack. The form opens with **Breakfast / Lunch / Snack / Dinner** at the top, the one for the time of day already picked; the Sheet still gets that category.
+- **Logging earlier meals later:** picking Breakfast or Lunch in the evening sets the start time to that meal's planned time today (from today's template). Picking the meal for the current time brings back "now". A start time you changed by hand is never touched.
+- Fix: a quick-amount button (milk, water, meal) only greys out the other buttons in its own row.
+
 ## v1.24.1 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Quick Log shows only the fields that fit:** Milk for milk and bottles, Water for water and meals, Outcome / Rating only where there are ratings (meals, sleep, handovers, health, mood, family contact). Pump, meds, weight, length and temperature keep their own value field. Tags (with the category's suggested chips) and Notes are always there. A field that already has a value always shows, so editing never hides data. Custom entries keep everything.
