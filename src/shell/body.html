@@ -1,0 +1,439 @@
+
+<!-- ═════════════════════════════ Header ═════════════════════════════ -->
+<header class="app">
+  <h1><span aria-hidden="true">🌙</span><span id="appTitle">Baby Routine Dashboard</span></h1>
+    <div class="seg kidseg hidden" id="kidSeg" role="group" aria-label="Child"></div>
+  <div class="meta">
+    <span id="srcPill" class="pill demo"><span class="dot"></span>Demo Mode</span>
+    <button id="scorePill" class="pill score hidden" data-noi18n></button>
+    <button id="scriptPill" class="pill warn hidden" data-noi18n></button>
+    <button id="healthPill" class="pill warn hidden" title="Some rows could not be read cleanly">⚠ <span></span></button>
+    <button id="scopePill" class="pill scope hidden" title="Some categories are left out of this view"></button>
+    <span id="queuePill" class="pill local hidden" title="Quick-log entries not yet in the Google Sheet"></span>
+    <span class="muted" id="syncInfo"></span>
+  </div>
+  <div class="actions">
+    <button class="btn" id="btnRefresh" title="Refresh data from Google Sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span class="lbl-txt">Refresh</span></button>
+    <button class="btn icon" id="btnReport" data-tucked title="Doctor / case-worker summary report (print or PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg></button>
+    <button class="btn icon" id="btnCsv" data-tucked title="Import a Daily Log CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></button>
+    <button class="btn icon" id="btnLang" data-tucked title="Français / English" style="font-weight:700;font-size:12.5px">FR</button>
+    <button class="btn icon" id="btnTheme" data-tucked title="Toggle light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <button class="btn icon" id="btnHelp" data-tucked title="Guided tour" style="font-weight:800;min-width:34px">?</button>
+    <button class="btn icon" id="btnSettings" title="Settings & setup guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="verpill" id="verPill" data-noi18n></button>
+  </div>
+  <input type="file" id="csvInput" accept=".csv,text/csv" hidden>
+</header>
+
+<div class="notice hidden" id="notice"></div>
+
+<!-- ═════════════════════════════ Today / Right Now banner ═════════════════════════════ -->
+
+
+<nav class="tabs" id="tabs" data-noi18n aria-label="Sections"></nav>
+
+<!-- ═════════════════════════════ Global filter bar ═════════════════════════════ -->
+<div class="filterbar" id="filterbar">
+  <div class="line">
+    <button class="btn sm" id="filterToggle">☰ Filters <span id="filterSummary" class="muted"></span></button><button class="btn sm ghost hidden" id="filterReset" title="Reset filters">✕</button><button class="btn sm primary" id="filterDone">Done</button>
+    <div class="row wrap collapsible">
+      <span class="lbl">Range</span>
+      <div class="seg" id="rangeSeg">
+        <button data-r="last7">7 days</button><button data-r="last14">14 days</button><button data-r="week">This week</button><button data-r="all">All</button><button data-r="custom">Custom</button>
+      </div>
+      <span id="customRange" class="row hidden"><input type="date" id="fFrom"> <span class="muted">→</span> <input type="date" id="fTo"></span>
+    </div>
+    <div class="row wrap collapsible">
+      <span class="lbl">Days</span>
+      <select id="fDayType" title="Day type filter">
+        <option value="all">All days</option>
+        <option value="visit" data-mod="visits">Visit days only</option>
+        <option value="home" data-mod="visits">Non-visit (home) days</option>
+        <option value="split">Split-night days</option>
+        <option value="after" data-mod="visits">Days after a visit</option>
+        <option value="homevisit" data-mod="visits">In-home visit days</option>
+        <option value="medical">Medical / appointment days</option>
+        <option value="outing">Outing / excursion days</option>
+        <option value="car">Any car-ride days</option>
+      </select>
+    </div>
+    <div class="search collapsible">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="fSearch" placeholder="Search notes & tags… (crying, eggs, head-bump)">
+    </div>
+    <button class="btn sm collapsible" id="catToggle" data-noi18n></button>
+    <select id="presetSel" class="collapsible" title="Saved filter presets"></select>
+    <span class="muted collapsible" id="dayCount" style="font-size:12.5px;margin-left:auto"></span>
+  </div>
+  <div class="line collapsible chipline">
+    <div class="chips" id="catChips"></div>
+  </div>
+</div>
+
+
+
+<main>
+  <!-- View 1: Timeline -->
+  <section class="view on" id="v-today">
+    <section class="today" id="today">
+  <div class="today-head">
+    <div class="ttl"><span aria-hidden="true">☀️</span><span id="todayTitle">Today</span></div>
+    <div class="peek" id="todayPeek"></div>
+    <select id="todayTpl" data-mod="schedule" title="Template for today (auto-selected from today's rows)"></select>
+    <label class="switch" data-mod="reminders" title="Browser reminders 15 min before naps, meals and the nap cutoff (while this tab is open)"><input type="checkbox" id="remToggle"> 🔔</label>
+    <button class="btn sm ghost" id="todayCollapse" title="Collapse / expand">▾</button>
+  </div>
+  <div class="today-body" id="todayBody"></div>
+</section>
+    <div id="tomorrowCard"></div>
+    <div class="card" style="margin-top:14px" id="planCard">
+      <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub" data-keep></div></div></div>
+      <div id="planList"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-head"><div><h2>Today’s entries</h2><div class="sub" id="todayEvSub" data-keep></div></div><button class="btn sm" id="btnCopyDay" data-noi18n></button></div>
+      <div id="todayEv"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-head"><div><h2>Today so far</h2><div class="sub">Everything logged today on the 24-hour grid · tap the row for the full day</div></div><button class="btn sm" id="btnTodayDay">Full day →</button></div>
+      <div class="tl-scroll"><div id="todayTl"></div></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-timeline">
+    <div class="card">
+      <div class="card-head">
+        <button type="button" class="obtn" id="tlOpts" title="Display options: layout, order, target overlay, labels, colour key" aria-label="Display options" data-noi18n><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+        <div><h2>24-Hour Spectrum</h2><div class="sub">15-minute grid · hover a block for details · click a day for the full breakdown · ⭐/✚ badges = milestones &amp; health notes</div></div>
+        <div class="tl-toolbar">
+          <div class="seg" id="orientSeg"><button data-o="h">Rows</button><button data-o="v">Columns</button></div>
+          <div class="seg" id="sortSeg"><button data-s="desc">Newest first</button><button data-s="asc">Oldest first</button></div>
+          <label class="switch" data-mod="schedule"><input type="checkbox" id="ovToggle"> Target overlay</label>
+          <select id="ovTemplate" data-mod="schedule" title="Template to overlay"></select>
+          <label class="switch" data-mod="diapers" title="Show Diaper and Meds events on the timeline"><input type="checkbox" id="careToggle"> Diaper &amp; meds</label>
+          <div class="seg" id="labSeg" title="Day labels: compact stacks the notes and milestones of each day into one badge"><button data-l="compact">Compact labels</button><button data-l="full">All labels</button></div>
+        </div>
+      </div>
+      <div class="tl-legend" id="tlLegend"></div>
+      <div class="tl-scroll"><div id="timeline"></div></div>
+    </div>
+  </section>
+
+  <!-- View 1b: Visits & patterns (v3) -->
+  <section class="view" id="v-patterns">
+    <div class="card" id="trendCard" style="margin-bottom:14px">
+      <div class="card-head"><div><h2>Trends to watch</h2><div class="sub">The last few days compared with the two weeks before · patterns in what you log, not medical advice</div></div></div>
+      <div id="trendBox"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2>Calendar &amp; Routine Score</h2><div class="sub" id="calSub"></div></div>
+        <button class="btn" id="btnReport2">📄 Build report</button></div>
+      <div id="calBox"></div>
+    </div>
+    <div class="grid2">
+      <div class="card" data-mod="schedule">
+        <div class="card-head"><div><h2>Routine Score by Day</h2><div class="sub">Bars = daily score · line = 7-day average · ● = visit day</div></div></div>
+        <div class="chartbox"><canvas id="chScore"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Key Findings</h2><div class="sub">Plain-language summary for the current range, with counts</div></div><button class="btn sm" id="findCopy">Copy</button></div>
+        <div id="findBox"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px" data-mod="cocooning">
+      <div class="card-head"><div><h2>Cocooning</h2><div class="sub" id="cocoonSub" data-keep></div></div></div>
+      <div id="cocoonBox"></div>
+      <div class="chartbox" style="height:220px"><canvas id="chCocoon"></canvas></div>
+      <div id="cocoonCmp" class="tbl-wrap"></div>
+    </div>
+    <div class="card" style="margin-top:14px" data-mod="visits">
+      <div class="card-head"><div><h2>Visit Cycle</h2><div class="sub">How each measure looks the day before a visit, on the visit day and the days after — compared with baseline days</div></div></div>
+      <div id="cycleBox" style="overflow-x:auto"></div>
+    </div>
+    <div class="card" data-mod="visits">
+      <div class="card-head"><div><h2>Visit by Visit</h2><div class="sub">Each off-site visit in range: handovers, car naps, that night, the next day and recovery · click a row for the day</div></div></div>
+      <div id="visitBox" class="tbl-wrap"></div>
+    </div>
+  </section>
+
+  <!-- View 2: Sleep diagnostics -->
+  <section class="view" id="v-sleep">
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <div class="card-head"><div><h2>Sleep per Day</h2><div class="sub">Night sleep (the night after each day) and naps, in hours · line = 7-day average of the total</div></div></div>
+      <p class="take" id="sdTake"></p>
+      <div class="chartbox"><canvas id="chSleepDay"></canvas></div>
+    </div>
+    <div class="card" data-mod="schedule" style="margin-top:14px">
+      <div class="card-head"><div><h2>Wake Windows</h2><div class="sub" id="wwSub"></div></div></div>
+      <p class="take" id="wwTake"></p>
+      <div id="wwBox"></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Naps and the Night After</h2><div class="sub">Average time awake at night after days with less, normal or more day sleep (or an early, on-time or late last nap)</div></div>
+          <div class="seg" id="scatterSeg"><button data-x="day">Day sleep</button><button data-x="last">Last nap end</button></div>
+        </div>
+        <p class="take" id="dnTake"></p>
+        <div id="dnBox"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Easiest Bedtime</h2><div class="sub">Minutes from the bedtime routine to asleep, by how long she was awake since the last nap · and how often she woke within an hour</div></div></div>
+        <p class="take" id="efTake"></p>
+        <div id="efBox"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-head"><div><h2>Outings &amp; Travel Impact</h2><div class="sub">Averages per day type in the current range — is disruption from car rides in general, or from supervised visits specifically? Days can belong to more than one slice.</div></div></div>
+      <div id="cmpTable" style="overflow-x:auto"></div>
+    </div>
+  </section>
+
+  <!-- View 3: Nutrition & hydration -->
+  <section class="view" id="v-nutrition">
+    <div class="card" data-mod="newborn">
+      <div class="card-head"><div><h2>Feeding</h2><div class="sub" id="feedSub"></div></div></div>
+      <div id="feedBox"></div>
+      <div class="grid2" style="margin-top:12px"><div class="chartbox"><canvas id="chFeeds"></canvas></div><div class="chartbox"><canvas id="chFeedClock"></canvas></div></div>
+      <div class="hint" id="feedHint"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2>Daily Milk Intake</h2><div class="sub" id="milkSub"></div></div></div>
+      <div class="chartbox tall"><canvas id="chMilk"></canvas></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><div><h2>Milk by Hour of Day</h2><div class="sub">Average oz per day consumed in each hour (selected range)</div></div></div>
+        <div class="chartbox"><canvas id="chMilkHour"></canvas></div>
+      </div>
+      <div class="card" data-mod="hydration">
+        <div class="card-head"><div><h2>Total Daily Fluids</h2><div class="sub">Milk (converted to ml) + Water (ml)</div></div></div>
+        <div class="chartbox"><canvas id="chFluids"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <div class="card-head"><div><h2>Late / Overnight Milk → Night Wakings</h2><div class="sub" id="lateSub"></div></div></div>
+        <div id="lateBox"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Bath Cadence</h2><div class="sub" id="bathSub" data-keep></div></div></div>
+        <div id="bathBox"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px" data-mod="food">
+      <div class="card-head"><div><h2>Food Frequency &amp; Acceptance</h2><div class="sub">Foods from the Tags column plus keywords found in meal Notes · acceptance from Outcome / Rating</div></div>
+        <input type="search" id="foodSearch" placeholder="Filter foods…" style="max-width:200px"></div>
+      <div id="foodBoard"></div>
+    </div>
+    <div class="grid2" data-mod="food">
+      <div class="card">
+        <div class="card-head"><div><h2>Meal Timing Stability</h2><div class="sub" id="mealSub"></div></div></div>
+        <div class="chartbox"><canvas id="chMeals"></canvas></div>
+        <div class="hint" id="mealHint"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>New Foods &amp; Allergen Log</h2><div class="sub">First appearance of each food · ⚠ = common allergen group</div></div>
+          <label class="switch"><input type="checkbox" id="newOnly"> Tagged new only</label></div>
+        <div id="newFoods" class="tbl-wrap" style="max-height:340px"></div>
+      </div>
+      <div class="card" data-mod="food">
+        <div class="card-head"><div><h2>Allergen Upkeep</h2><div class="sub">When each common allergen group she has already had was last offered · read from the foods you log</div></div></div>
+        <div id="allergyBox"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- View 4: Milestones & health -->
+  <section class="view" id="v-health">
+    <div class="grid2">
+      <div class="card" id="msCard" data-mod="milestones">
+        <div class="card-head"><div><h2>Milestones</h2><div class="sub">Developmental achievements, newest first</div></div>
+          <div class="row no-print"><button class="btn sm" id="msCopy">Copy</button><button class="btn sm" id="msPrint">Print</button></div></div>
+        <div class="chips no-print" id="msTags" style="margin-bottom:8px"></div>
+        <ul class="feed" id="msFeed"></ul>
+      </div>
+      <div class="card" data-mod="health">
+        <div class="card-head"><div><h2>Health, Appointments &amp; Incidents</h2><div class="sub">Medical / Appointment and Health / Incident entries</div></div>
+          <div class="seg" id="hlSeg"><button data-h="all">All</button><button data-h="follow">Follow-up needed</button><button data-h="monitor">Monitor</button><button data-h="resolved">Resolved</button></div></div>
+        <ul class="feed" id="hlFeed"></ul>
+        <div id="tempBox"></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card" data-mod="growth">
+        <div class="card-head"><div><h2>Growth</h2><div class="sub" id="growthSub"></div></div><button class="btn sm" id="btnPastMeasure" data-noi18n></button>
+          <div class="seg" id="growthSeg"><button data-g="weight">Weight</button><button data-g="length">Length</button><button data-g="head">Head</button></div></div>
+        <div class="chartbox tall"><canvas id="chGrowth"></canvas></div>
+        <div id="growthBox"></div>
+      </div>
+      <div class="card" data-mod="teeth">
+        <div class="card-head"><div><h2>Teeth</h2><div class="sub" id="teethSub" data-keep></div></div></div>
+        <div id="teethBox"></div>
+        <div id="teethSleep"></div>
+      </div>
+      <div class="card" id="medCard">
+        <div class="card-head"><div><h2>Medications</h2><div class="sub">Doses checked off over the last 30 days · set up in Settings → Reminders</div></div></div>
+        <div id="medBox"></div>
+      </div>
+      <div class="card" data-mod="health" id="vaxCard">
+        <div class="card-head"><div><h2>Vaccines · Québec schedule</h2><div class="sub">From the Québec immunization program (PIQ) and the Vaccine rows you log · turn off in Settings → Reminders</div></div></div>
+        <div id="vaxBox"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px" data-mod="diapers">
+      <div class="card-head"><div><h2>Care Tracking</h2><div class="sub">Diaper and meds entries (if your sheet logs them)</div></div></div>
+      <div id="careBox"></div>
+    </div>
+  </section>
+
+  <!-- View 5: Data explorer -->
+  <section class="view" id="v-checkins" data-mod="checkins">
+    <div class="card">
+      <div class="card-head"><div><h2>Daily Check-ins</h2><div class="sub" id="ciSub" data-keep></div></div><button class="btn primary" data-ciopen>📝 Today's check-in</button></div>
+      <div id="ciStrip"></div>
+    </div>
+    <div class="grid2" id="ciAreas" style="margin-top:14px"></div>
+  </section>
+  <section class="view" id="v-contact" data-mod="familyContact">
+    <div class="card">
+      <div class="card-head"><div><h2>Family Contact</h2><div class="sub" id="ctSub" data-keep></div></div></div>
+      <div class="row wrap faint" id="ctRule" style="gap:8px;font-size:13px;margin:-4px 0 10px"></div>
+      <div class="kpis" id="ctKpis"></div>
+      <div id="ctFind" style="margin-top:10px"></div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><div class="card-head"><div><h2>Contacts per Day</h2><div class="sub">By channel · text, phone, email, video, in person</div></div></div><div class="chartbox" style="height:240px"><canvas id="chCtDay"></canvas></div></div>
+      <div class="card"><div class="card-head"><div><h2>Time of Day</h2><div class="sub">When contacts start, by hour</div></div></div><div class="chartbox" style="height:240px"><canvas id="chCtHour"></canvas></div></div>
+      <div class="card"><div class="card-head"><div><h2>What It's About</h2><div class="sub">Topics from the Tags column (one contact can cover several)</div></div></div><div class="chartbox" style="height:260px"><canvas id="chCtTopic"></canvas></div></div>
+      <div class="card"><div class="card-head"><div><h2>Kind of Question & Tone</h2><div class="sub">Per week · basic / in-depth / follow-up, and positive / neutral / difficult</div></div></div><div class="chartbox" style="height:260px"><canvas id="chCtKind"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-top:14px"><div class="card-head"><div><h2>Repeat &amp; Visit-Day Questions</h2><div class="sub">Questions asked again soon after, and requests for photos or updates on visit days</div></div></div><div id="ctFlags"></div></div>
+    <div class="card" style="margin-top:14px"><div class="card-head"><div><h2>Contact Log</h2><div class="sub">↘ from the family · ↗ from you · reply time in brackets · tap and hold a row to edit</div></div></div><div class="tbl-wrap" id="ctLog"></div></div>
+  </section>
+  <section class="view" id="v-data">
+    <div class="card">
+      <div class="card-head"><div><h2>Daily Rollup</h2><div class="sub" id="rollSub">One row per day · click a header to sort · click a row to inspect</div></div></div>
+      <div class="tbl-wrap" id="rollup"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div><h2>Event Log</h2><div class="sub" id="logSub" data-keep></div></div>
+        <button class="btn" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export filtered CSV</button>
+      </div>
+      <div class="tbl-wrap" id="evlog"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="bbar" id="bbar" data-noi18n aria-label="Sections"></nav>
+<div class="sheet" id="moreSheet"><header><h3 id="moreTitle">More</h3><button class="btn sm ghost" id="moreClose" style="margin-left:auto">✕</button></header><div class="more-list" id="moreList" data-noi18n></div></div>
+<button class="fab" id="fab" data-mod="quicklog" title="Quick log an event">＋ Quick Log</button>
+
+<!-- Tooltip, drawer, modals -->
+<div id="tip"></div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Day details">
+  <header><div class="grow"><div style="font-weight:750;font-size:17px" id="drTitle"></div><div class="row wrap" id="drPills" style="margin-top:4px"></div></div>
+    <button class="btn icon ghost" id="drPrev" title="Previous day">‹</button><button class="btn icon ghost" id="drNext" title="Next day">›</button><button class="btn icon ghost" id="drClose" title="Close">✕</button></header>
+  <div class="body" id="drBody"></div>
+</aside>
+
+<!-- Quick log bottom sheet -->
+<div class="sheet" id="qlog" role="dialog" aria-modal="true" aria-label="Quick log">
+  <div class="grab"></div>
+  <header><h3 id="qlTitle">Quick Log</h3><span class="grow"></span><span class="pill" id="qlDest"></span><button class="btn icon ghost" id="qlClose">✕</button></header>
+  <div class="body" id="qlBody"></div>
+</div>
+
+<div class="modal" id="mSettings" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="box">
+    <div class="mhead"><h3>Settings</h3><span class="grow"></span><span class="savedchip" id="savedChip" data-noi18n></span><button class="btn icon ghost" data-close>✕</button></div>
+    <div class="mbody">
+      <nav class="mnav" id="setNav">
+        <button data-p="profile" class="on">Child &amp; features</button>
+        <button data-p="source">Data source</button>
+        <button data-p="guide">Setup guide</button>
+        <button data-p="notify" data-mod="reminders">Reminders</button>
+        <button data-p="general">General</button>
+        <button data-p="targets">Targets</button>
+        <button data-p="templates" data-mod="schedule">Schedule templates</button>
+        <button data-p="score" data-mod="schedule">Routine score</button>
+        <button data-p="reports">Reports</button>
+        <button data-p="cats">Categories</button>
+        <button data-p="foods" data-mod="food">Foods</button>
+        <button data-p="presets">Filter presets</button>
+        <button data-p="sharing">Sharing &amp; viewers</button>
+        <button data-p="backup">Backup &amp; sync</button>
+        <button data-p="about">About &amp; changes</button>
+      </nav>
+      <div class="mpane" id="setPane"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="mWizard" role="dialog" aria-modal="true" aria-label="Setup">
+  <div class="box narrow wiz">
+    <div class="mhead"><div class="dots" id="wizDots"></div><span class="grow"></span><button class="btn sm ghost" id="wizSkip">Skip setup</button></div>
+    <div class="mpane" id="wizBody"></div>
+    <div class="wiz-f"><button class="btn" id="wizBack">Back</button><span class="grow"></span><button class="btn primary" id="wizNext">Next</button></div>
+  </div>
+</div>
+
+<div class="modal" id="mCheckin" role="dialog" aria-modal="true" aria-label="Check-in">
+  <div class="box">
+    <div class="mhead"><h3 id="ciTitle">End-of-day check-in</h3><span class="grow"></span><button class="btn icon ghost" data-close>✕</button></div>
+    <div class="mpane" id="ciBody"></div>
+  </div>
+</div>
+<div class="modal" id="mNew" role="dialog" aria-modal="true" aria-label="What's new">
+  <div class="box narrow">
+    <div class="mhead"><h3 id="newTitle">What's new</h3><span class="grow"></span><button class="btn icon ghost" data-close data-seen>✕</button></div>
+    <div class="mpane" id="newBody"></div>
+  </div>
+</div>
+<div class="modal" id="mBand" role="dialog" aria-modal="true" aria-label="Targets for age">
+  <div class="box narrow">
+    <div class="mhead"><h3>Suggested targets for this age</h3><span class="grow"></span><button class="btn icon ghost" data-close>✕</button></div>
+    <div class="mpane" id="bandBody"></div>
+  </div>
+</div>
+
+<div id="tour" aria-live="polite"><div id="tourBlock"></div><div id="tourSpot"></div><div id="tourTip" role="dialog" aria-label="Guided tour"></div></div>
+
+<div class="modal" id="mHealth" role="dialog" aria-modal="true" aria-label="Data health">
+  <div class="box narrow">
+    <div class="mhead"><h3>Data Health / Parse Warnings</h3><span class="grow"></span><button class="btn icon ghost" data-close>✕</button></div>
+    <div class="mpane" id="healthBody"></div>
+  </div>
+</div>
+
+<!-- Printable doctor / case-worker report -->
+<div id="report" aria-label="Summary report">
+  <div class="rep-tools">
+    <b>Summary report</b>
+    <div class="seg" id="repSeg"><button data-n="period">Reporting period</button><button data-n="visits" data-mod="visits">All visits to date</button><button data-n="filters">Current filters</button></div>
+    <span class="row" id="repNav"><button class="btn sm" id="repPrev">◀</button><span id="repPeriod" class="muted" style="min-width:150px;text-align:center"></span><button class="btn sm" id="repNext">▶</button></span>
+    <select id="repSnaps" title="Saved reports"></select>
+    <span class="grow"></span>
+    <button class="btn" id="repSave" title="Keep an unchangeable copy of this report on this device">Save copy</button>
+    <button class="btn" id="repHtml" title="Download as a standalone HTML file">Download</button>
+    <button class="btn primary" id="repPrint">Print / Save as PDF</button><button class="btn" id="repClose">Close</button>
+  </div>
+  <div class="rep-opts" id="repOpts">
+    <label class="field grow">Caregiver comments for this report <span class="faint">(saved on this device, printed in the report)</span><textarea id="repComment" rows="2" placeholder="Context the numbers don't show: illness, teething, schedule changes, anything the worker should know…"></textarea></label>
+    <div class="row wrap" style="gap:14px">
+      <label class="switch"><input type="checkbox" id="repCal"> Calendar</label>
+      <label class="switch"><input type="checkbox" id="repDaily"> Day-by-day table</label>
+      <label class="switch"><input type="checkbox" id="repNotes"> Include note text</label>
+    </div>
+  </div>
+  <div class="rep" id="repBody"></div>
+</div>
+
+<div id="dropzone">Drop your Daily Log CSV to load it</div>
+<div id="toasts"></div>
+
+<script>
+'use strict';

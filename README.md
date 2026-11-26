@@ -145,6 +145,32 @@ Every device applies changes made elsewhere on its next sync and pushes its own 
 
 ---
 
+## Working on the code
+
+`index.html` is **built**; don't edit it by hand. The source is in `src/`, split by concern, and `node tools/build.js` (or `./build.sh`) joins the files in the order listed in `src/BUILD_ORDER` into one self-contained page, so the app keeps working as a single file on GitHub Pages with no bundler or dependencies.
+
+| Folder | What's in it |
+|---|---|
+| `src/shell/` | The page's HTML skeleton and styles |
+| `src/core/` | Version, constants, default settings, settings storage, categories, utilities |
+| `src/i18n/` | French translations, language switching, the in-app changelog |
+| `src/data/` | Parsing Sheet rows, loading (demo, CSV, Sheet, offline queue), Quick Log writes, WHO tables |
+| `src/analytics/` | Per-day metrics, templates, routine score, visit cycle, foods |
+| `src/views/` | One file per section: today, timeline, sleep, nutrition, health, patterns, data |
+| `src/features/` | Medications, smart suggestions, reports, family contact, check-ins, kids, growth & teeth, cocooning… |
+| `src/quicklog/` | The Quick Log panel and editing entries |
+| `src/ui/` | Navigation, swipes, day panel, filters, ⓘ buttons, Back button, charts |
+| `src/settings/`, `src/onboarding/`, `src/boot/`, `src/sync/` | Settings panes, setup wizard and tour, event wiring and start-up, shared settings in the Sheet |
+| `apps-script/Code.gs` | The Apps Script, also inlined into the page at build time (Settings shows and copies it) |
+
+The files share one global scope and run top to bottom in `BUILD_ORDER`, so a new file goes after anything it uses at load time. The build refuses to run if a file in `src/` isn't listed, or if `Code.gs` doesn't have the placeholder `SECRET`.
+
+**Releasing:** bump `APP_VERSION` and add an English + French entry at the top of `src/i18n/changelog.js`, mirror it in `CHANGELOG.md`, build, test, commit. Bump `SCRIPT_VERSION` (in `Code.gs`) and `REQUIRED_SCRIPT` (in `src/core/version.js`) only when the script changes.
+
+**Tests:**
+- `node tests/apps_script.test.js`: runs `Code.gs` against an in-memory Sheet (append, end, edit, delete, Config and Medications tabs).
+- `python tests/smoke.py`: opens the built page in Chromium (Playwright): every section in three family setups, English and French, phone and computer, without errors; Quick Log, score sliders, filter buttons, the whole tour, the day panel and phone swipes. Setup: `pip install playwright` then `python -m playwright install chromium`.
+
 ## Privacy
 
 - Your log lives in **your** Google Sheet, read through **your** Apps Script and protected by your secret.

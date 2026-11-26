@@ -1,0 +1,172 @@
+function renderSettings(){
+  $$('#setNav button').forEach(b => b.classList.toggle('on', b.dataset.p === setPane));
+  let h = '';
+  if (setPane === 'profile') h = profilePaneHTML();
+  else if (setPane === 'source') {
+    const loc = QUEUE.filter(q => q.status === 'local').length, pend = QUEUE.filter(q => q.status === 'pending').length;
+    h = `
+    <h4>Google Sheet (live sync + Quick Log)</h4>
+    <div class="fgrid" style="grid-template-columns:1fr">
+      <label class="field">Apps Script Web App URL<input type="url" data-set="endpoint" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(S.endpoint)}"></label>
+      <label class="field">Secret token<input type="password" data-set="token" placeholder="Same value as SECRET in the script" value="${esc(S.token)}" autocomplete="off"></label>
+    </div>
+    <div class="row wrap" style="margin-top:10px"><button class="btn primary" data-act="sync">Save &amp; sync now</button><button class="btn" data-pane="guide">Setup guide →</button></div>
+    <div class="fgrid" style="margin-top:14px">
+      <label class="field">Auto-refresh<select data-set="autoRefreshMin" data-num>${[0,5,15,30,60].map(v => `<option value="${v}" ${+S.autoRefreshMin === v ? 'selected' : ''}>${v ? 'Every ' + v + ' min' : 'Off'}</option>`).join('')}</select></label>
+    </div>
+    <p class="hint">Your Sheet stays private: only someone with both the URL and the token can read or write it. Nothing is sent anywhere except your own Apps Script.</p>
+    ${QUEUE.length ? `<h4>Quick-log entries not in the Sheet</h4>
+      <p>${loc ? `<b>${loc}</b> saved on this device only` : ''}${loc && pend ? ' · ' : ''}${pend ? `<b>${pend}</b> waiting to retry` : ''}.</p>
+      <div class="row wrap">${S.endpoint ? `<button class="btn primary" data-act="sendLocal">Send ${QUEUE.length} to Sheet</button>` : ''}<button class="btn" data-act="exportQueue">Download as CSV</button><button class="btn danger" data-act="clearQueue">Discard</button></div>` : ''}
+    ${cfgStatusHTML()}
+    <h4>Offline / one-off data</h4>
+    <div class="row wrap"><button class="btn" data-act="csv">Import Daily Log CSV…</button><button class="btn" data-act="demo">Load demo week</button>
+      ${chk('cacheData','Keep last data on this device for offline viewing')}</div>
+    <p class="hint">Tip: you can also drag a CSV file anywhere onto the page. In Google Sheets use File → Download → CSV on the Daily Log tab.</p>
+    <h4>Currently showing</h4><p>${esc(DATA.source === 'demo' ? 'Built-in demo data' : DATA.label)} · ${DATA.events.length} events · ${DAYS.size} days${DATA.source !== 'demo' ? ' · synced ' + new Date(DATA.synced).toLocaleString(LOC()) : ''}</p>`;
+  }
+  else if (setPane === 'guide') h = `
+    <h4>Connect your Google Sheet in ~2 minutes</h4>
+    <ol class="steps">
+      <li>Open your Sheet. The tab must be named <b>Daily Log</b> with headers <span class="mono">Date, Start Time, End Time, Duration (min), Category, Milk (oz), Notes</span> and (v2, optional) <span class="mono">Water (ml), Tags, Outcome / Rating</span> in columns H–J.</li>
+      <li>Go to <b>Extensions → Apps Script</b>, replace any existing code with the script below.</li>
+      <li>Change <span class="mono">SECRET</span> to a long random phrase. Save (💾).</li>
+      <li><b>First time:</b> Deploy → New deployment → gear → <b>Web app</b>; <b>Execute as: Me</b>, <b>Who has access: Anyone</b>; Deploy and authorize.<br><b>Upgrading from v1:</b> Deploy → <b>Manage deployments</b> → ✏️ Edit → Version: <b>New version</b> → Deploy. The URL stays the same.</li>
+      <li>Copy the <b>Web app URL</b> (ends in <span class="mono">/exec</span>) into <b>Data source</b> with your token, then <b>Save &amp; sync</b>. The <b>＋ Quick Log</b> button now writes rows straight into the Sheet.</li>
+      <li><b>Timestamps (v3, recommended):</b> in the Apps Script toolbar choose <span class="mono">markExistingRows</span> and click ▸ <b>Run</b> once. This adds a <b>Logged At</b> column, labels existing rows “before tracking”, and from then on every new row — Quick Log or typed into the Sheet — is stamped with the time it was entered. Corrections to a row never change its stamp.</li>
+    </ol>
+    <p class="hint">If another tool (e.g. Gemini) turns your written notes into rows, have it fill an optional <b>Noted At</b> column with the time the note was written; reports then show those entries as transcribed from contemporaneous notes rather than as late entries.</p>
+    <div class="row sp"><b>Apps Script (read + quick-log)</b><button class="btn sm" data-act="copyScript">Copy script</button></div>
+    <pre class="code" id="scriptCode">${esc(APPS_SCRIPT)}</pre>
+    <p class="hint"><b>doGet</b> reads the tab; <b>doPost</b> appends a row (or fills in End Time on the latest open row of that category, for “End Nap”). Both check the token. “Anyone” means anyone <i>with the link and token</i>. If you add new columns later, the dashboard picks them up automatically.</p>
+    <p class="hint">Want phone reminders even when the dashboard is closed? See <a href="#" data-pane="notify">Reminders → Phone push</a>. Share settings with other caregivers via <b>Backup &amp; sync → Export config</b> (it includes the token, so send it privately).</p>`;
+  else if (setPane === 'notify') {
+    const perm = !('Notification' in window) ? 'not supported in this browser' : Notification.permission;
+    h = `<h4>In-browser reminders (while this tab is open)</h4>
+      <div class="row wrap" style="gap:16px">${chk('reminders.enabled','Enable tab reminders')}${chk('reminders.chime','Soft chime')}</div>
+      <div class="fgrid" style="margin-top:10px">${numField('reminders.lead','Minutes before',5)}<label class="field">${L('Vaccine schedule', 'Calendrier de vaccination')}<select data-set="vaxSchedule"><option value="qc" ${(S.vaxSchedule || 'qc') === 'qc' ? 'selected' : ''}>${L('Québec (PIQ)', 'Québec (PIQ)')}</option><option value="off" ${S.vaxSchedule === 'off' ? 'selected' : ''}>${L('Off', 'Désactivé')}</option></select></label>${mod('checkins') ? `<label class="field">${L('End-of-day check-in reminder', 'Rappel du bilan de fin de journée')}<input type="time" data-set="checkinAt" value="${esc(S.checkinAt || '19:30')}"></label>` : ''}</div>
+      <div class="row wrap" style="gap:16px;margin-top:10px">${chk('reminders.naps','Naps &amp; bedtime')}${chk('reminders.meals','Meals')}${chk('reminders.cutoff','Hard nap cutoff')}${chk('reminders.dynamic','Live “nap window opens” (from actual wake time)')}</div>
+      ${mod('newborn') ? `<div class="fgrid" style="margin-top:10px">${numField('reminders.feedEvery','Feed reminder: minutes after a feed starts (0 = off)',15,'e.g. 150 = remind 2½ h after each feed began')}</div>` : ''}
+      <div class="row wrap" style="margin-top:10px"><button class="btn" data-act="testRem">Send a test reminder</button><span class="muted">Notification permission: <b>${esc(perm)}</b></span></div>
+      <p class="hint">Uses today's active template (auto-selected from today's rows, or your override in the Today banner). System notifications need the page served over https (GitHub Pages, Netlify) or localhost; otherwise reminders appear as in-page alerts with the chime. Desktop and Android Chrome work well; iOS Safari only notifies for pages added to the Home Screen.</p>
+      <h4>Phone push (works when the phone is locked)</h4>
+      <ol class="steps">
+        <li>Install the free <b>ntfy</b> app (iOS / Android) on each caregiver's phone.</li>
+        <li>Pick a long, private topic name below and <b>subscribe</b> to it in the app on every phone.</li>
+        <li>Paste the generated snippet <b>below</b> the main script in Apps Script, Save, then choose <span class="mono">installReminderTrigger</span> in the toolbar and click ▸ <b>Run</b> once (authorize when asked).</li>
+      </ol>
+      <div class="fgrid" style="grid-template-columns:1fr auto;align-items:end"><label class="field">ntfy topic<input type="text" data-set="ntfyTopic" value="${esc(S.ntfyTopic)}" placeholder="baby-routine-…"></label><button class="btn" data-act="genTopic">Generate random</button></div>
+      <div class="row sp" style="margin-top:10px"><b>Reminder add-on (generated from your templates)</b><button class="btn sm" data-act="copyNtfy">Copy snippet</button></div>
+      <pre class="code" id="ntfyCode">${esc(ntfySnippet())}</pre>
+      <p class="hint">Runs every 5 minutes on Google's servers (well inside the free quota) and picks today's template with the same Visit rule as the dashboard. Re-copy the snippet after editing templates. Anyone who knows the topic name can read the reminders, so keep it unguessable.</p>${medSettingsHTML()}`;
+  }
+  else if (setPane === 'general') h = `
+    <h4>${L('On this device', 'Sur cet appareil')}</h4>
+    <div class="fgrid">
+      <label class="field">${L('Who am I (first name)', 'Qui suis-je (prénom)')}<input type="text" id="meName" value="${esc(ME.name || '')}" placeholder="${esc(L('e.g. Mike', 'p. ex. Mike'))}" maxlength="24"></label>
+    </div>
+    <p class="hint">${L('Entries you add from this device are signed with this name (a “Logged By” column in the Sheet), shown small under each entry’s time. It stays on this device and isn’t included when you export the config, so each person sets their own.', 'Les entrées ajoutées depuis cet appareil sont signées de ce nom (colonne « Logged By » de la feuille), affiché en petit sous l’heure de chaque entrée. Il reste sur cet appareil et n’est pas inclus quand vous exportez la configuration : chaque personne règle le sien.')}</p>
+    <h4>Display</h4>
+    <div class="fgrid">
+      <label class="field">Language / Langue<select id="langSel"><option value="en" ${S.lang !== 'fr' ? 'selected' : ''}>English</option><option value="fr" ${S.lang === 'fr' ? 'selected' : ''}>Français</option></select><span class="faint">${L('Whole app, reports included. Your own entries (notes, categories, template names) stay as you wrote them, and the Sheet always stores English column values.', 'Toute l’application, rapports compris. Vos propres entrées (notes, catégories, noms de modèles) restent telles que vous les avez écrites, et la feuille garde toujours les valeurs en anglais.')}</span></label>
+      <label class="field">Dashboard title<input type="text" data-set="title" value="${esc(S.title)}" placeholder="e.g. Maya's Routine"></label>
+      <label class="field">Theme<select data-set="theme">${['auto','light','dark'].map(v => `<option ${S.theme === v ? 'selected' : ''} value="${v}">${v[0].toUpperCase() + v.slice(1)}</option>`).join('')}</select></label>
+    </div>
+    <div style="margin-top:8px">${chk('swipeNav', L('Phones: swipe left / right to move between sections (Today → Timeline → … → Data)', 'Téléphones : glisser à gauche / à droite pour passer d’une section à l’autre (Aujourd’hui → Chronologie → … → Données)'))}</div>
+    <h4>Day logic</h4>
+    <div class="fgrid">
+      <label class="field">Day boundary<select data-set="dayBoundary" data-num><option value="360" ${+S.dayBoundary === 360 ? 'selected' : ''}>06:00 — night belongs to the evening before</option><option value="0" ${+S.dayBoundary === 0 ? 'selected' : ''}>00:00 — calendar date</option></select></label>
+      ${timeField('targets.nightStart','Overnight window starts')}${timeField('targets.nightEnd','Overnight window ends')}
+    </div>
+    <p class="hint">With a 06:00 boundary, a 01:00 or 03:00 wake-up is attributed to the night that started the previous evening, so each row reads “day → the night after it”. The timeline grid always splits midnight-crossing events at 24:00 regardless.</p>
+    <h4>Instant events (e.g. Milk with no end time)</h4>
+    <div class="fgrid">
+      <label class="field">Show as<select data-set="instantMode"><option value="marker" ${S.instantMode === 'marker' ? 'selected' : ''}>Dot markers</option><option value="block" ${S.instantMode === 'block' ? 'selected' : ''}>Short blocks</option></select></label>
+      ${numField('instantWidth','Block width (min)',5)}
+    </div>
+    <p class="hint">Instant events never count toward duration totals. Sleep, visits and other span-type rows with a start but no end are shown as <b>in progress</b> if they began recently.</p>`;
+  else if (setPane === 'targets') h = `
+    <h4>Sleep</h4><div class="fgrid">${numField('targets.maxDaySleep','Max daytime sleep (min)',5)}${timeField('targets.napCutoff','Hard nap cutoff')}${timeField('targets.bedtime','Default bedtime target')}${numField('targets.splitNightMin','Split night = awake ≥ (min)',5)}</div>
+    <h4>Wake windows (minutes)</h4><div class="fgrid">${numField('targets.ww1','Wake → Nap 1',15,'default 180 (3h)')}${numField('targets.ww2','Nap 1 → Nap 2',15,'default 210 (3.5h)')}${numField('targets.wwFinal','Last nap → Bedtime',15,'default 240 (4h)')}${numField('targets.underTired','Under-tired if final window <',15,'default 210 (3.5h)')}</div>
+    <h4>Feeding</h4><div class="fgrid">${milkField('targets.milkMin','Milk minimum')}${milkField('targets.milkMax','Milk maximum')}${numField('targets.waterMl','Water target (ml/day, 0 = none)',10)}<label class="field">${L('Water amounts in Quick Log (ml)', 'Quantités d’eau dans l’ajout rapide (ml)')}<input type="text" data-set="targets.waterChips" value="${esc(T().waterChips || '')}" placeholder="10, 30, 60, 90, 120, 150"></label>${timeField('targets.lateDinner','Late dinner after')}</div>
+    ${mod('diapers') ? `<h4>Diapers (per day — from your provider's guidance; 0 = no target)</h4><div class="fgrid">${numField('targets.wetMin','Wet diapers at least',1)}${numField('targets.dirtyMin','Dirty diapers at least',1)}</div>` : ''}
+    <h4>Routine</h4><div class="fgrid">${numField('targets.bathMin','Bath every at least (nights)',1)}${numField('targets.bathMax','Bath every at most (nights)',1)}${timeField('targets.earlyVisitCutoff','Early-visit template if Visit starts by','default 09:30')}</div>
+    <p class="hint">Templates can override max daytime sleep and the milk range (Schedule templates). Bedtime targets per day type also come from the templates.</p>`;
+  else if (setPane === 'templates') {
+    tplIdx = clamp(tplIdx, 0, S.templates.length - 1); const tp = S.templates[tplIdx]; tp.targets ||= {};
+    h = `<h4>Templates</h4><div class="row wrap"><select id="tplSel">${S.templates.map((x,i) => `<option value="${i}" ${i === tplIdx ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+      <button class="btn sm" data-act="tplNew">＋ New</button><button class="btn sm" data-act="tplDup">Duplicate</button><button class="btn sm danger" data-act="tplDel" ${S.templates.length < 2 ? 'disabled' : ''}>Delete</button><button class="btn sm ghost" data-act="tplReset">Restore defaults</button></div>
+      <h4>Edit “${esc(tp.name)}”</h4>
+      <div class="fgrid"><label class="field">Name<input type="text" id="tplName" value="${esc(tp.name)}"></label>
+        ${['maxDaySleep','milkMin','milkMax'].map(k => { const ml = k !== 'maxDaySleep'; return `<label class="field">${{ maxDaySleep:'Max day sleep (min)', milkMin:`Milk min (${MU()})`, milkMax:`Milk max (${MU()})` }[k]}<input type="number" step="${ml ? (metric() ? 10 : .5) : 5}" data-tt="${k}" ${ml ? 'data-milk' : ''} value="${esc(tp.targets[k] == null || tp.targets[k] === '' ? '' : ml ? toDisp(tp.targets[k]) : tp.targets[k])}" placeholder="global: ${ml ? toDisp(T()[k]) : T()[k]}"></label>`; }).join('')}</div>
+      <table class="tpl-items" style="margin-top:10px"><thead><tr class="faint" style="font-size:12px"><td>Label</td><td style="width:130px">Type</td><td style="width:100px">Start</td><td style="width:100px">End (opt.)</td><td style="width:64px">Optional</td><td style="width:36px"></td></tr></thead><tbody>
+      ${tp.items.map((it,i) => `<tr data-i="${i}"><td><input type="text" data-ti="label" value="${esc(it.label)}"></td><td><select data-ti="kind">${Object.keys(KIND_STYLE).map(k => `<option value="${k}" ${it.kind === k ? 'selected' : ''}>${KIND_STYLE[k].label}</option>`).join('')}</select></td><td><input type="time" data-ti="start" value="${esc(it.start)}"></td><td><input type="time" data-ti="end" value="${esc(it.end || '')}"></td><td style="text-align:center"><input type="checkbox" data-ti="optional" ${it.optional ? 'checked' : ''} ${it.kind === 'nap' ? '' : 'disabled'}></td><td><button class="btn sm ghost danger" data-act="tiDel" title="Remove">✕</button></td></tr><tr data-i="${i}" class="tpl-sub"><td colspan="6"><div class="row" style="gap:6px"><input type="text" data-ti="note" value="${esc(it.note || '')}" placeholder="${esc(L('Notes & instructions (shown in Today’s plan)', 'Notes et consignes (affichées dans le plan du jour)'))}" style="flex:3"><input type="text" data-ti="days" value="${esc(it.days || '')}" placeholder="${esc(L('Every day (or e.g. Mon, Thu, Sun)', 'Tous les jours (ou p. ex. lun, jeu, dim)'))}" style="flex:2"><input type="number" min="0" step="5" data-ti="beforeBed" value="${it.beforeBed ?? ''}" placeholder="${esc(L('min before bed', 'min avant coucher'))}" title="${esc(L('Minutes before bedtime: the step then follows each day’s bedtime, including on visit days', 'Minutes avant le coucher : l’étape suit alors l’heure du coucher de chaque jour, y compris les jours de visite'))}" style="flex:1;min-width:90px"></div></td></tr>`).join('')}
+      </tbody></table><button class="btn sm" data-act="tiAdd" style="margin-top:8px">＋ Add target</button>
+      <p class="hint">Bands (with an end time) and lines (without) draw on the timeline; meal targets show as ▼ markers and drive the “coming up” cues and reminders. Each target can have <b>notes</b> (shown in Today’s plan), be limited to some <b>days</b> of the week (bath nights, a weekly home visit), and be set in <b>minutes before bedtime</b> so it moves with each day’s bedtime (Baseline’s bedtime routines also apply on visit days). <b>Optional</b> naps (e.g. the bridge nap) are never flagged as late; when a template has two bedtimes, the later one applies only on days the optional nap happened. In <b>Auto</b> mode, an off-site Visit starting by ${T().earlyVisitCutoff} uses <i>Early-Morning Visit Day</i>, later visits use <i>Late-Morning Visit Day</i>, and all other days (including in-home visits and appointments) use <i>Baseline Home Day</i>.</p>`;
+  }
+  else if (setPane === 'score') {
+    const W = S.score.weights;
+    h = `<h4>Routine score</h4>
+      <p class="hint" style="margin-top:0">${L('A 0–100 score per day for how closely it followed <b>your</b> routine. Share out 100 points between the parts: the more points, the more that part counts. 0 = ignore it. Parts with no data that day are skipped; a day needs at least three parts to get a score.', 'Un score de 0 à 100 par jour selon le respect de <b>votre</b> routine. Répartissez 100 points entre les volets : plus un volet a de points, plus il compte. 0 = ignoré. Les volets sans données ce jour-là sont omis; il en faut au moins trois pour obtenir un score.')}</p>
+      ${scoreWeightsHTML()}
+      <h4>Colour bands</h4><div class="fgrid">${numField('score.good','Good from',5)}${numField('score.ok','OK from',5)}</div>
+      <h4>How each part is scored</h4>
+      <ul class="hint" style="margin-top:0">
+        <li><b>Naps on schedule</b> — for each (non-optional) nap in the template: full credit for a nap starting within 20 min of the planned start, sliding to none at 75 min off; a missed nap scores 0.</li>
+        <li><b>Daytime sleep in budget</b> — full marks up to the max (and at least half of it); loses credit for each minute over, reaching 0 at 60 min over.</li>
+        <li><b>No nap past cutoff</b> — full up to 10 min past the cutoff, sliding to none at 60 min past (optional naps such as the bridge nap don't count).</li>
+        <li><b>Bedtime on target</b> — full within 20 min of the template bedtime, 0 at 60 min off.</li>
+        <li><b>Unbroken night</b> — full at ≤ 10 min awake, 40% at the split-night threshold (${T().splitNightMin} min), 0 at 20 min beyond it.</li>
+        <li><b>Milk in range</b> — full inside the target range, 0 at 3 oz outside it.</li>
+        <li><b>Meals accepted</b> — Ate Well 100%, Partial 50%, Refused 0%, averaged over rated meals.</li></ul>`;
+  }
+  else if (setPane === 'reports') {
+    const O = S.report;
+    h = `<h4>Report details</h4><div class="fgrid">
+        <label class="field">Child label on reports<input type="text" data-set="report.childLabel" value="${esc(O.childLabel)}" placeholder="e.g. initials only"></label>
+        <label class="field">Prepared by<input type="text" data-set="report.preparedBy" value="${esc(O.preparedBy)}"></label>
+        <label class="field">Case / file reference<input type="text" data-set="report.caseRef" value="${esc(O.caseRef)}"></label></div>
+      <h4>Reporting periods</h4><div class="fgrid">
+        <label class="field">First period starts<input type="date" data-set="report.anchor" value="${esc(O.anchor)}"><span class="faint">blank = first day of data</span></label>
+        ${numField('report.periodDays','Period length (days)',1)}</div>
+      <p class="hint">Periods run back to back from the start date, so each report lines up with your submission schedule. “All visits to date” covers everything from the day before the first visit — useful for court summaries.</p>
+      <h4>Saved copies</h4>
+      <p>${REPS.snaps.length} saved report${REPS.snaps.length === 1 ? '' : 's'} on this device.${REPS.snaps.length ? ' <button class="btn sm danger" data-act="clearSnaps">Delete all</button>' : ''}</p>
+      <p class="hint">“Save copy” in the report keeps an unchangeable copy here, so a report you've already submitted can be shown exactly as sent even after the log is corrected. Use Download to keep your own file copy.</p>`;
+  }
+  else if (setPane === 'cats') {
+    const present = new Set(DATA.events.map(e => e.cat));
+    h = `<h4>Category colors</h4><p class="hint" style="margin-top:0">New categories found in your data are added automatically with a stable color and a behaviour inferred from the name (sleep, meal, visit, health…). Override any color here.</p>
+      ${GROUPS.map(g => { const cs = [...CATS.values()].filter(c => c.group === g.id && (c.known || present.has(c.name))); return cs.length ? `<div style="margin-top:10px;font-weight:700;font-size:12.5px;color:var(--muted)">${g.label}</div>` + cs.map(c => `<div class="catrow"><span>${c.icon}</span><span>${esc(c.name)} ${c.known ? '' : '<span class="pill">auto-discovered</span>'} ${present.has(c.name) ? '' : '<span class="faint">(not in data)</span>'}</span><input type="color" data-catcolor="${esc(c.name)}" value="${catColor(c.name)}"><button class="btn sm ghost" data-catreset="${esc(c.name)}" title="Reset color" ${S.catColors[c.name] ? '' : 'disabled'}>↺</button></div>`).join('') : ''; }).join('')}`;
+  }
+  else if (setPane === 'foods') {
+    const st = foodStats(DATA.events);
+    h = `<h4>Food detection</h4>
+      <p class="hint" style="margin-top:0">Foods come from the <b>Tags</b> column of meal rows (most accurate) plus keywords found in meal <b>Notes</b>. ${st.length} distinct foods detected so far.</p>
+      <label class="field">Extra food keywords (comma-separated)<textarea rows="3" data-set="foodWords" placeholder="e.g. arepa, dal, congee, pierogi">${esc(S.foodWords)}</textarea></label>
+      <p class="hint">Tags such as <span class="mono">new-food</span>, <span class="mono">accepted</span>, <span class="mono">refused</span>, <span class="mono">grandparents</span> describe the meal and are not counted as foods. Mark a first taste with the <span class="mono">new-food</span> tag to list it in the New Foods log.</p>`;
+  }
+  else if (setPane === 'sharing') h = sharingPaneHTML();
+  else if (setPane === 'about') h = aboutPaneHTML();
+  else if (setPane === 'presets') h = `<h4>Saved filter presets</h4>
+      ${S.presets.length ? S.presets.map((p,i) => `<div class="catrow" style="grid-template-columns:1fr auto auto"><span><b>${esc(p.name)}</b> <span class="faint">${esc(describeFilter(p.filter))}</span></span><button class="btn sm" data-preset-apply="${i}">Apply</button><button class="btn sm ghost danger" data-preset-del="${i}">Delete</button></div>`).join('') : '<p class="muted">No presets yet.</p>'}
+      <div class="row" style="margin-top:12px"><button class="btn" data-act="presetSave">＋ Save current filters as preset</button></div>`;
+  else if (setPane === 'backup') h = `<h4>Move settings between devices</h4>
+      <p class="hint" style="margin-top:0">Exports everything in Settings (endpoint, token, targets, templates, colors, presets, reminders) — not your log data. Send privately: it contains your token.</p>
+      <div class="row wrap"><button class="btn primary" data-act="cfgExport">Export config (JSON)</button><button class="btn" data-act="cfgImport">Import config…</button><input type="file" id="cfgFile" accept=".json,application/json" hidden></div>
+      <h4>Reset</h4>
+      <div class="row wrap"><button class="btn" data-act="clearCache">Clear cached data</button><button class="btn danger" data-act="resetAll">Reset all settings</button></div>
+      <p class="hint">Everything is stored only in this browser (localStorage). Clearing site data removes it. Dashboard v${APP_VERSION} · <a href="#" data-act="about">${L('what’s new', 'nouveautés')}</a>.</p>`;
+  $('#setPane').innerHTML = `<section class="on">${h}</section>`;
+  if (setPane === 'score') syncScoreWeights();
+}
+function describeFilter(f){ const r = { last7:'Last 7 days', last14:'Last 14 days', week:'This week', all:'All time', custom:'Custom range' }[f.range] || f.range; return [r, f.dayType !== 'all' ? f.dayType + ' days' : '', f.q ? `“${f.q}”` : '', f.hidden?.length ? f.hidden.length + ' hidden categories' : ''].filter(Boolean).join(' · '); }
+function savePreset(){ const name = prompt('Name this preset:', describeFilter(F)); if (!name) return; S.presets.push({ name, filter: structuredClone(F) }); saveSettings(); renderFilterBar(); if ($('#mSettings').classList.contains('on')) renderSettings(); toast('Preset saved'); }
+function applyPreset(i){ const p = S.presets[i]; if (!p) return; F = Object.assign({ ...DEFAULT_FILTER }, structuredClone(p.filter)); ensureCustomRange(); saveFilter(); renderAll(); toast('Applied “' + p.name + '”'); }
+/** Settings changed that affect analytics → recompute; everything else → just re-render. */
+const settingsChanged = debounce((reanalyze) => { saveSettings(); FOOD_DICT = null; if (reanalyze) analyze(); applyTheme(); setupAutoRefresh(); renderAll(); }, 250);
+function exportQueueCSV(){
+  const lines = [HEADERS.map(csvCell).join(',')].concat(QUEUE.filter(q => q.op === 'append').map(q => HEADERS.map(h => csvCell(q.row[h] ?? '')).join(',')));
+  download('quick_log_device_entries.csv', lines.join('\r\n'));
+}
+

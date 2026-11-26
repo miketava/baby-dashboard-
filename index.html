@@ -1511,7 +1511,6 @@ const OUTCOME_TONE = { 'Ate Well':'good', 'Easy':'good', 'Resolved':'good', 'Par
 const REACT_NEG = ['clingy','upset','upset-at-handover','tantrum','crying','inconsolable','regression','night-terror','aggressive','hitting','biting','withdrawn','not-eating','fussy','screaming','separation-anxiety'];
 const REACT_POS = ['happy','settled','calm','playful','content','smiling','engaged','affectionate'];
 const REACT_NEG_RE = /\b(cry|crying|cried|tantrum|clingy|upset|inconsolable|scream|screaming|meltdown|distress)/i;
-const REACT_POS_RE = /\b(happy|content|playful|laughing|giggl|settled well|calm)/i;
 const HANDOVER_TAGS = ['drop-off','pick-up','agency','parent','caregiver','on-time','late'];
 
 /**
@@ -3966,7 +3965,6 @@ function goDrawerDay(dir, { fromDrag = 0 } = {}){
     setTimeout(() => { drAnimating = false; }, 230);
   };
 }
-function stepDrawer(dir){ const ds = visibleDays().map(d => d.D); let i = ds.indexOf(drawerDay); if (i < 0) return; i = clamp(i + dir, 0, ds.length-1); drawerEv = null; drawerDay = ds[i]; renderDrawer(); }
 
 /* ════════════════════════════════════════════════════════════════════════════
    14. CHART.JS HELPERS
@@ -4021,7 +4019,6 @@ function mkChart(id, cfg){
 }
 function chartEmpty(id, msg){ if (CH[id]) { CH[id].destroy(); delete CH[id]; } const cv = document.getElementById(id); cv.style.display = 'none'; const box = cv.parentElement; box.querySelector('.empty')?.remove(); box.insertAdjacentHTML('beforeend', `<div class="empty">${msg}</div>`); }
 const hhmmTick = v => fmtTime(v);
-const hrsTick = v => (v/60).toFixed(v % 60 ? 1 : 0) + 'h';
 const dayLabel = d => fmtDay(d.D, { weekday:'short', day:'numeric' });
 
 /* swipe left / right in the day panel (phones) */
@@ -4148,15 +4145,6 @@ function renderSleep(){
       const base = cols[j][4] ? get(slices[0]) : null, diff = base != null && v != null && s !== slices[0] && s.n ? cols[j][4](v, base) : 0;
       return `<td class="${diff > 0 ? 'worse' : diff < 0 ? 'better' : ''}">${v == null || (!s.n && name !== 'Days') ? '<span class="faint">—</span>' : `<div class="val">${fmt(v)}</div>${bar ? `<div class="bar"><i style="width:${v/mx[j]*100}%;background:${s.col}"></i></div>` : ''}`}</td>`; }).join('')}</tr>`).join('')
   }</tbody></table><div class="hint">Orange = noticeably worse than a quiet home day, green = better. Compare “Car ride, no visit” and “Outing” against “Visit” to see whether disruption comes from travel in general or from supervised visits specifically. “Day after visit” = a non-visit day right after a visit day.</div>`;
-}
-function chartDayClick(_e, els, ch){ const el = els[0]; if (!el) return; const p = ch.data.datasets[el.datasetIndex].data[el.index]; if (p?.D != null) openDrawer(p.D); }
-function linReg(X, Y){
-  if (X.length < 3) return null;
-  const mx = mean(X), my = mean(Y);
-  const sxy = sum(X.map((x,i) => (x-mx)*(Y[i]-my))), sxx = sum(X.map(x => (x-mx)**2)), syy = sum(Y.map(y => (y-my)**2));
-  if (!(sxx > 0)) return null;
-  const k = sxy/sxx, b0 = my - k*mx, x0 = Math.min(...X), x1 = Math.max(...X), r = syy > 0 ? sxy/Math.sqrt(sxx*syy) : 0;
-  return { r, line:[[x0, b0+k*x0],[x1, b0+k*x1]], strength: Math.abs(r) > .6 ? 'strong' : Math.abs(r) > .3 ? 'moderate' : 'weak' };
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

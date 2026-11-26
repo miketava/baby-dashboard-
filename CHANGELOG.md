@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+### Repository · 2026-11-26
+
+- The source is now in the repo: `src/` (70 files by concern, joined by `node tools/build.js` in the order of `src/BUILD_ORDER`), with `apps-script/Code.gs` as the single copy of the script, inlined at build time. The built `index.html` was checked byte-for-byte against the previous build.
+- Tests: `tests/apps_script.test.js` (the script against an in-memory Sheet) and `tests/smoke.py` (30 browser checks).
+- Removed five unused functions left behind by earlier changes (no visible change).
+
 ## v1.25.3 — 2026-11-26 · Apps Script v1.3 (no script change)
 
 - **Filter button only where filters apply.** An audit changed each filter (range, day type, search, categories) and checked which sections changed. The funnel is removed from the seven that never do, because they always use their own window: Growth (every measurement, for the WHO curves), Teeth, Medications (last 30 days), Vaccines (the Québec schedule), Allergen upkeep, Trends to watch (last days vs the two weeks before) and Cocooning (the settling-in period). Every other section keeps it.
