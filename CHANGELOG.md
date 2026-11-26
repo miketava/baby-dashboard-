@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.25.1 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Compact day labels on the Timeline** (default on phones): a day's milestones, notes, measurements and check-ins are stacked into one badge of icons (with a count when there are several of a kind), e.g. "⚖️ 📏 ⭐ 💗"; hover or long-press for the text, tap the day for the full list. **All labels** shows each one as before (default on computers). Switch in the timeline's display options.
+- **Phones: clearer Display options.** The timeline's *⚙︎ Display* button is now a round sliders icon beside the filter and ⓘ. It opens a boxed **Display** panel (rows / columns, order, target overlay, diapers & meds, labels) with a separate, labelled **Colour key** under it, so it no longer looks like the filter's category list. The filter (funnel) still chooses *which* days and categories are shown; Display only changes *how* they're drawn.
+
 ## v1.25.0 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Swipe between sections** (phones): swipe left / right on the page to go to the next / previous section in menu order: Today → Timeline → Check-ins → Routine → Sleep → Feeding → Health → Birth Family → Data (sections you've turned off are skipped).
