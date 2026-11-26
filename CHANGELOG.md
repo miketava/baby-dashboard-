@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.25.4 — 2026-11-26 · Apps Script v1.3 (no script change)
+
+- **Puzzle** added to the play activities (Quick Log → Play, and the Play area of the daily check-in). Stored as the tag `puzzle`.
+
 ### Repository · 2026-11-26
 
 - The source is now in the repo: `src/` (70 files by concern, joined by `node tools/build.js` in the order of `src/BUILD_ORDER`), with `apps-script/Code.gs` as the single copy of the script, inlined at build time. The built `index.html` was checked byte-for-byte against the previous build.

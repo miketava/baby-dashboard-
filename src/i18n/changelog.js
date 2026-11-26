@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.25.4', date:'2026-11-26',
+    en:['Play: a Puzzle choice in the activity buttons (Quick Log → Play, and the daily check-in’s Play area).'],
+    fr:['Jeu : un choix Casse-tête dans les boutons d’activité (saisie rapide → Jeu, et le volet Jeu du bilan quotidien).'] },
   { v:'1.25.3', date:'2026-11-26',
     en:['The filter button only appears on sections the filters actually change. Removed from Growth, Teeth, Medications, Vaccines, Allergen upkeep, Trends to watch and Cocooning, which always use their own window (every measurement, the last 30 days, the settling-in period…).'],
     fr:['Le bouton de filtre n’apparaît que sur les sections que les filtres changent vraiment. Retiré de Croissance, Dents, Médicaments, Vaccins, Suivi des allergènes, Tendances à surveiller et Cocooning, qui utilisent toujours leur propre période (toutes les mesures, les 30 derniers jours, la période d’adaptation…).'] },

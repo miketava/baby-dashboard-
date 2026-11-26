@@ -1144,11 +1144,14 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.25.3';
+const APP_VERSION = '1.25.4';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.25.4', date:'2026-11-26',
+    en:['Play: a Puzzle choice in the activity buttons (Quick Log → Play, and the daily check-in’s Play area).'],
+    fr:['Jeu : un choix Casse-tête dans les boutons d’activité (saisie rapide → Jeu, et le volet Jeu du bilan quotidien).'] },
   { v:'1.25.3', date:'2026-11-26',
     en:['The filter button only appears on sections the filters actually change. Removed from Growth, Teeth, Medications, Vaccines, Allergen upkeep, Trends to watch and Cocooning, which always use their own window (every measurement, the last 30 days, the settling-in period…).'],
     fr:['Le bouton de filtre n’apparaît que sur les sections que les filtres changent vraiment. Retiré de Croissance, Dents, Médicaments, Vaccins, Suivi des allergènes, Tendances à surveiller et Cocooning, qui utilisent toujours leur propre période (toutes les mesures, les 30 derniers jours, la période d’adaptation…).'] },
@@ -5322,7 +5325,7 @@ const CHECKIN = [
         { k:'issue', en:'If not', fr:'Sinon', o:[o3('Too often', 'Trop souvent'), o3('Asked for photos', 'Ont demandé des photos'), o3('Outside agreed times', 'Hors des heures convenues'), o3('Tone', 'Ton'), o3('Other', 'Autre')] } ] },
   { id:'other', cat:'Check-in - Other', icon:'📝', en:'Anything else', fr:'Autre', hint:['Any other topic you consider relevant: health, milestones, visits, changes at home…', 'Tout autre sujet pertinent : santé, étapes, visites, changements à la maison…'], q:[] },
 ];
-function PLAY_ACTS(){ return [o3('Books', 'Livres'), o3('Blocks', 'Blocs'), o3('Stacking', 'Empiler'), o3('Balls', 'Ballons'), o3('Music', 'Musique'), o3('Toys with sounds', 'Jouets sonores'), o3('Peekaboo', 'Coucou'), o3('Pretend', 'Faire semblant'), o3('Sensory', 'Sensoriel'), o3('Mirror', 'Miroir'), o3('Cars', 'Autos'), o3('Outdoors', 'Dehors'), o3('Water', 'Eau'), o3('Crawling / climbing', 'Ramper / grimper')]; }
+function PLAY_ACTS(){ return [o3('Books', 'Livres'), o3('Blocks', 'Blocs'), o3('Stacking', 'Empiler'), o3('Puzzle', 'Casse-tête'), o3('Balls', 'Ballons'), o3('Music', 'Musique'), o3('Toys with sounds', 'Jouets sonores'), o3('Peekaboo', 'Coucou'), o3('Pretend', 'Faire semblant'), o3('Sensory', 'Sensoriel'), o3('Mirror', 'Miroir'), o3('Cars', 'Autos'), o3('Outdoors', 'Dehors'), o3('Water', 'Eau'), o3('Crawling / climbing', 'Ramper / grimper')]; }
 const CI_TONE = [['Positive', 'A good day', 'Une bonne journée'], ['Mixed', 'Mixed', 'Mitigée'], ['Difficult', 'A hard day', 'Une journée difficile']];
 const ciArea = cat => CHECKIN.find(a => a.cat.toLowerCase() === String(cat).toLowerCase());
 const ciAreas = () => CHECKIN.filter(a => !a.mod || mod(a.mod));

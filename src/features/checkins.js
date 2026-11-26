@@ -49,7 +49,7 @@ const CHECKIN = [
         { k:'issue', en:'If not', fr:'Sinon', o:[o3('Too often', 'Trop souvent'), o3('Asked for photos', 'Ont demandé des photos'), o3('Outside agreed times', 'Hors des heures convenues'), o3('Tone', 'Ton'), o3('Other', 'Autre')] } ] },
   { id:'other', cat:'Check-in - Other', icon:'📝', en:'Anything else', fr:'Autre', hint:['Any other topic you consider relevant: health, milestones, visits, changes at home…', 'Tout autre sujet pertinent : santé, étapes, visites, changements à la maison…'], q:[] },
 ];
-function PLAY_ACTS(){ return [o3('Books', 'Livres'), o3('Blocks', 'Blocs'), o3('Stacking', 'Empiler'), o3('Balls', 'Ballons'), o3('Music', 'Musique'), o3('Toys with sounds', 'Jouets sonores'), o3('Peekaboo', 'Coucou'), o3('Pretend', 'Faire semblant'), o3('Sensory', 'Sensoriel'), o3('Mirror', 'Miroir'), o3('Cars', 'Autos'), o3('Outdoors', 'Dehors'), o3('Water', 'Eau'), o3('Crawling / climbing', 'Ramper / grimper')]; }
+function PLAY_ACTS(){ return [o3('Books', 'Livres'), o3('Blocks', 'Blocs'), o3('Stacking', 'Empiler'), o3('Puzzle', 'Casse-tête'), o3('Balls', 'Ballons'), o3('Music', 'Musique'), o3('Toys with sounds', 'Jouets sonores'), o3('Peekaboo', 'Coucou'), o3('Pretend', 'Faire semblant'), o3('Sensory', 'Sensoriel'), o3('Mirror', 'Miroir'), o3('Cars', 'Autos'), o3('Outdoors', 'Dehors'), o3('Water', 'Eau'), o3('Crawling / climbing', 'Ramper / grimper')]; }
 const CI_TONE = [['Positive', 'A good day', 'Une bonne journée'], ['Mixed', 'Mixed', 'Mitigée'], ['Difficult', 'A hard day', 'Une journée difficile']];
 const ciArea = cat => CHECKIN.find(a => a.cat.toLowerCase() === String(cat).toLowerCase());
 const ciAreas = () => CHECKIN.filter(a => !a.mod || mod(a.mod));
