@@ -109,7 +109,7 @@ function todayState(){
   apptCallouts().forEach(c => S0.callouts.push(c));
   nudgeCallouts(m, D).forEach(c => S0.callouts.push(c));
   vaxCallouts().forEach(c => S0.callouts.push(c));
-  { const tr = D === todayIdx() && !viewOnly() ? trendAlerts() : []; if (tr.length) S0.callouts.push({ cls:'info', html:`📈 ${L(`${tr.length} trend${tr.length > 1 ? 's' : ''} to watch`, `${plural(tr.length, '', '', 'tendance à surveiller', 'tendances à surveiller')}`)}: ${esc(tr[0].text)} <button class="btn sm" data-goview="patterns" style="margin-left:6px">${L('See', 'Voir')}</button>` }); }
+  { const tr = D === todayIdx() && !viewOnly() ? trendAlerts().filter(x => !x.acked) : []; if (tr.length) S0.callouts.push({ cls:'info', html:`📈 ${L(`${tr.length} trend${tr.length > 1 ? 's' : ''} to watch`, `${plural(tr.length, '', '', 'tendance à surveiller', 'tendances à surveiller')}`)}: ${esc(tr[0].text)} <button class="btn sm" data-act="trendAck" data-k="${tr[0].key}" style="margin-left:6px">✓ ${L('Got it', 'Compris')}</button><button class="btn sm" data-goview="patterns" style="margin-left:6px">${L('See', 'Voir')}</button>` }); }
   if (ciDue()) S0.callouts.push({ cls:'info', html:`📝 ${L('Time for today’s check-in', 'C’est l’heure du bilan du jour')} <button class="btn sm primary" data-ciopen style="margin-left:6px">${L('Start', 'Commencer')}</button>` });
   if (!S0.peek) S0.peek = S0.lines[0]?.html.replace(/<[^>]+>/g,'') || '';
   return S0;

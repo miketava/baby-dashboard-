@@ -1153,12 +1153,15 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.30.1';
+const APP_VERSION = '1.31.0';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.7';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.31.0', date:'2026-11-26',
+    en:['Trends to watch: ✓ Got it, in the Today banner and on the Routine tab, for a trend you’ve seen and expect (e.g. less day sleep because of a new routine). It leaves the banner and folds under “Acknowledged” for 14 days, by which time the two-week comparison has caught up with the new normal. It comes back sooner if it gets clearly worse. Shared with the other caregiver; Undo brings it back.'],
+    fr:['Tendances à surveiller : ✓ Compris, dans le bandeau d’aujourd’hui et dans l’onglet Routine, pour une tendance vue et attendue (p. ex. moins de sommeil de jour à cause d’une nouvelle routine). Elle quitte le bandeau et se range sous « Pris en compte » pendant 14 jours, le temps que la comparaison sur deux semaines rattrape la nouvelle normale. Elle revient plus tôt si elle s’aggrave nettement. Partagé avec l’autre parent; Annuler la fait revenir.'] },
   { v:'1.30.1', date:'2026-11-26',
     en:['Today’s plan keeps anything that ended in the last 45 minutes in view instead of folding it under “Earlier today”, so a nap or meal you’re a few minutes late for is still there. Not logged yet, it says “due 20m ago” rather than “not logged”.'],
     fr:['Le plan du jour garde visible ce qui s’est terminé dans les 45 dernières minutes au lieu de le replier sous « Plus tôt aujourd’hui » : une sieste ou un repas avec quelques minutes de retard reste là. Pas encore noté, il indique « prévu il y a 20 min » plutôt que « non noté ».'] },
@@ -1668,7 +1671,8 @@ const DEFAULT_SETTINGS = {
   overlayOn: true, overlayTpl: 'auto',
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
-  todayTpl: { date: null, id: 'auto' },   // manual override for today only
+  todayTpl: { date: null, id: 'auto' },
+  trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only
   apptFor: {}, apptIgnoreCals: [], libSeen: [],   // v1.26: calendar appointments (id → child id or 'no'), ignored calendars, library templates already added
   reminders: { enabled:false, chime:true, lead:15, naps:true, meals:true, cutoff:true, dynamic:true, feedEvery:0 },
   ntfyTopic: '',
@@ -3920,7 +3924,7 @@ function todayState(){
   apptCallouts().forEach(c => S0.callouts.push(c));
   nudgeCallouts(m, D).forEach(c => S0.callouts.push(c));
   vaxCallouts().forEach(c => S0.callouts.push(c));
-  { const tr = D === todayIdx() && !viewOnly() ? trendAlerts() : []; if (tr.length) S0.callouts.push({ cls:'info', html:`📈 ${L(`${tr.length} trend${tr.length > 1 ? 's' : ''} to watch`, `${plural(tr.length, '', '', 'tendance à surveiller', 'tendances à surveiller')}`)}: ${esc(tr[0].text)} <button class="btn sm" data-goview="patterns" style="margin-left:6px">${L('See', 'Voir')}</button>` }); }
+  { const tr = D === todayIdx() && !viewOnly() ? trendAlerts().filter(x => !x.acked) : []; if (tr.length) S0.callouts.push({ cls:'info', html:`📈 ${L(`${tr.length} trend${tr.length > 1 ? 's' : ''} to watch`, `${plural(tr.length, '', '', 'tendance à surveiller', 'tendances à surveiller')}`)}: ${esc(tr[0].text)} <button class="btn sm" data-act="trendAck" data-k="${tr[0].key}" style="margin-left:6px">✓ ${L('Got it', 'Compris')}</button><button class="btn sm" data-goview="patterns" style="margin-left:6px">${L('See', 'Voir')}</button>` }); }
   if (ciDue()) S0.callouts.push({ cls:'info', html:`📝 ${L('Time for today’s check-in', 'C’est l’heure du bilan du jour')} <button class="btn sm primary" data-ciopen style="margin-left:6px">${L('Start', 'Commencer')}</button>` });
   if (!S0.peek) S0.peek = S0.lines[0]?.html.replace(/<[^>]+>/g,'') || '';
   return S0;
@@ -6437,8 +6441,10 @@ function trendAlerts(){
   const D = todayIdx(), recent = [1, 2, 3].map(k => DAYS.get(D - k)).filter(Boolean), base = daysBack(14, D - 4);
   if (recent.length < 3 || base.length < 7) return [];
   const out = [], all3 = (f) => recent.every(f), bm = k => medianOf(base.map(m => m[k]));
-  const up = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null) return; if (all3(m => m[k] != null && m[k] >= b + Math.max(min, b * rel))) out.push({ icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
-  const down = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null || b <= 0) return; if (all3(m => m[k] != null && m[k] <= b - Math.max(min, b * rel))) out.push({ icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
+  const avg3 = k => recent.reduce((a, m) => a + m[k], 0) / 3;
+  // key + v (the recent level) let a trend be acknowledged and come back only if it gets worse (v1.31)
+  const up = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null) return; if (all3(m => m[k] != null && m[k] >= b + Math.max(min, b * rel))) out.push({ key:k, dir:1, v:avg3(k), tol:min, icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
+  const down = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null || b <= 0) return; if (all3(m => m[k] != null && m[k] <= b - Math.max(min, b * rel))) out.push({ key:k, dir:-1, v:avg3(k), tol:min, icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
   const durs = a => a.map(x => fmtDur(Math.round(x))).join(', ');
   up('overnightAwake', 15, .5, '🌙', (b, v) => `Awake at night went up three nights running (${durs(v)}; usually ${fmtDur(Math.round(b))}).`, (b, v) => `Plus d’éveil la nuit trois nuits de suite (${durs(v)}; d’habitude ${fmtDur(Math.round(b))}).`);
   up('effort', 10, .5, '🛏️', (b, v) => `Bedtime has taken longer three days running (${durs(v)}; usually ${fmtDur(Math.round(b))}).`, (b, v) => `Le coucher prend plus de temps trois jours de suite (${durs(v)}; d’habitude ${fmtDur(Math.round(b))}).`);
@@ -6446,20 +6452,41 @@ function trendAlerts(){
   down('daySleep', 30, .2, '💤', (b, v) => `Less daytime sleep three days running (${durs(v)}; usually ${fmtDur(Math.round(b))}).`, (b, v) => `Moins de sommeil de jour trois jours de suite (${durs(v)}; d’habitude ${fmtDur(Math.round(b))}).`);
   if (mod('milk')) down('milk', 2, .25, '🍼', (b, v) => `Less milk three days running (${v.map(fmtOz).join(', ')}; usually ${fmtOz(b)}).`, (b, v) => `Moins de lait trois jours de suite (${v.map(fmtOz).join(', ')}; d’habitude ${fmtOz(b)}).`);
   const ref = recent.flatMap(m => m.evs.filter(e => isMeal(e) && e.outcome === 'Refused')).length;
-  if (ref >= 3) out.push({ icon:'🍽', text:L(`${ref} meals refused in the last three days.`, `${ref} repas refusés dans les trois derniers jours.`) });
+  if (ref >= 3) out.push({ key:'refused', dir:1, v:ref, tol:1, icon:'🍽', text:L(`${ref} meals refused in the last three days.`, `${ref} repas refusés dans les trois derniers jours.`) });
   // nap transition: fewer naps than the plan on most of the last 7 days
   const wk = daysBack(7, D - 1), planN = tplItems(tplById('baseline'), 'nap').filter(i => !i.optional).length, age = ageDays();
   if (wk.length >= 6 && planN >= 2) { const short = wk.filter(m => m.napCount != null && m.napCount < planN).length;
-    if (short >= 4) out.push({ icon:'🔀', text:L(`Fewer naps than planned on ${short} of the last ${wk.length} days${age != null && age > 330 && age < 600 ? '. Around 13–18 months many children move from two naps to one; the age-band review in Settings → Targets can suggest a one-nap day' : ''}.`,
+    if (short >= 4) out.push({ key:'fewerNaps', dir:1, v:short, tol:1, icon:'🔀', text:L(`Fewer naps than planned on ${short} of the last ${wk.length} days${age != null && age > 330 && age < 600 ? '. Around 13–18 months many children move from two naps to one; the age-band review in Settings → Targets can suggest a one-nap day' : ''}.`,
       `Moins de siestes que prévu ${short} jours sur ${wk.length}${age != null && age > 330 && age < 600 ? '. Vers 13 à 18 mois, beaucoup d’enfants passent de deux siestes à une; la révision selon l’âge (Paramètres → Cibles) peut proposer une journée à une sieste' : ''}.`) }); }
   if (wk.length >= 6 && planN === 1) { const none = wk.filter(m => m.napCount === 0).length;
-    if (none >= 3) out.push({ icon:'🔀', text:L(`No nap on ${none} of the last ${wk.length} days.`, `Aucune sieste ${none} jours sur ${wk.length}.`) }); }
-  return out;
+    if (none >= 3) out.push({ key:'noNap', dir:1, v:none, tol:1, icon:'🔀', text:L(`No nap on ${none} of the last ${wk.length} days.`, `Aucune sieste ${none} jours sur ${wk.length}.`) }); }
+  return out.map(x => ({ ...x, acked: trendAcked(x) }));
+}
+/* Acknowledging a trend (“Got it”): hidden from the Today banner and folded on the Routine tab for 14 days, by then the
+   two-week comparison has caught up with the new normal. It comes back sooner if it gets clearly worse than when it was
+   acknowledged. Shared between caregivers (Config tab). Per child. */
+const TREND_ACK_DAYS = 14;
+const trendAckKey = x => (multiKid() ? (S.kids[kidIdx()]?.id || kidIdx()) + ':' : '') + x.key;
+function trendAcked(x){
+  const a = (S.trendAck || {})[trendAckKey(x)]; if (!a) return null;
+  if (todayIdx() - parseDate(a.at) >= TREND_ACK_DAYS) return null;
+  return (x.v - a.v) * x.dir > Math.max(x.tol, Math.abs(a.v) * .15) ? null : a;   // clearly worse: show it again
+}
+function ackTrend(key, undo){
+  const x = trendAlerts().find(t => t.key === key); if (!x) return;
+  S.trendAck = { ...(S.trendAck || {}) };
+  for (const k in S.trendAck) if (todayIdx() - parseDate(S.trendAck[k].at) >= TREND_ACK_DAYS) delete S.trendAck[k];   // tidy old ones
+  if (undo) delete S.trendAck[trendAckKey(x)]; else S.trendAck[trendAckKey(x)] = { at: isoOf(todayIdx()), v: Math.round(x.v * 10) / 10, by: ME?.name || '' };
+  saveSettings(); renderAll();
+  if (!undo) toast(L(`Got it: hidden for ${TREND_ACK_DAYS} days unless it gets worse`, `Compris : masqué ${TREND_ACK_DAYS} jours, sauf si ça empire`));
 }
 function renderTrends(){
   const box = $('#trendBox'); if (!box) return;
-  const a = trendAlerts();
-  box.innerHTML = a.length ? `<ul class="find">${a.map(x => `<li>${x.icon} ${esc(x.text)}</li>`).join('')}</ul>`
+  const all = trendAlerts(), a = all.filter(x => !x.acked), done = all.filter(x => x.acked), ro = viewOnly();
+  const ackBtn = x => ro ? '' : ` <button class="btn sm ghost" data-act="trendAck" data-k="${x.key}">✓ ${L('Got it', 'Compris')}</button>`;
+  const doneHTML = done.length ? `<details class="trend-done" style="margin-top:6px"><summary class="faint">${L(`Acknowledged (${done.length})`, `Pris en compte (${done.length})`)}</summary><ul class="find" style="opacity:.7">${done.map(x => `<li>${x.icon} ${esc(x.text)} <span class="faint">· ${L(`acknowledged ${relDay(parseDate(x.acked.at))}`, `pris en compte ${relDay(parseDate(x.acked.at))}`)}${x.acked.by ? ' · ' + esc(x.acked.by) : ''}</span>${ro ? '' : ` <button class="btn sm ghost" data-act="trendUndo" data-k="${x.key}">${L('Undo', 'Annuler')}</button>`}</li>`).join('')}</ul></details>` : '';
+  if (!a.length && done.length) { box.innerHTML = `<p class="muted" style="margin:2px 0">${L('Nothing new to watch.', 'Rien de nouveau à surveiller.')}</p>${doneHTML}`; return; }
+  box.innerHTML = a.length ? `<ul class="find">${a.map(x => `<li>${x.icon} ${esc(x.text)}${ackBtn(x)}</li>`).join('')}</ul>${doneHTML}`
     : `<p class="muted" style="margin:2px 0">${L('Nothing unusual in the last three days compared with the two weeks before.', 'Rien d’inhabituel dans les trois derniers jours par rapport aux deux semaines précédentes.')}</p>`;
 }
 
@@ -6888,7 +6915,7 @@ document.addEventListener('click', e => {
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share'];   // share: viewer keys, so “Copy script” has them on every device
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck'];   // share: viewer keys, so “Copy script” has them on every device
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
@@ -8081,6 +8108,7 @@ function wire(){
   $('#btnPastMeasure').onclick = () => logPastMeasurement();
   $('#vaxBox').onclick = e => { const b = e.target.closest('[data-vaxlog]'); if (b) logVaccineFromSchedule(b.dataset.vaxlog); };
   document.addEventListener('click', e => { const g = e.target.closest?.('[data-goview]'); if (g) setView(g.dataset.goview); });
+  document.addEventListener('click', e => { const g = e.target.closest?.('[data-act=trendAck],[data-act=trendUndo]'); if (g) ackTrend(g.dataset.k, g.dataset.act === 'trendUndo'); });   // v1.31: acknowledge a trend
   $('#btnTodayDay').onclick = () => { if (DAYS.has(todayIdx())) openDrawer(todayIdx()); };
   // Timeline toolbar
   $('#orientSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.orientation = b.dataset.o; saveSettings(); renderTimeline(); };

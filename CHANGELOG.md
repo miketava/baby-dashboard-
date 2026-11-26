@@ -8,6 +8,14 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.31.0 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **Acknowledge a trend.** *Trends to watch* (Today banner and Routine tab) gets **✓ Got it** for a trend you've seen and expect, e.g. less day sleep because of a new routine.
+  - It leaves the Today banner (the next unacknowledged trend shows instead, if any) and folds under *Acknowledged* on the Routine tab, with when and by whom, and **Undo**.
+  - It stays hidden for 14 days: by then the two-week comparison has caught up with the new normal, so an expected change stops being flagged on its own.
+  - It comes back sooner if it gets clearly worse than when it was acknowledged (15% or the trend's own threshold, e.g. 30 more minutes less day sleep).
+  - Kept in the Sheet's Config tab, so acknowledging on one phone clears it on the other. Per child.
+
 ## v1.30.1 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **Today's plan keeps the last 45 minutes in view.** Items that ended (or, without an end, started) up to 45 minutes ago stay in the list, slightly dimmed, instead of folding under *Earlier today*. One that isn't logged yet shows "due 20m ago" instead of "not logged", so running a few minutes behind on a nap or meal doesn't hide it. Older items still fold away.

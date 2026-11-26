@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.31.0', date:'2026-11-26',
+    en:['Trends to watch: ✓ Got it, in the Today banner and on the Routine tab, for a trend you’ve seen and expect (e.g. less day sleep because of a new routine). It leaves the banner and folds under “Acknowledged” for 14 days, by which time the two-week comparison has caught up with the new normal. It comes back sooner if it gets clearly worse. Shared with the other caregiver; Undo brings it back.'],
+    fr:['Tendances à surveiller : ✓ Compris, dans le bandeau d’aujourd’hui et dans l’onglet Routine, pour une tendance vue et attendue (p. ex. moins de sommeil de jour à cause d’une nouvelle routine). Elle quitte le bandeau et se range sous « Pris en compte » pendant 14 jours, le temps que la comparaison sur deux semaines rattrape la nouvelle normale. Elle revient plus tôt si elle s’aggrave nettement. Partagé avec l’autre parent; Annuler la fait revenir.'] },
   { v:'1.30.1', date:'2026-11-26',
     en:['Today’s plan keeps anything that ended in the last 45 minutes in view instead of folding it under “Earlier today”, so a nap or meal you’re a few minutes late for is still there. Not logged yet, it says “due 20m ago” rather than “not logged”.'],
     fr:['Le plan du jour garde visible ce qui s’est terminé dans les 45 dernières minutes au lieu de le replier sous « Plus tôt aujourd’hui » : une sieste ou un repas avec quelques minutes de retard reste là. Pas encore noté, il indique « prévu il y a 20 min » plutôt que « non noté ».'] },

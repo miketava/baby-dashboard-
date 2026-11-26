@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS = {
   overlayOn: true, overlayTpl: 'auto',
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
-  todayTpl: { date: null, id: 'auto' },   // manual override for today only
+  todayTpl: { date: null, id: 'auto' },
+  trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only
   apptFor: {}, apptIgnoreCals: [], libSeen: [],   // v1.26: calendar appointments (id → child id or 'no'), ignored calendars, library templates already added
   reminders: { enabled:false, chime:true, lead:15, naps:true, meals:true, cutoff:true, dynamic:true, feedEvery:0 },
   ntfyTopic: '',

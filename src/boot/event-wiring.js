@@ -56,6 +56,7 @@ function wire(){
   $('#btnPastMeasure').onclick = () => logPastMeasurement();
   $('#vaxBox').onclick = e => { const b = e.target.closest('[data-vaxlog]'); if (b) logVaccineFromSchedule(b.dataset.vaxlog); };
   document.addEventListener('click', e => { const g = e.target.closest?.('[data-goview]'); if (g) setView(g.dataset.goview); });
+  document.addEventListener('click', e => { const g = e.target.closest?.('[data-act=trendAck],[data-act=trendUndo]'); if (g) ackTrend(g.dataset.k, g.dataset.act === 'trendUndo'); });   // v1.31: acknowledge a trend
   $('#btnTodayDay').onclick = () => { if (DAYS.has(todayIdx())) openDrawer(todayIdx()); };
   // Timeline toolbar
   $('#orientSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.orientation = b.dataset.o; saveSettings(); renderTimeline(); };

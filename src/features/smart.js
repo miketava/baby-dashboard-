@@ -107,8 +107,10 @@ function trendAlerts(){
   const D = todayIdx(), recent = [1, 2, 3].map(k => DAYS.get(D - k)).filter(Boolean), base = daysBack(14, D - 4);
   if (recent.length < 3 || base.length < 7) return [];
   const out = [], all3 = (f) => recent.every(f), bm = k => medianOf(base.map(m => m[k]));
-  const up = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null) return; if (all3(m => m[k] != null && m[k] >= b + Math.max(min, b * rel))) out.push({ icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
-  const down = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null || b <= 0) return; if (all3(m => m[k] != null && m[k] <= b - Math.max(min, b * rel))) out.push({ icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
+  const avg3 = k => recent.reduce((a, m) => a + m[k], 0) / 3;
+  // key + v (the recent level) let a trend be acknowledged and come back only if it gets worse (v1.31)
+  const up = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null) return; if (all3(m => m[k] != null && m[k] >= b + Math.max(min, b * rel))) out.push({ key:k, dir:1, v:avg3(k), tol:min, icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
+  const down = (k, min, rel, icon, en, fr) => { const b = bm(k); if (b == null || b <= 0) return; if (all3(m => m[k] != null && m[k] <= b - Math.max(min, b * rel))) out.push({ key:k, dir:-1, v:avg3(k), tol:min, icon, text:L(en(b, recent.map(m => m[k])), fr(b, recent.map(m => m[k]))) }); };
   const durs = a => a.map(x => fmtDur(Math.round(x))).join(', ');
   up('overnightAwake', 15, .5, '🌙', (b, v) => `Awake at night went up three nights running (${durs(v)}; usually ${fmtDur(Math.round(b))}).`, (b, v) => `Plus d’éveil la nuit trois nuits de suite (${durs(v)}; d’habitude ${fmtDur(Math.round(b))}).`);
   up('effort', 10, .5, '🛏️', (b, v) => `Bedtime has taken longer three days running (${durs(v)}; usually ${fmtDur(Math.round(b))}).`, (b, v) => `Le coucher prend plus de temps trois jours de suite (${durs(v)}; d’habitude ${fmtDur(Math.round(b))}).`);
@@ -116,20 +118,41 @@ function trendAlerts(){
   down('daySleep', 30, .2, '💤', (b, v) => `Less daytime sleep three days running (${durs(v)}; usually ${fmtDur(Math.round(b))}).`, (b, v) => `Moins de sommeil de jour trois jours de suite (${durs(v)}; d’habitude ${fmtDur(Math.round(b))}).`);
   if (mod('milk')) down('milk', 2, .25, '🍼', (b, v) => `Less milk three days running (${v.map(fmtOz).join(', ')}; usually ${fmtOz(b)}).`, (b, v) => `Moins de lait trois jours de suite (${v.map(fmtOz).join(', ')}; d’habitude ${fmtOz(b)}).`);
   const ref = recent.flatMap(m => m.evs.filter(e => isMeal(e) && e.outcome === 'Refused')).length;
-  if (ref >= 3) out.push({ icon:'🍽', text:L(`${ref} meals refused in the last three days.`, `${ref} repas refusés dans les trois derniers jours.`) });
+  if (ref >= 3) out.push({ key:'refused', dir:1, v:ref, tol:1, icon:'🍽', text:L(`${ref} meals refused in the last three days.`, `${ref} repas refusés dans les trois derniers jours.`) });
   // nap transition: fewer naps than the plan on most of the last 7 days
   const wk = daysBack(7, D - 1), planN = tplItems(tplById('baseline'), 'nap').filter(i => !i.optional).length, age = ageDays();
   if (wk.length >= 6 && planN >= 2) { const short = wk.filter(m => m.napCount != null && m.napCount < planN).length;
-    if (short >= 4) out.push({ icon:'🔀', text:L(`Fewer naps than planned on ${short} of the last ${wk.length} days${age != null && age > 330 && age < 600 ? '. Around 13–18 months many children move from two naps to one; the age-band review in Settings → Targets can suggest a one-nap day' : ''}.`,
+    if (short >= 4) out.push({ key:'fewerNaps', dir:1, v:short, tol:1, icon:'🔀', text:L(`Fewer naps than planned on ${short} of the last ${wk.length} days${age != null && age > 330 && age < 600 ? '. Around 13–18 months many children move from two naps to one; the age-band review in Settings → Targets can suggest a one-nap day' : ''}.`,
       `Moins de siestes que prévu ${short} jours sur ${wk.length}${age != null && age > 330 && age < 600 ? '. Vers 13 à 18 mois, beaucoup d’enfants passent de deux siestes à une; la révision selon l’âge (Paramètres → Cibles) peut proposer une journée à une sieste' : ''}.`) }); }
   if (wk.length >= 6 && planN === 1) { const none = wk.filter(m => m.napCount === 0).length;
-    if (none >= 3) out.push({ icon:'🔀', text:L(`No nap on ${none} of the last ${wk.length} days.`, `Aucune sieste ${none} jours sur ${wk.length}.`) }); }
-  return out;
+    if (none >= 3) out.push({ key:'noNap', dir:1, v:none, tol:1, icon:'🔀', text:L(`No nap on ${none} of the last ${wk.length} days.`, `Aucune sieste ${none} jours sur ${wk.length}.`) }); }
+  return out.map(x => ({ ...x, acked: trendAcked(x) }));
+}
+/* Acknowledging a trend (“Got it”): hidden from the Today banner and folded on the Routine tab for 14 days, by then the
+   two-week comparison has caught up with the new normal. It comes back sooner if it gets clearly worse than when it was
+   acknowledged. Shared between caregivers (Config tab). Per child. */
+const TREND_ACK_DAYS = 14;
+const trendAckKey = x => (multiKid() ? (S.kids[kidIdx()]?.id || kidIdx()) + ':' : '') + x.key;
+function trendAcked(x){
+  const a = (S.trendAck || {})[trendAckKey(x)]; if (!a) return null;
+  if (todayIdx() - parseDate(a.at) >= TREND_ACK_DAYS) return null;
+  return (x.v - a.v) * x.dir > Math.max(x.tol, Math.abs(a.v) * .15) ? null : a;   // clearly worse: show it again
+}
+function ackTrend(key, undo){
+  const x = trendAlerts().find(t => t.key === key); if (!x) return;
+  S.trendAck = { ...(S.trendAck || {}) };
+  for (const k in S.trendAck) if (todayIdx() - parseDate(S.trendAck[k].at) >= TREND_ACK_DAYS) delete S.trendAck[k];   // tidy old ones
+  if (undo) delete S.trendAck[trendAckKey(x)]; else S.trendAck[trendAckKey(x)] = { at: isoOf(todayIdx()), v: Math.round(x.v * 10) / 10, by: ME?.name || '' };
+  saveSettings(); renderAll();
+  if (!undo) toast(L(`Got it: hidden for ${TREND_ACK_DAYS} days unless it gets worse`, `Compris : masqué ${TREND_ACK_DAYS} jours, sauf si ça empire`));
 }
 function renderTrends(){
   const box = $('#trendBox'); if (!box) return;
-  const a = trendAlerts();
-  box.innerHTML = a.length ? `<ul class="find">${a.map(x => `<li>${x.icon} ${esc(x.text)}</li>`).join('')}</ul>`
+  const all = trendAlerts(), a = all.filter(x => !x.acked), done = all.filter(x => x.acked), ro = viewOnly();
+  const ackBtn = x => ro ? '' : ` <button class="btn sm ghost" data-act="trendAck" data-k="${x.key}">✓ ${L('Got it', 'Compris')}</button>`;
+  const doneHTML = done.length ? `<details class="trend-done" style="margin-top:6px"><summary class="faint">${L(`Acknowledged (${done.length})`, `Pris en compte (${done.length})`)}</summary><ul class="find" style="opacity:.7">${done.map(x => `<li>${x.icon} ${esc(x.text)} <span class="faint">· ${L(`acknowledged ${relDay(parseDate(x.acked.at))}`, `pris en compte ${relDay(parseDate(x.acked.at))}`)}${x.acked.by ? ' · ' + esc(x.acked.by) : ''}</span>${ro ? '' : ` <button class="btn sm ghost" data-act="trendUndo" data-k="${x.key}">${L('Undo', 'Annuler')}</button>`}</li>`).join('')}</ul></details>` : '';
+  if (!a.length && done.length) { box.innerHTML = `<p class="muted" style="margin:2px 0">${L('Nothing new to watch.', 'Rien de nouveau à surveiller.')}</p>${doneHTML}`; return; }
+  box.innerHTML = a.length ? `<ul class="find">${a.map(x => `<li>${x.icon} ${esc(x.text)}${ackBtn(x)}</li>`).join('')}</ul>${doneHTML}`
     : `<p class="muted" style="margin:2px 0">${L('Nothing unusual in the last three days compared with the two weeks before.', 'Rien d’inhabituel dans les trois derniers jours par rapport aux deux semaines précédentes.')}</p>`;
 }
 
