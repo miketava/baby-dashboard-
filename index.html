@@ -544,6 +544,8 @@ svg.teeth .tooth.in rect{fill:#fffbeb;stroke:#d97706;stroke-width:1.8;stroke-das
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+.savedchip{font-size:12px;font-weight:600;color:var(--good);opacity:0;transition:opacity .25s;margin-right:8px} .savedchip.on{opacity:1}
+.dx{display:flex;gap:6px;align-items:stretch} .dx input{flex:1;min-width:0} .dx .dxb{flex:none;padding:0 10px} .dx.empty .dxb{visibility:hidden}
 .medstrip{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap} .medstrip i{width:12px;height:14px;border-radius:3px;background:var(--border)}
 .medstrip i.ok{background:var(--good)} .medstrip i.part{background:var(--warn)} .medstrip i.miss{background:var(--bad)} .medstrip i.today{background:transparent;border:1px dashed var(--muted)}
 .medrow{padding:10px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
@@ -972,7 +974,7 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
 
 <div class="modal" id="mSettings" role="dialog" aria-modal="true" aria-label="Settings">
   <div class="box">
-    <div class="mhead"><h3>Settings</h3><span class="grow"></span><button class="btn icon ghost" data-close>✕</button></div>
+    <div class="mhead"><h3>Settings</h3><span class="grow"></span><span class="savedchip" id="savedChip" data-noi18n></span><button class="btn icon ghost" data-close>✕</button></div>
     <div class="mbody">
       <nav class="mnav" id="setNav">
         <button data-p="profile" class="on">Child &amp; features</button>
@@ -1064,11 +1066,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.21.1';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.21.1', date:'2026-11-25',
+    en:['Optional date fields (a medication’s “until”, the placement date, a viewer key’s start…) have a ✕ to clear them, since phone date pickers often can’t.', 'Settings shows “✓ Saved” after each change, and each medication has a ✓ Save button that checks it and confirms what was saved.', 'Quick Log → Meds: buttons for your scheduled medications and ones logged recently fill in the name, tag and dose; the form now has a Dose field.'],
+    fr:['Les champs de date facultatifs (« jusqu’au » d’un médicament, date de placement, début d’une clé de lecture…) ont un ✕ pour les effacer, car les sélecteurs de date des téléphones ne le permettent souvent pas.', 'Les Paramètres affichent « ✓ Enregistré » après chaque changement, et chaque médicament a un bouton ✓ Enregistrer qui le vérifie et confirme ce qui a été enregistré.', 'Ajout rapide → Médicaments : des boutons pour vos médicaments prévus et ceux notés récemment remplissent le nom, l’étiquette et la dose; le formulaire a maintenant un champ Dose.'] },
   { v:'1.21.0', date:'2026-11-25',
     en:['Medications: add a regular medication with its dose, time and how long (or ongoing) in Settings → Reminders. You get a reminder at dose time, a ✓ Given button in the banner and in Today’s plan (it writes a Meds row), a red banner if it isn’t checked off an hour later, and a 30-day check-off history in Health.'],
     fr:['Médicaments : ajoutez un médicament régulier avec sa dose, son heure et sa durée (ou en continu) dans Paramètres → Rappels. Vous avez un rappel à l’heure de la dose, un bouton ✓ Donné dans le bandeau et le plan du jour (il écrit une ligne Meds), un bandeau rouge s’il n’est pas coché une heure plus tard, et l’historique sur 30 jours dans Santé.'] },
@@ -2400,7 +2405,7 @@ const PATH_ONLY = { familyContact:['placement'], cocooning:['placement'], checki
 const mod = k => { if (k === 'quicklog' && viewOnly()) return false; const v = S.profile?.modules?.[k]; if (v === undefined && PATH_ONLY[k]) return PATH_ONLY[k].includes(S.profile?.path || 'placement'); return v !== false; };
 /** Connected with a read-only viewer key (the server says so) — no Quick Log, scope shown everywhere. */
 const viewOnly = () => !!DATA?.viewer;
-const saveSettings = () => lsSet(LS_SETTINGS, S);
+const saveSettings = () => { lsSet(LS_SETTINGS, S); if (typeof flashSaved === 'function') flashSaved(); };
 /** Apps Script version reported by the last sync ('' = not synced this session; '0' = older script without a version). */
 let SCRIPT_SEEN = '';
 const scriptOutdated = () => DATA.source === 'live' && SCRIPT_SEEN && !viewOnly() && cmpVer(SCRIPT_SEEN, REQUIRED_SCRIPT) < 0;
@@ -5390,11 +5395,12 @@ function renderQuickLog(){
       <label class="field">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
       ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
       <label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>
-      ${['pump','growth','temp'].includes(catKindNow) ? `<label class="field">${catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
+      ${['pump','growth','temp','meds'].includes(catKindNow) ? `<label class="field">${catKindNow === 'meds' ? L('Dose', 'Dose') : catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'meds' ? L('e.g. 2 ml', 'p. ex. 2 ml') : catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
       <label class="field">Water (ml)<input type="number" step="5" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
       ${catKindNow === 'meal' && f.op === 'append' ? `<div class="full tchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
+      ${catKindNow === 'meds' ? medPickHTML(f.row) : ''}
       ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     <label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${ocOpts.map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>
@@ -5814,8 +5820,48 @@ function medSettingsHTML(){
       <label class="field">${L('From', 'Du')}<input type="date" data-md="from" value="${esc(md.from || '')}"></label>
       <label class="field">${L('Until (blank = ongoing)', 'Jusqu’au (vide = en continu)')}<input type="date" data-md="until" value="${esc(md.until || '')}"></label>
       <label class="field">${L('Note', 'Note')}<input type="text" data-md="note" value="${esc(md.note || '')}" placeholder="${esc(L('e.g. with the evening bottle', 'p. ex. avec le biberon du soir'))}"></label>
-      <div class="full"><button class="btn sm ghost danger" data-act="medDel" data-mi="${i}">✕ ${L('Remove', 'Retirer')}</button></div></div>`).join('')}
+      <div class="full row" style="gap:8px"><button class="btn sm primary" data-act="medSave" data-mi="${i}">✓ ${L('Save medication', 'Enregistrer le médicament')}</button><button class="btn sm ghost danger" data-act="medDel" data-mi="${i}">✕ ${L('Remove', 'Retirer')}</button><span class="faint medok" style="font-size:12px">${md.name && medTimes(md).length ? '✓ ' + esc(medSummary(md)) : L('Not active yet: add a name and a time', 'Pas encore actif : ajoutez un nom et une heure')}</span></div></div>`).join('')}
     <button class="btn sm" data-act="medAdd" style="margin-top:8px">＋ ${L('Add a medication', 'Ajouter un médicament')}</button>`;
+}
+
+const medSummary = md => L(`${md.name}${md.dose ? ' ' + md.dose : ''} at ${medTimes(md).join(', ')}${md.from ? ' from ' + fmtDayShort(parseDate(md.from)) : ''}, ${md.until ? 'until ' + fmtDayShort(parseDate(md.until)) : 'ongoing'}`,
+  `${md.name}${md.dose ? ' ' + md.dose : ''} à ${medTimes(md).join(', ')}${md.from ? ' dès le ' + fmtDayShort(parseDate(md.from)) : ''}, ${md.until ? 'jusqu’au ' + fmtDayShort(parseDate(md.until)) : 'en continu'}`);
+/** “✓ Save medication”: check the row and confirm what was saved. */
+function saveMed(i){
+  const md = (S.meds || [])[i]; if (!md) return;
+  $$(`#setPane [data-mi="${i}"] [data-md]`).forEach(el => { const v = el.value.trim(); if (v) md[el.dataset.md] = v; else delete md[el.dataset.md]; });
+  if (!md.name) return toast(L('Add the medication’s name first', 'Ajoutez d’abord le nom du médicament'), true);
+  if (!medTimes(md).length) return toast(L('Add a time, e.g. 19:30', 'Ajoutez une heure, p. ex. 19:30'), true);
+  if (md.until && md.from && parseDate(md.until) < parseDate(md.from)) return toast(L('“Until” is before “From”', '« Jusqu’au » est avant « Du »'), true);
+  saveSettings(); renderSettings(); renderAll();
+  toast(L(`Saved: ${medSummary(md)}`, `Enregistré : ${medSummary(md)}`));
+}
+/** Settings window: a “✓ Saved” chip after every change (settings save as you type). */
+let SAVED_T = null;
+function flashSaved(){
+  const c = $('#savedChip'); if (!c || !$('#mSettings')?.classList.contains('on')) return;
+  c.textContent = L('✓ Saved', '✓ Enregistré'); c.classList.add('on'); clearTimeout(SAVED_T); SAVED_T = setTimeout(() => c.classList.remove('on'), 1800);
+}
+
+/** Quick Log → Meds: one button per scheduled medication, plus medications logged in the last 60 days. Tapping one fills Notes, Tags and Value. */
+function medPickList(){
+  const seen = new Map();
+  (S.meds || []).filter(m => m.name).forEach(m => seen.set(medSlug(m.name), { name:m.name, dose:m.dose || '', sched:true }));
+  DATA.events.filter(e => e.k === 'meds' && e.d > todayIdx() - 60).sort((a, b) => b.s - a.s).forEach(e => {
+    const tag = e.tags.find(t => !['meds', 'med'].includes(t)); const name = tag ? tag.replace(/-/g, ' ') : (e.notes || '').replace(/\s+\d.*$/, '').trim();
+    const k = medSlug(name); if (!k || seen.has(k)) return; seen.set(k, { name: name.replace(/^./, c => c.toUpperCase()), dose: e.raw?.value || '', sched:false }); });
+  return [...seen.values()].slice(0, 8);
+}
+function medPickHTML(row){
+  const list = medPickList(); if (!list.length) return '';
+  const cur = medSlug((row['Tags'] || '').split(',')[0]);
+  return `<div class="full tchips" data-for="Notes"><span class="faint">${L('Medication', 'Médicament')}</span>${list.map((m, i) => `<button type="button" class="chip ${medSlug(m.name) === cur ? '' : 'off'}" data-medpick="${i}">${m.sched ? '💊 ' : ''}${esc(m.name)}${m.dose ? ` <span class="faint">${esc(m.dose)}</span>` : ''}</button>`).join('')}</div>`;
+}
+function pickMedInForm(i){
+  const m = medPickList()[i], f = $('#qlForm'); if (!m || !f) return;
+  const set = (n, v) => { const el = f.querySelector(`[name="${n}"]`); if (el) { el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); } };
+  set('Notes', `${m.name}${m.dose ? ' ' + m.dose : ''}`); set('Tags', medSlug(m.name)); if (m.dose) set('Value', m.dose);
+  f.querySelectorAll('[data-medpick]').forEach(b => b.classList.toggle('off', +b.dataset.medpick !== i));
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -6264,6 +6310,21 @@ function syncFilterBtns(){
   $$('.fbtn').forEach(b => { b.classList.toggle('on', !!on); b.title = L('Filters', 'Filtres') + (sum ? ' · ' + sum : ''); b.setAttribute('aria-label', b.title); });
 }
 
+/* ── Clearable date fields ──
+   Phone date pickers often have no way to empty a date once set. Every optional date field (not marked required)
+   gets a small ✕ beside it that clears it and saves, like typing it blank. */
+(function clearableDates(){
+  const fix = el => { if (el.required || el.dataset.cx || el.closest('.dx')) return; el.dataset.cx = '1';
+    const w = document.createElement('span'); w.className = 'dx'; el.replaceWith(w); w.appendChild(el);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost dxb'; b.textContent = '✕'; b.setAttribute('data-noi18n', '');
+    b.title = L('Clear this date', 'Effacer cette date'); b.setAttribute('aria-label', b.title);
+    b.onclick = e => { e.preventDefault(); e.stopPropagation(); el.value = ''; el.dispatchEvent(new Event('input', { bubbles:true })); el.dispatchEvent(new Event('change', { bubbles:true })); sync(); };
+    const sync = () => w.classList.toggle('empty', !el.value); el.addEventListener('input', sync); el.addEventListener('change', sync); sync();
+    w.appendChild(b); };
+  const scan = root => root.querySelectorAll?.('input[type=date]').forEach(fix);
+  scan(document); new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => n.nodeType === 1 && (n.matches?.('input[type=date]') ? fix(n) : scan(n))))).observe(document.body, { childList:true, subtree:true });
+})();
+
 /* ════════════════════════════════════════════════════════════════════════════
    21. SETTINGS MODAL
    ════════════════════════════════════════════════════════════════════════════ */
@@ -6704,6 +6765,7 @@ function wire(){
       i.value = fmtTime(nowMin()); if (D && nb.dataset.now === 'Start Time') D.value = isoOf(todayIdx());
       $(`#qlForm .tchips[data-for="${nb.dataset.now}"]`)?.querySelectorAll('[data-ago]').forEach(b => b.classList.toggle('off', b.dataset.ago !== '0'));
       i.dispatchEvent(new Event('change', { bubbles:true })); return; }
+    const mp = e.target.closest('[data-medpick]'); if (mp) { pickMedInForm(+mp.dataset.medpick); return; }
     const sv = e.target.closest('[data-set-v]'); if (sv) { const i = $(`#qlForm [name="${sv.closest('[data-for]').dataset.for}"]`); i.value = sv.dataset.setV; $$('#qlForm [data-set-v]').forEach(b => b.classList.toggle('off', b !== sv)); return; }
     const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid); });
@@ -6796,6 +6858,7 @@ function wire(){
       case 'tplDup': S.templates.push({ ...structuredClone(tp), id:'tpl-' + Date.now().toString(36), name: tp.name + ' (copy)' }); tplIdx = S.templates.length - 1; settingsChanged(true); renderSettings(); break;
       case 'tplDel': if (S.templates.length > 1 && confirm(`Delete “${tp.name}”?`)) { S.templates.splice(tplIdx, 1); tplIdx = 0; if (!S.templates.some(x => x.id === S.overlayTpl)) S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
       case 'tplReset': if (confirm('Restore the three default templates? Custom templates will be removed.')) { S.templates = structuredClone(DEFAULT_TEMPLATES); tplIdx = 0; S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
+      case 'medSave': saveMed(+e.target.closest('[data-act]').dataset.mi); break;
       case 'medAdd': S.meds = [...(S.meds || []), { name:'', dose:'', times:'19:30', from: isoOf(todayIdx()) }]; saveSettings(); renderSettings(); break;
       case 'medDel': { const i = +e.target.closest('[data-act]').dataset.mi; if (confirm(L('Remove this medication schedule? Doses already logged stay in the Sheet.', 'Retirer cet horaire de médicament? Les doses déjà notées restent dans la feuille.'))) { S.meds.splice(i, 1); saveSettings(); renderSettings(); renderAll(); } break; }
       case 'tiAdd': tp.items.push({ label:'New target', kind:'nap', start:'12:00', end:'13:00' }); settingsChanged(true); renderSettings(); break;

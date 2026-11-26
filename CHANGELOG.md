@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.21.1 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Clear a date:** every optional date field (a medication's *until*, the placement date, a viewer key's start date, report anchor…) has a ✕ to empty it, because phone date pickers often can't.
+- **Save confirmation:** Settings shows "✓ Saved" after each change (they save as you type). Each medication has **✓ Save medication**, which checks it (name, a valid time, *until* not before *from*) and confirms, e.g. "Saved: Septra 2 ml at 19:30 from Nov 25, ongoing". The row also shows whether it's active.
+- **Quick Log → Meds:** buttons for your scheduled medications and any logged in the last 60 days; one tap fills Notes (name and dose), Tags (the name) and a new **Dose** field, so the dose checks off the schedule.
+
 ## v1.21.0 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Medication schedule** (*Settings → Reminders → Medications*): name, dose, time(s), from, until (blank = ongoing) and a note, per child.
