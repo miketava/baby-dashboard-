@@ -544,6 +544,7 @@ svg.teeth .tooth.in rect{fill:#fffbeb;stroke:#d97706;stroke-width:1.8;stroke-das
 .more-list button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .more-list .mgrp{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin-top:6px}
 #tlOpts{display:none}
+.pips{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap} .pips i{width:13px;height:9px;border-radius:3px;background:var(--border);overflow:hidden;display:block} .pips i b{display:block;height:100%} .pips.na i{background:transparent;border:1px dashed var(--border)}
 header.app .actions [data-tucked]{display:none!important}
 .pill.score{font-weight:700;cursor:pointer;border:1px solid transparent} .pill.score:hover{border-color:currentColor}
 .smartrow{margin:0 0 12px;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--accent) 7%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 25%,var(--border))}
@@ -1056,11 +1057,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.20.2';
+const APP_VERSION = '1.20.3';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.20.3', date:'2026-11-25',
+    en:['Routine score breakdown shows points as pips (one pip = 5 points, 20 in all), so each part looks as big as what it’s worth.', 'Naps on schedule is graded: full credit within 20 minutes of the planned start, sliding to none at 75 minutes off; the detail says which nap was how late or early.'],
+    fr:['Le détail du score de routine affiche les points en pastilles (une pastille = 5 points, 20 en tout) : chaque partie paraît aussi grande que ce qu’elle vaut.', 'Les siestes à l’heure sont notées progressivement : tous les points à 20 minutes près de l’heure prévue, puis de moins en moins jusqu’à zéro à 75 minutes d’écart; le détail indique quelle sieste était en retard ou en avance et de combien.'] },
   { v:'1.20.2', date:'2026-11-25',
     en:['Quick Log: water amounts can be entered in 5 ml steps (was 10 ml).'],
     fr:['Ajout rapide : l’eau se saisit maintenant par tranches de 5 ml (au lieu de 10 ml).'] },
@@ -3551,6 +3555,12 @@ function renderTimeline(){
     $('#timeline').innerHTML = `<div class="tl h">${axisHTML()}${list.map(m => dayRowHTML(m)).join('')}</div>`;
   }
 }
+/** Score pips: one pip per 5 points of weight (20 pips for a 100-point score); partly earned pips fill partly. */
+function pipsHTML(v, w){
+  if (v == null) return `<div class="pips na">${'<i></i>'.repeat(Math.max(1, Math.round(w / 5)))}</div>`;   // not scored yet
+  const n = Math.max(1, Math.round(w / 5)), earned = v * n, col = v >= .8 ? 'var(--good)' : v >= .5 ? 'var(--warn)' : 'var(--bad)';
+  return `<div class="pips" title="${+(v * w).toFixed(1)} / ${w}">${Array.from({ length:n }, (_, i) => `<i><b style="width:${clamp(earned - i, 0, 1) * 100}%;background:${col}"></b></i>`).join('')}</div>`;
+}
 /** One entry row (day panel and Today's entries): time, category, amounts, ✏️; press and hold / right-click to edit. */
 function evLi(e, D, cont, hitId){
     const col = catColor(e.cat);
@@ -3673,7 +3683,7 @@ function renderDrawer(){
   const li = (e, cont) => evLi(e, m.D, cont, drawerEv);
   const sc = m.score, W = S.score.weights;
   const partsHTML = sc ? `<div class="row sp" style="margin-bottom:6px"><b>Routine score</b><span style="font-size:20px;font-weight:750;color:${scoreCol(sc.score)}">${sc.score ?? '—'}${sc.score != null ? '<span class="faint" style="font-size:12px"> / 100' + (sc.partial ? ' ' + L('so far', 'jusqu’ici') : '') + '</span>' : ''}</span></div>
-    <div class="parts">${SCORE_PARTS.map(([k, l]) => { const p = sc.parts[k]; return `<div class="pr"><div>${l} <span class="faint">· ${esc(p.detail)}${+W[k] ? '' : ' · weight 0'}</span>${p.v == null ? '' : `<div class="meter"><i style="width:${p.v*100}%;background:${p.v >= .8 ? 'var(--good)' : p.v >= .5 ? 'var(--warn)' : 'var(--bad)'}"></i></div>`}</div><div style="text-align:right;font-weight:650">${p.v == null ? '<span class="faint">n/a</span>' : Math.round(p.v*100) + '%'}</div></div>`; }).join('')}</div>
+    <div class="parts">${SCORE_PARTS.map(([k, l]) => { const p = sc.parts[k]; return `<div class="pr"><div>${l} <span class="faint">· ${esc(p.detail)}${+W[k] ? '' : ' · weight 0'}</span>${!+W[k] ? '' : pipsHTML(p.v, +W[k])}</div><div style="text-align:right;font-weight:650;white-space:nowrap">${p.v == null ? '<span class="faint">n/a</span>' : `${+(p.v * W[k]).toFixed(1)}<span class="faint" style="font-weight:500"> / ${W[k]}</span>`}</div></div>`; }).join('')}</div>
     ${sc.score == null ? '<div class="hint" style="margin:-8px 0 12px">Needs at least 3 scored components.</div>' : ''}<div class="row wrap" style="gap:4px;margin-bottom:12px">${iconsHTML(m, 12)}</div>` : '';
   $('#drBody').innerHTML = partsHTML + `<div class="totals">${tot.map(([k,v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}</div>
     <div class="hint" style="margin:-6px 0 12px">Night metrics refer to the night ${+S.dayBoundary > 0 ? 'after' : 'before'} this day (day boundary ${fmtTime(+S.dayBoundary)}).${m.complete24 ? '' : ' *24h sleep is partial — missing the adjoining night.'}</div>
@@ -4036,8 +4046,16 @@ function scoreDay(m){
   const cutoff = cutoffFor(m);
   // naps on schedule: each core template nap window has a nap that overlaps it and starts within 45 min
   const bands = tplItems(m.tpl, 'nap').filter(b => !b.optional && b.end).map(b => [parseTime(b.start), parseTime(b.end), b.label]).filter(([, b]) => !today || b <= now);
-  if (bands.length) { const hit = bands.filter(([a, b]) => m.naps.some(n => n.st != null && n.st < b && (n.t - D*DAY) > a && Math.abs(n.st - a) <= 45)).length;
-    set('naps', hit / bands.length, `${hit} of ${bands.length} nap window${bands.length > 1 ? 's' : ''} hit`); } else set('naps', null, 'no nap windows yet');
+  // graded: full credit within 20 min of the planned start, sliding to none at 75 min off; a missed nap scores 0
+  if (bands.length) { const used = new Set(), offs = [];
+    const credit = bands.map(([a, b, lbl]) => {
+      const n = m.naps.filter(n => n.st != null && !used.has(n) && Math.abs(n.st - a) <= 120).sort((x, y) => Math.abs(x.st - a) - Math.abs(y.st - a))[0];
+      if (!n) { offs.push(L(`${lbl} missed`, `${lbl} manquée`)); return 0; }
+      used.add(n); const off = n.st - a, c = clamp(1 - (Math.abs(off) - 20) / 55, 0, 1);
+      if (Math.abs(off) > 20) offs.push(L(`${lbl} ${fmtDur(Math.abs(off))} ${off > 0 ? 'late' : 'early'}`, `${lbl} ${off > 0 ? 'en retard de' : 'en avance de'} ${fmtDur(Math.abs(off))}`));
+      return c; });
+    const v = credit.reduce((x, y) => x + y, 0) / bands.length;
+    set('naps', v, offs.length ? offs.join(' · ') : L(`${bands.length} of ${bands.length} on time (within 20 min)`, `${bands.length} sur ${bands.length} à l’heure (à 20 min près)`)); } else set('naps', null, 'no nap windows yet');
   const max = m.targets.maxDaySleep, ds = m.daySleep;
   if ((m.napCount || m.wake != null) && !(today && now < cutoff)) set('budget', ds <= max ? (ds >= max * .5 ? 1 : ds / (max * .5)) : 1 - (ds - max) / 60, `${fmtDur(ds)} of ${fmtDur(max)} max`);
   else set('budget', null, today ? 'still accumulating' : 'no naps logged');

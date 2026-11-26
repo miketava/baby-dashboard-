@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.20.3 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Score pips:** the routine score breakdown (tap the score in the header, or any day) shows each part as pips, one pip per 5 points, 20 in all, with partly earned pips partly filled and parts not scored yet as dashed outlines. Points show as earned / possible (e.g. 8.3 / 10) instead of percentages.
+- **Graded nap timing:** “Naps on schedule” gives full credit within 20 minutes of the planned start, then slides to none at 75 minutes off (a missed nap scores 0), instead of all-or-nothing at 45 minutes. The detail names the nap and how late or early it was.
+
 ## v1.20.2 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - Quick Log: the water amount accepts 5 ml steps (it only allowed multiples of 10).
