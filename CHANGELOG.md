@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.24.0 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Quick Log groups:** the buttons sit under small headings with a divider: Sleep, Feeding, Diapers, Health & growth, Activities, Visits & family, Other. Anything in progress (End night, End nap, breastfeeding switch / end) stays first in its group, highlighted. *Suggested now* is unchanged at the top.
+- **Drop-off and Pick-up icons:** 👋 Drop-off (saying goodbye), 🤗 Pick-up (welcome back), instead of the same 🤝 on both. The Handover category keeps 🤝 elsewhere.
+
 ## v1.23.6 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Phones:** dragging inside Quick Log (including in the gaps between buttons), a dialog, the day panel or the filter panel no longer scrolls the page behind it.
