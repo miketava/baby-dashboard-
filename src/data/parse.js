@@ -19,9 +19,10 @@ const FIELD_RULES = [
   ['mood',    k => k === 'mood' || k === 'tone' || k === 'humeur'],
   ['by',      k => k === 'loggedby' || k === 'enteredby' || k === 'by' || k === 'notépar' || k === 'notepar'],
   ['qtype',   k => k === 'questiontype' || k === 'typeofquestion'],
+  ['asleep',  k => k === 'asleepat' || k === 'asleep' || k === 'fellasleep' || k === 'fellasleepat' || k.startsWith('endormi')],
   ['kid',     k => k === 'child' || k === 'kid' || k === 'baby' || k === 'enfant' || k === 'childname' || k === 'children'],
 ];
-const FIELD_CANON = { date:'Date', start:'Start Time', end:'End Time', dur:'Duration (min)', cat:'Category', milk:'Milk (oz)', notes:'Notes', water:'Water (ml)', tags:'Tags', outcome:'Outcome / Rating', logged:'Logged At', noted:'Noted At', value:'Value', kid:'Child', edited:'Edited At', mood:'Mood', qtype:'Question Type', by:'Logged By' };
+const FIELD_CANON = { date:'Date', start:'Start Time', end:'End Time', dur:'Duration (min)', cat:'Category', milk:'Milk (oz)', notes:'Notes', water:'Water (ml)', tags:'Tags', outcome:'Outcome / Rating', logged:'Logged At', noted:'Noted At', value:'Value', asleep:'Asleep At', kid:'Child', edited:'Edited At', mood:'Mood', qtype:'Question Type', by:'Logged By' };
 function mapHeaders(headers){
   const map = {}, extras = [];
   headers.forEach(h => {

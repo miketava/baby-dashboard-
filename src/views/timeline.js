@@ -150,26 +150,29 @@ function sleepVsPlan(e){
     return { txt: s || L('bedtime on target', 'coucher à l’heure'), bad: Math.abs(off) > 20 }; }
   const bands = tplItems(m.tpl, 'nap').filter(b => b.end).map(b => ({ a: parseTime(b.start), b: parseTime(b.end), lbl: b.label, opt: b.optional })).filter(b => b.a != null && Math.abs(e.st - b.a) <= 120).sort((x, y) => Math.abs(e.st - x.a) - Math.abs(e.st - y.a));
   const bd = bands[0]; if (!bd) return { txt: L('not in the plan', 'hors plan'), bad: false };
-  const so = e.st - bd.a, eo = e.ongoing || e.t == null ? null : (e.st + (e.dur || 0)) - bd.b;
+  const so = e.st - bd.a, eo = e.ongoing || e.t == null ? null : endTod(e) - bd.b;
   const parts = [fmt(so, x => L(`down ${x} early`, `endormie ${x} plus tôt`), x => L(`down ${x} late`, `endormie ${x} plus tard`)),
     eo == null ? '' : fmt(eo, x => L(`woke ${x} early`, `réveillée ${x} plus tôt`), x => L(`woke ${x} late`, `réveillée ${x} plus tard`))].filter(Boolean);
   return { txt: `${bd.lbl}${bd.opt ? ' (' + L('optional', 'facultative') + ')' : ''}: ${parts.length ? parts.join(' · ') : L('on time', 'à l’heure')}`, bad: Math.abs(so) > 20 || (eo != null && Math.abs(eo) > 20) };
 }
 /** One entry row (day panel and Today's entries): time, category, amounts, ✏️; press and hold / right-click to edit. */
+/** End time of day of an entry (its real end; for sleep, .dur is time asleep since v1.27). */
+const endTod = x => x.t != null ? x.t - x.d * DAY : x.st + (x.dur || 0);
 function evLi(e, D, cont, hitId){
     const col = catColor(e.cat);
     const tm = e.allDay ? 'All day' : cont ? `00:00 – ${fmtTime(e.t - D*DAY)}` : e.t == null ? fmtTime(e.st) : `${fmtTime(e.st)} – ${e.ongoing ? 'now' : fmtTime(e.t - e.d*DAY)}`;
-    const bits = [e.t != null ? fmtDur(cont ? e.t - D*DAY : e.dur) + (e.ongoing ? ' so far' : '') : e.allDay ? '' : 'instant', e.milk != null ? fmtOz(e.milk) : '', e.water != null ? fmtMl(e.water) : '',
+    const asl = isSleep(e) && e.so > e.s && !cont ? (e.settleHow === 'assumed' ? L(` asleep · ~${fmtTime((e.so - e.d * DAY) % DAY)}`, ` de sommeil · ~${fmtTime((e.so - e.d * DAY) % DAY)}`) : L(` asleep · ${fmtTime((e.so - e.d * DAY) % DAY)} (${fmtDur(e.so - e.s)} to settle)`, ` de sommeil · ${fmtTime((e.so - e.d * DAY) % DAY)} (${fmtDur(e.so - e.s)} pour s’endormir)`)) : '';
+    const bits = [e.t != null ? fmtDur(cont ? e.t - D*DAY : e.dur) + (e.ongoing ? ' so far' : '') + (e.t != null ? asl : '') : e.allDay ? '' : 'instant', e.milk != null ? fmtOz(e.milk) : '', e.water != null ? fmtMl(e.water) : '',
       cont ? L(`continued from ${fmtTime(e.st)} the night before`, `suite de ${fmtTime(e.st)} la veille`) : e.cross && !e.ongoing ? L('continues past midnight', 'se poursuit après minuit') : '', e.local ? L('not in Sheet yet', 'pas encore dans la feuille') : ''].filter(Boolean).join(' · ');
     return `<li class="${e.id === hitId ? 'hit' : ''}" data-ev="${e.id}"><div class="tm">${tm}${e.raw?.by ? `<span class="by">${esc(e.raw.by)}</span>` : ''}</div><div><div class="c"><i style="background:${col}"></i>${cat(e.cat).icon} ${esc(e.cat)} ${ocPill(e.outcome)}${e.editedAt ? ` <span class="faint" title="Edited At">✎ ${L('edited', 'modifié')}</span>` : ''}${viewOnly() || DATA.source === 'demo' ? '' : `<button class="evedit" data-edit="${e.id}" title="${L('Edit or delete', 'Modifier ou supprimer')}" aria-label="${L('Edit', 'Modifier')}">✏️</button>`}</div><div class="x">${bits}</div>${(v => v ? `<div class="x vsplan ${v.bad ? 'bad' : ''}">🎯 ${esc(v.txt)}</div>` : '')(mod('schedule') && !cont ? sleepVsPlan(e) : null)}${e.tags.length ? `<div class="x">${e.tags.map(t => `<span class="tagchip">${esc(t)}</span>`).join(' ')}</div>` : ''}${e.notes ? `<div class="x" style="color:var(--text);margin-top:2px">${esc(e.notes)}</div>` : ''}${Object.entries(e.extra||{}).map(([k,v]) => `<div class="x">${esc(k)}: ${esc(v)}</div>`).join('')}</div></li>`;
   }
 /** Today's plan: the template for today as a list (time · what · notes), with what actually happened next to past items. */
 function planActual(it, m, used){
   const a = parseTime(it.start), b = it.end ? parseTime(it.end) : null;
-  if (it.kind === 'nap' && b != null) { const n = m.naps.find(n => !used.has(n) && n.st != null && n.st < b + 45 && n.st + (n.dur || 0) > a - 45);
-    if (n) { used.add(n); const so = n.st - a, eo = n.ongoing ? null : n.st + (n.dur || 0) - b, d = x => Math.abs(x) <= 5 ? '' : (x > 0 ? '+' : '−') + fmtDur(Math.abs(Math.round(x)));
+  if (it.kind === 'nap' && b != null) { const n = m.naps.find(n => !used.has(n) && n.st != null && n.st < b + 45 && endTod(n) > a - 45);
+    if (n) { used.add(n); const so = n.st - a, eo = n.ongoing ? null : endTod(n) - b, d = x => Math.abs(x) <= 5 ? '' : (x > 0 ? '+' : '−') + fmtDur(Math.abs(Math.round(x)));
       const dev = [d(so), eo == null ? '' : d(eo)]; const dv = dev.some(Boolean) ? ` <span class="faint" title="${esc(L('start / end vs plan', 'début / fin par rapport au plan'))}">(${dev.map(x => x || '✓').join(' / ')})</span>` : '';
-      return n.ongoing ? L(`asleep since ${fmtTime(n.st)}`, `endormie depuis ${fmtTime(n.st)}`) + dv : `${fmtTime(n.st)}–${fmtTime((n.st + (n.dur || 0)) % DAY)}` + dv; } return null; }
+      return n.ongoing ? L(`asleep since ${fmtTime(n.st)}`, `endormie depuis ${fmtTime(n.st)}`) + dv : `${fmtTime(n.st)}–${fmtTime(endTod(n) % DAY)}` + dv; } return null; }
   if (it.kind === 'wake') return m.wake != null ? fmtTime(m.wake) : null;
   if (it.kind === 'bedtime') return m.bed != null ? fmtTime(m.bed % DAY) : null;
   if (it.kind === 'visit' && it.appt) { const a = (m.events || []).find(e => e.d === m.D && e.st != null && catKind(e.cat) === 'medical'); return a ? fmtTime(a.st) : null; }

@@ -10,6 +10,7 @@ function mkSheet(name, rows) {
     getDisplayValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => { const v = (rows[r - 1 + i] || [])[c - 1 + j] ?? ''; return v instanceof Date ? v.toISOString() : String(v); })),
     setValues: v => { v.forEach((row, i) => row.forEach((x, j) => { cell(r + i, c + j); rows[r - 1 + i][c - 1 + j] = x; })); return rng(r, c, nr, nc); },
     setValue: x => { cell(r, c); rows[r - 1][c - 1] = x; }, getValue: () => cell(r, c),
+    getDisplayValue: () => { const v = cell(r, c); return v instanceof Date ? v.toISOString() : String(v ?? ''); },
     clearContent: () => { for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) if (rows[r - 1 + i]) rows[r - 1 + i][c - 1 + j] = ''; },
     setNumberFormat: () => rng(r, c, nr, nc), setFontWeight: () => rng(r, c, nr, nc),
     getSheet: () => sheet, getRow: () => r, getLastRow: () => r + nr - 1, getColumn: () => c, getNumColumns: () => nc,

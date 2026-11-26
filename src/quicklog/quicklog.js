@@ -105,7 +105,9 @@ function renderQuickLog(){
   $('#qlBody').innerHTML = `<form class="qform" id="qlForm" autocomplete="off">
     ${f.op === 'end' ? `<div class="full callout info">Ending <b>${esc(f.row['Category'])}</b> that started at ${fmtTime(f.target.st)} (${fmtDur(nowAbs() - f.target.s)} so far).</div>
       <label class="field">End time<input type="time" name="End Time" value="${v('End Time')}" required></label>
-      ${agoChips('End Time', L('Ended', 'Fin'))}`
+      ${agoChips('End Time', L('Ended', 'Fin'))}
+      ${isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category']) ? asleepFieldHTML(f.row, fmtTime(f.target.st)) : ''}
+      ${isSleep({ k: catKindNow }) || catKindNow === 'awake' ? `<label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}"></label>${soothChipsHTML(f.row['Tags'], catKindNow === 'awake' ? 'awake' : 'sleep')}` : ''}`
     : `<label class="field full">Category<input type="text" name="Category" list="qlCats" value="${v('Category')}" required placeholder="e.g. Lunch, Sleep - Nap, Milestone"><datalist id="qlCats">${known.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
       ${catKindNow === 'meal' && f.op !== 'end' ? `<div class="full tchips mealchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       <label class="field tfield">Date<input type="date" name="Date" value="${v('Date')}" required></label>
@@ -113,6 +115,7 @@ function renderQuickLog(){
       ${f.op === 'append' ? agoChips('Start Time', L('Started', 'Début')) : ''}
       <label class="field tfield">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
       ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
+      ${isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '') ? asleepFieldHTML(f.row, '') : ''}
       ${showMilk ? `<label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>` : ''}
       ${/milk|bottle/i.test(f.row['Category'] || '') ? `<div class="full tchips" data-for="Milk (oz)">${milkChips().map(a => `<button type="button" class="chip ${f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null && Math.abs(toDisp(+f.row['Milk (oz)']) - a) < .01 ? '' : f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null ? 'off' : ''}" data-set-v="${a}">${a} ${MU()}</button>`).join('')}</div>` : ''}
       ${['pump','growth','temp','meds'].includes(catKindNow) ? `<label class="field">${catKindNow === 'meds' ? L('Dose', 'Dose') : catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'meds' ? L('e.g. 2 ml', 'p. ex. 2 ml') : catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
@@ -121,7 +124,7 @@ function renderQuickLog(){
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
       ${catKindNow === 'meds' ? medPickHTML(f.row) : ''}
       ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
-      ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
+      ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : (isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '')) || catKindNow === 'awake' ? soothChipsHTML(f.row['Tags'], catKindNow === 'awake' ? 'awake' : 'sleep') : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' && catKindNow !== 'awake' && !isSleep({ k: catKindNow }) ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     ${showOutcome ? `<label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${[...ocOpts, ...(has('Outcome / Rating') && !ocOpts.includes(f.row['Outcome / Rating']) ? [f.row['Outcome / Rating']] : [])].map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>` : ''}
     <label class="field full">Notes<textarea name="Notes" rows="2" placeholder="${catKindNow === 'milestone' ? 'e.g. First steps!' : catKindNow === 'incident' ? 'What happened?' : ''}">${v('Notes')}</textarea></label>
     ${f.op === 'update' ? `<div class="full faint" style="font-size:12px">${L(`Sheet row ${f.ev.sheetRow ?? '—'} · first logged ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. Saving stamps “Edited At”; the original entry time is kept.`, `Ligne ${f.ev.sheetRow ?? '—'} de la feuille · saisie le ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. L’enregistrement ajoute « Edited At »; l’heure de saisie originale est conservée.`)}</div>` : ''}
@@ -132,15 +135,15 @@ function renderQuickLog(){
     const w = document.createElement('span'); w.className = 'tw'; i.replaceWith(w); w.appendChild(i);
     w.insertAdjacentHTML('beforeend', `<button type="button" class="btn sm nowbtn" data-now="${esc(i.name)}" data-noi18n>${L('Now', 'Maint.')}</button>`); });
 }
-/** Open Quick Log straight into a form for a given row (e.g. from the tooth chart). */
-/** “now · −5 · −15 · −30 min · −1 h” buttons that fill a time field. */
-const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span>${[[0, L('now', 'maintenant')], [5, '−5 min'], [15, '−15 min'], [30, '−30 min'], [60, '−1 h']].map(([d, t]) => `<button type="button" class="chip" data-ago="${d}">${t}</button>`).join('')}</div>`;
+/** “now · −10 · −5 · −1 · +1 · +5 · +10 min” buttons: now sets the time; the others nudge whatever is in the field, so taps add up (v1.27). */
+const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span><button type="button" class="chip" data-ago="0">${L('now', 'maintenant')}</button>${[-10, -5, -1, 1, 5, 10].map(d => `<button type="button" class="chip nudge" data-nudge="${d}">${d < 0 ? '−' + -d : '+' + d}</button>`).join('')}</div>`;
 const milkChips = () => metric() ? [60, 90, 120, 150] : [2, 3, 4, 5];
 function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
 function stoolChipsHTML(tagsStr){
   const cur = new Set(parseTags(tagsStr));
   return `<div class="full ctchips"><div class="ctg"><span class="faint">${L('Consistency', 'Consistance')} · <a href="https://bitss-stoolscale.com" target="_blank" rel="noopener" class="faint">BITSS</a></span><div class="chips">${STOOL().map(([v, n, d]) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" data-single="stool" title="${esc(d)}">${stoolIcon(v)}<span class="st-n">${esc(n)}<span class="faint">${esc(d.split(' · ')[0])}</span></span></span>`).join('')}</div></div></div>`;
 }
+/** Open Quick Log straight into a form for a given row (e.g. from the tooth chart). */
 function openQuickLogWith(row){ if (viewOnly()) return toast(L('This is a view-only connection — logging is done by the family', 'Accès en lecture seulement — la famille fait les entrées')); QL = { op:'append', row:{ 'Date': isoOf(todayIdx()), 'Start Time':'', 'End Time':'', 'Duration (min)':'', 'Category':'', 'Milk (oz)':'', 'Notes':'', 'Water (ml)':'', 'Tags':'', 'Outcome / Rating':'', 'Value':'', ...row } }; renderQuickLog(); $('#qlog').classList.add('on'); $('#scrim').classList.add('on'); }
 async function pickPreset(i){
   const p = window.__qlp[i]; if (!p) return;
@@ -171,6 +174,10 @@ async function submitQuickLog(form){
     const tgt = QL.target, en = parseTime(fd['End Time']); if (en == null) return toast('Pick an end time', true);
     const endAbs = (en < tgt.st ? tgt.d + 1 : tgt.d) * DAY + en;
     const row = { 'Category': tgt.cat, 'End Time': fmtTime(en), 'Duration (min)': endAbs - tgt.s, 'Notes': fd['Notes'] || '', 'Outcome / Rating': fd['Outcome / Rating'] || '' };
+    if (fd['Tags']?.trim()) row['Tags'] = fd['Tags'].trim();                 // v1.27: soothing methods, merged into the row's tags
+    if (fd['Asleep At']?.trim()) { const a = parseTime(fd['Asleep At']); let aa = a == null ? null : tgt.d * DAY + a; if (aa != null && aa < tgt.s - 60) aa += DAY;
+      if (aa == null || aa < tgt.s || aa >= endAbs) return toast(L('“Asleep at” has to be between going up and the end time', '« Endormi·e à » doit être entre le début et la fin'), true);
+      row['Asleep At'] = fmtTime(a); }
     closeQuickLog(); saveQuickOp('end', row); return;
   }
   const row = { ...QL.row, ...fd }, both = QL.both;
@@ -182,6 +189,8 @@ async function submitQuickLog(form){
   if (mk && row['Value'] && parseMeasure(row['Value'], mk) == null) return toast(`Couldn't read “${row['Value']}” — try e.g. ${{ weight:'4.2 kg or 9 lb 4 oz', length:'54 cm or 21 in', head:'35 cm', temp:'37.6 °C or 99.7 °F', volume:'90 ml or 3 oz' }[mk]}`, true);
   if (mk && mk !== 'volume' && !row['Value']) return toast('Enter the measurement', true);
   row['Duration (min)'] = st != null && en != null ? (en > st ? en - st : en + DAY - st) : '';
+  if (row['Asleep At']) { const a = parseTime(row['Asleep At']), span = row['Duration (min)'] || DAY, off = a == null || st == null ? null : (a - st + DAY) % DAY;
+    if (off == null || off >= span || off > 180) return toast(L('“Asleep at” has to be between going up and the end time', '« Endormi·e à » doit être entre le début et la fin'), true); }
   if (row['Milk (oz)'] === '' && row['Category'] === 'Milk' && !row['Water (ml)']) return toast('Enter the milk amount', true);
   Object.keys(row).forEach(k => { if (row[k] == null) row[k] = ''; });
   if (catKind(row['Category']) === 'contact') { const keep = parseTags(row['Tags']).map(contactTag).filter(h => h && ['channel', 'dir', 'who'].includes(h[0])).map(h => h[1]); if (keep.length) { S.lastContactTags = keep.join(', '); saveSettings(); } }

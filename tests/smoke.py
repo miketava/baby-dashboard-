@@ -147,10 +147,25 @@ async def templates_and_appointments(b):
     got = set(await pg.evaluate("S.templates.map(t=>t.id)"))
     check(f'{prof} path: no visit templates', got == want, sorted(got)); await ctx.close()
 
+async def settling(b):
+  print('Going up vs. asleep, soothing, time nudges')
+  ctx, pg, errs = await open_page(b, 'placement', 'en', PHONE)
+  st = await pg.evaluate("(()=>{const e=DATA.events.find(e=>e.k==='nap'&&!/car/i.test(e.cat)&&e.t!=null&&e.settleHow==='assumed');return e?[e.so-e.s, e.dur, e.t-e.s]:null})()")
+  check('a nap without an asleep time settles 15 min after going up', st and st[0] == 15 and st[1] == st[2] - 15, st)
+  await pg.evaluate("openQuickLogWith({Date:isoOf(todayIdx()),Category:'Sleep - Nap','Start Time':'09:57','End Time':'11:20'})"); await pg.wait_for_timeout(200)
+  for n in ('10', '-1', '-1', '5'): await pg.locator(f'#qlForm [data-for="Start Time"] [data-nudge="{n}"]').click()
+  check('time nudges add up (09:57 +10 −1 −1 +5 = 10:10)', await pg.input_value('#qlForm [name="Start Time"]') == '10:10')
+  await pg.fill('#qlForm [name="Start Time"]', '09:57'); await pg.locator('#qlForm [data-after="15"]').click()
+  check('+15 after going up fills 10:12', await pg.input_value('#qlForm [name="Asleep At"]') == '10:12')
+  await pg.locator('#qlForm .ctchips [data-tag=rocking]').click(); await pg.click('#qlForm button[type=submit]'); await pg.wait_for_timeout(400)
+  e = await pg.evaluate("(()=>{const e=DATA.events.filter(x=>x.local&&isSleep(x)).at(-1);return e?[e.so-e.s,e.dur,e.tags.includes('rocking')]:null})()")
+  check('logged asleep time and soothing tag are used', e == [15, 68, True], e)
+  check('no page errors', not errs, errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(**({'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {}))
-    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments): await t(b)
+    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling): await t(b)
     await b.close()
   bad = [r for r in results if not r[1]]
   print(f'\n{len(results) - len(bad)} / {len(results)} checks passed' + (f' · FAILED: {", ".join(r[0] for r in bad)}' if bad else ''))

@@ -8,6 +8,23 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.27.0 — 2026-11-26 · **Apps Script v1.5** (update needed to save soothing tags and the asleep time when ending a nap)
+
+- **Going up vs. asleep.** A nap's or bedtime's Start Time stays the start of the routine (diaper, milk, rocking), so schedule targets and the routine score are unchanged: going up at 9:57 still counts as an on-time nap.
+  - Sleep amounts (day sleep, night sleep, 24 h) and wake windows now use when she was **actually asleep**:
+    1. the new optional **Asleep At** time (Quick Log: a field with *+5 / +10 / +15 / +20 / +30 min after going up*, also when ending a nap), else
+    2. the end of an **Awake / Restless** entry overlapping the start (how long settlings are logged), else
+    3. a **typical settling time**, 15 min by default, set separately for naps and bedtime in *Settings → Targets → Falling asleep*. Car naps start asleep.
+  - Entries show e.g. "1h 8m asleep · 10:12 (15m to settle)", with "~" when the time is assumed. Bedtime effort ("Easiest bedtime") uses the real asleep time when it's known.
+  - The Sheet gets an `Asleep At` column the first time one is saved.
+- **What helped to sleep:** pills on naps, bedtimes and Awake / Restless entries, also when ending a nap: on own, rocking, holding, walking, lullaby, humming, shushing, white noise, story, patting, back rub, pacifier, milk, lovey, stroller, contact. Stored as tags.
+  - **Sleep tab → What Helps Her Settle:** for each method, the typical time to fall asleep (only from known asleep times) and how long restless stretches lasted, green / orange when a few minutes quicker / slower than usual.
+- **Time buttons** in Quick Log are now **now · −10 · −5 · −1 · +1 · +5 · +10** min. Each nudges whatever time is in the field, so taps add up (crossing midnight moves the date).
+- "Pretend" play reads **Pretend / imaginary** (same tag).
+- An "asleep at" time outside going-up → end is refused with a message.
+- **Apps Script v1.5:** ending a nap can also add tags (merged with the row's) and the asleep time. Paste the new `Code.gs`, keep your `SECRET` and `VIEWERS`, then *Deploy → Manage deployments → ✏️ → New version*. (If you haven't deployed v1.4 yet, this one includes it.)
+- Gemini instructions v6: `Asleep At` column, Start Time = going up for sleep, soothing tags, `puzzle`.
+
 ## v1.26.0 — 2026-11-26 · **Apps Script v1.4** (update needed for calendar appointments)
 
 - **Template library** (*Settings → Schedule templates*, at the top): ready-made days that fit the family and the child's current nap count (built for 1 or 2 naps, from the Baseline Home Day).

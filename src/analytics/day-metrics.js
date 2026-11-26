@@ -3,11 +3,13 @@
    8. ANALYTICS — per-day metrics, midnight rollover, day-boundary attribution, live "in progress"
    ════════════════════════════════════════════════════════════════════════════ */
 /** Sum of minutes of events matching `pred` that overlap [a, b). */
-function overlapMin(pred, a, b){ let m = 0; for (const e of DATA.events) if (e.t != null && e.s < b && e.t > a && pred(e)) m += Math.min(b, e.t) - Math.max(a, e.s); return m; }
+function overlapMin(pred, a, b){ let m = 0; for (const e of DATA.events) { const s = e.so ?? e.s; if (e.t != null && s < b && e.t > a && pred(e)) m += Math.min(b, e.t) - Math.max(a, s); } return m; }   // sleep counts from when she was asleep (v1.27)
 /** Wake-up time on day D: latest end of a (finished) night-sleep segment between 04:00 and 12:00. */
 function wakeOf(D){ let w = null; for (const e of DATA.events) if (isNight(e) && !e.ongoing && e.t >= D*DAY + 240 && e.t <= D*DAY + 720) w = Math.max(w ?? 0, e.t - D*DAY); return w; }
 /** Bedtime on day D: earliest night-sleep start dated D at/after 15:00. */
 function bedOf(D){ let b = null; for (const e of DATA.events) if (isNight(e) && e.d === D && e.st != null && e.st >= 900) b = Math.min(b ?? 1e9, e.st); return b; }
+/** That night's entry (the earliest Sleep - Night dated D at/after 15:00): its start is going up, its .so is asleep. */
+function bedEntry(D){ let b = null; for (const e of DATA.events) if (isNight(e) && e.d === D && e.st != null && e.st >= 900 && (!b || e.st < b.st)) b = e; return b; }
 
 /**
  * Rows with a start but no end for a span-type category (e.g. "Start Nap" from Quick Log) are
@@ -31,6 +33,7 @@ function refreshOngoing(){
 
 function analyze(){
   refreshOngoing();
+  applySleepOnset();
   FEEDS = feedSessions();
   DAYS = new Map();
   const byDay = new Map(), today = todayIdx();
@@ -45,7 +48,7 @@ function analyze(){
   for (const D of [...byDay.keys()].sort((a,b) => a-b)) {
     const evs = byDay.get(D);
     const naps = evs.filter(e => isNap(e) && e.t != null).sort((a,b) => a.s - b.s);
-    const wake = wakeOf(D), bed = bedOf(D);
+    const wake = wakeOf(D), bed = bedOf(D), bedE = bedEntry(D), bedAsleep = bedE ? bedE.so - D*DAY : null;
     const lastNapEnd = naps.length ? Math.max(...naps.map(n => n.t)) - D*DAY : null;
     // The "night" attached to day D: the following night (boundary 06:00) or the preceding one (boundary 00:00).
     const A = B > 0 ? D : D - 1;
@@ -74,8 +77,9 @@ function analyze(){
         ...evs.filter(e => e.milk != null && e.st != null && e.st >= bed - 90 && e.st < bed).map(e => e.st),
         ...evs.filter(e => isAwake(e) && e.st != null && e.st >= bed - 120 && e.st < bed).map(e => e.st),
       ];
-      if (cands.length) effort = bed - Math.min(...cands);
-      const bAbs = D*DAY + bed;
+      if (bedE && bedE.settleHow !== 'assumed') effort = bedAsleep - Math.min(bed, ...cands);   // v1.27: up to when she was really asleep
+      else if (cands.length) effort = bed - Math.min(...cands);
+      const bAbs = D*DAY + (bedAsleep ?? bed);
       firstTry = !DATA.events.some(e => isAwake(e) && e.s > bAbs && e.s <= bAbs + 60);
     }
     // Late-evening / overnight feed (21:00–00:30, not during a wake-up) → wake-up between 00:30 and 03:00?
@@ -86,9 +90,9 @@ function analyze(){
     DAYS.set(D, {
       D, evs, naps, wake, bed, lastNapEnd,
       napCount: naps.length, daySleep: sum(naps.map(n => n.dur)),
-      ww1: wake != null && naps[0] ? naps[0].s - D*DAY - wake : null,
-      ww2: naps.length >= 2 ? naps[1].s - naps[0].t : null,
-      wwFinal: bed != null && lastNapEnd != null ? bed - lastNapEnd : null,
+      ww1: wake != null && naps[0] ? (naps[0].so ?? naps[0].s) - D*DAY - wake : null,   // wake windows run to when she fell asleep (v1.27)
+      ww2: naps.length >= 2 ? (naps[1].so ?? naps[1].s) - naps[0].t : null,
+      wwFinal: bedAsleep != null && lastNapEnd != null ? bedAsleep - lastNapEnd : null, bedAsleep,
       overnightAwake, nightSleep, nightKnown: nightSleep > 0, total24, complete24,
       milk: milkEv.length ? sum(milkEv.map(e => e.milk)) : null, milkWin: win, milkHours: hours,
       water: waterEv.length ? sum(waterEv.map(e => e.water)) : null,

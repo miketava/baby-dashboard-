@@ -44,6 +44,7 @@ features/baby-growth-teeth.js
 features/kids.js
 features/family-contact.js
 features/checkins.js
+features/settling.js
 views/data.js
 features/reports.js
 quicklog/quicklog.js

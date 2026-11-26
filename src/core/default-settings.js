@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS = {
   ntfyTopic: '',
   foodWords: '',                 // extra food keywords (comma-separated)
   targets: {
-    maxDaySleep: 150, milkMin: 12, milkMax: 15, waterMl: 0, waterChips: '10, 30, 60, 90, 120, 150',
+    maxDaySleep: 150, settleNap: 15, settleNight: 15, milkMin: 12, milkMax: 15, waterMl: 0, waterChips: '10, 30, 60, 90, 120, 150',
     ww1: 180, ww2: 210, wwFinal: 240, underTired: 210,
     napCutoff: '16:00', bedtime: '20:00', lateDinner: '18:15',
     nightStart: '22:00', nightEnd: '06:00', splitNightMin: 30,

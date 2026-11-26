@@ -1,4 +1,4 @@
-# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.23)
+# Daily Log schema — instructions for Gemini (v6, matches dashboard v1.27)
 
 Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions. Write only to the **Daily Log** tab: never add or change rows in the **Config** or **Medications** tabs, which the dashboard manages.
 
@@ -8,12 +8,12 @@ The dashboard reads these rows. It can count feeds, sleep, reactions, handovers,
 
 One row per event. Columns, in this order (leave a cell empty when it doesn't apply):
 
-`Date | Start Time | End Time | Duration (min) | Category | Milk (oz) | Notes | Water (ml) | Tags | Outcome / Rating | Value | Noted At | Child`
+`Date | Start Time | End Time | Duration (min) | Category | Milk (oz) | Notes | Water (ml) | Tags | Outcome / Rating | Value | Noted At | Child | Asleep At`
 
 | Column | What goes in it |
 |---|---|
 | **Date** | `YYYY-MM-DD`, the date the event **started**. |
-| **Start Time** | 24-hour `HH:MM`. Blank for an all-day record (a milestone, a tooth, a health note with no time). |
+| **Start Time** | 24-hour `HH:MM`. Blank for an all-day record (a milestone, a tooth, a health note with no time). For **naps and bedtime** it is when the routine started (going up: diaper, milk, rocking), not when she fell asleep. |
 | **End Time** | 24-hour `HH:MM`. Blank for instant events (a bottle, a diaper, a reaction, a weight). An end earlier than the start means the event ran past midnight. For **Family Contact**, it is when you replied (text/email) or when the call ended. |
 | **Duration (min)** | May be left blank; the dashboard calculates it. |
 | **Category** | One of the categories in section 3, spelled exactly. |
@@ -25,6 +25,7 @@ One row per event. Columns, in this order (leave a cell empty when it doesn't ap
 | **Value** | Measurements only, with the unit exactly as written: `7 lb 8 oz`, `3.4 kg`, `52 cm`, `20.5 in`, `37.8 C`, `100.1 F`. Never convert units. |
 | **Noted At** | If the note has its own timestamp (when it was written): `YYYY-MM-DD HH:MM`. Reports then show the entry came from a note written at the time. |
 | **Child** | Only when the family tracks more than one child (see section 6). |
+| **Asleep At** | Naps and Sleep - Night only: 24-hour `HH:MM` when she actually fell asleep, **only if the note says so** ("down at 9:57, asleep by 10:12"). Otherwise leave it blank; the dashboard assumes a typical settling time. A long, difficult settling is better logged as its own `Awake / Restless` row starting when the routine started. |
 
 **Never fill** `Logged At`, `Edited At` or `Logged By` (the dashboard signs entries made from each caregiver's device). The Sheet stamps them automatically.
 
@@ -90,7 +91,8 @@ A checkup with measurements is **several rows**: one Medical / Appointment row p
 - **Diaper - Poop:** the consistency if described, one of `hard` (separate hard lumps, lumpy), `formed` (sausage-shaped, soft blobs), `loose` (mushy, ragged), `watery` (no solid pieces). These are the Brussels Infant and Toddler Stool Scale groups. A diaper that was both wet and dirty is **two rows**, `Diaper - Wet` and `Diaper - Poop`, with the same time.
 - **Health:** short descriptors, e.g. `head-bump, rash, mild, ear, teething`.
 - **Family Contact:** see section 7.
-- **Play:** the activity (`books`, `blocks`, `stacking`, `balls`, `music`, `toys-with-sounds`, `peekaboo`, `pretend`, `sensory`, `mirror`, `cars`, `outdoors`, `water`, `crawling-climbing`), who with (`alone`, `with-an-adult`, `with-other-kids`) and attention (`short`, `medium`, `long`) if described.
+- **Soothing** (on naps, Sleep - Night and Awake / Restless rows), only the ones the note mentions: `on-own`, `rocking`, `holding`, `walking`, `lullaby`, `humming`, `shushing`, `white-noise`, `story`, `patting`, `back-rub`, `pacifier`, `milk`, `lovey`, `stroller`, `contact`.
+- **Play:** the activity (`books`, `blocks`, `stacking`, `puzzle`, `balls`, `music`, `toys-with-sounds`, `peekaboo`, `pretend` (pretend or imaginary play), `sensory`, `mirror`, `cars`, `outdoors`, `water`, `crawling-climbing`), who with (`alone`, `with-an-adult`, `with-other-kids`) and attention (`short`, `medium`, `long`) if described.
 
 ## 5. Outcome / Rating (exact values)
 

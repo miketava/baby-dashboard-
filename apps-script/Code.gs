@@ -1,7 +1,7 @@
-// Baby Routine Dashboard — Apps Script v1.4 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Baby Routine Dashboard — Apps Script v1.5 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.4';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.5';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -179,6 +179,17 @@ function doPost(e) {
         if (col('Duration (min)') && row['Duration (min)'] !== '') sh.getRange(r, col('Duration (min)')).setValue(row['Duration (min)']);
         if (col('Notes') && row['Notes']) sh.getRange(r, col('Notes')).setValue(notes ? notes + '; ' + row['Notes'] : row['Notes']);
         if (col('Outcome / Rating') && row['Outcome / Rating']) sh.getRange(r, col('Outcome / Rating')).setValue(row['Outcome / Rating']);
+        if (row['Tags']) {                                         // v1.5: tags added when ending (e.g. what helped her sleep) join the row's tags
+          if (!col('Tags')) { sh.getRange(1, headers.length + 1).setValue('Tags'); headers.push('Tags'); }
+          const cur = String(sh.getRange(r, col('Tags')).getDisplayValue() || '').split(',').map(t => t.trim()).filter(String);
+          String(row['Tags']).split(',').map(t => t.trim()).filter(String).forEach(t => { if (cur.indexOf(t) < 0) cur.push(t); });
+          sh.getRange(r, col('Tags')).setValue(cur.join(', '));
+        }
+        Object.keys(row).forEach(k => {                            // v1.5: any other column sent (e.g. Asleep At), added if missing
+          if (['Category', 'End Time', 'Duration (min)', 'Notes', 'Outcome / Rating', 'Tags', 'Child'].indexOf(k) >= 0 || row[k] === '' || row[k] == null) return;
+          if (!col(k)) { sh.getRange(1, headers.length + 1).setValue(k); headers.push(k); }
+          sh.getRange(r, col(k)).setValue(row[k]);
+        });
         return out_({ ok: true, updated: r });
       }
       return out_({ ok: false, error: 'No open "' + row['Category'] + '" row to end' });

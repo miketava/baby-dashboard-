@@ -109,6 +109,16 @@ function wire(){
   // Quick log
   $('#fab').onclick = openQuickLog; $('#qlClose').onclick = closeQuickLog;
   $('#qlBody').addEventListener('click', e => { const tg = e.target.closest('[data-tag]'); if (tg) { toggleTagChip(tg); return; }
+    const ng = e.target.closest('[data-nudge]'); if (ng) {   // nudge the field's time by ±1/5/10 min; taps add up, crossing midnight moves the date
+      const fld = ng.closest('[data-for]').dataset.for, i = $(`#qlForm [name="${fld}"]`), D = $('#qlForm [name=Date]'); if (!i) return;
+      let t = (parseTime(i.value) ?? nowMin()) + +ng.dataset.nudge, d = parseDate(D?.value) ?? todayIdx();
+      if (t < 0) { t += DAY; d--; } else if (t >= DAY) { t -= DAY; d++; }
+      i.value = fmtTime(t); if (D && fld === 'Start Time') D.value = isoOf(d); ng.closest('[data-for]').querySelectorAll('[data-ago]').forEach(b => b.classList.add('off'));
+      i.dispatchEvent(new Event('change', { bubbles:true })); return; }
+    const af = e.target.closest('[data-after]'); if (af) {   // asleep = going up + N min
+      const box = af.closest('[data-for]'), from = parseTime(box.dataset.from || $('#qlForm [name="Start Time"]')?.value), i = $('#qlForm [name="Asleep At"]');
+      if (from == null || !i) return toast(L('Set the start time first', 'Indiquez d’abord l’heure de début'), true);
+      i.value = fmtTime((from + +af.dataset.after) % DAY); box.querySelectorAll('[data-after]').forEach(b => b.classList.toggle('off', b !== af)); return; }
     const ago = e.target.closest('[data-ago]'); if (ago) { const box = ago.closest('[data-for]'), fld = box.dataset.for, i = $(`#qlForm [name="${fld}"]`), D = $('#qlForm [name=Date]'); let t = nowMin() - +ago.dataset.ago, d = todayIdx(); if (t < 0) { t += DAY; d--; }
       i.value = fmtTime(t); if (D && fld === 'Start Time') D.value = isoOf(d); box.querySelectorAll('[data-ago]').forEach(b => b.classList.toggle('off', b !== ago)); i.dispatchEvent(new Event('change', { bubbles:true })); return; }
     const nb = e.target.closest('[data-now]'); if (nb) { const i = $(`#qlForm [name="${nb.dataset.now}"]`), D = $('#qlForm [name=Date]');

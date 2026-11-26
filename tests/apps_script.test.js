@@ -19,6 +19,12 @@ t('update and delete find the row', () => {
   assert.ok(gas.post({ action: 'delete', rowNum: r._row, match: { Date: r.Date, Category: r.Category, 'Start Time': r['Start Time'] } }).ok);
   assert.ok(!gas.get().rows.some(x => x.Category === 'Sleep - Nap'));
 });
+t('end merges tags and saves Asleep At (v1.5)', () => {
+  gas.post({ action: 'append', row: { Date: '2026-11-26', 'Start Time': '09:57', Category: 'Sleep - Nap', Tags: 'crib' } });
+  assert.ok(gas.post({ action: 'end', row: { Category: 'Sleep - Nap', 'End Time': '11:20', 'Duration (min)': 83, Tags: 'rocking, crib, lullaby', 'Asleep At': '10:12' } }).ok);
+  const r = gas.get().rows.find(x => x['Start Time'] === '09:57');
+  assert.strictEqual(r.Tags, 'crib, rocking, lullaby'); assert.strictEqual(r['Asleep At'], '10:12'); assert.strictEqual(r['End Time'], '11:20');
+});
 t('no Config / Medications tabs until first write', () => { const g = gas.get(); assert.deepStrictEqual(g.config, {}); assert.strictEqual(g.meds, null); });
 t('config upsert creates the tab and stamps updates', () => {
   assert.ok(gas.post({ action: 'config', by: 'Mike', items: [{ key: 'title', value: 'Ava' }, { key: 'child:main:targets', value: { bedtime: '19:30' } }] }).ok);
@@ -44,7 +50,7 @@ t('appointments: matched, titled, visits kept apart', () => {
   assert.deepStrictEqual(g2.planned.map(v => v.start), ['12:00'], 'only the parents’ visit is a visit (not “Visite médicale”)');
   assert.deepStrictEqual(g2.appts.map(a => a.title), ['Dentiste Ava', 'Doctor appointment', 'Visite médicale CLSC'], 'cancelled and all-day ones are left out');
   assert.ok(g2.appts.every(a => a.id && a.calendar && /^\d\d:\d\d$/.test(a.start)));
-  assert.strictEqual(g2.scriptVersion, '1.4');
+  assert.strictEqual(g2.scriptVersion, '1.5');
 });
 t('viewer keys get no appointments or settings', () => {
   const code = require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');

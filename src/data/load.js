@@ -54,7 +54,9 @@ function withQueue(headers, records){
         if (q.row['Child'] && !kidRowMatch(r[H('kid')], q.row['Child'], q.blankOk)) continue;
         recs[i] = { ...r, [H('end')]: q.row['End Time'], [H('dur')]: q.row['Duration (min)'] ?? '', _local:true, _localId:q.id,
           ...(q.row['Notes'] ? { [H('notes')]: [r[H('notes')], q.row['Notes']].filter(Boolean).join('; ') } : {}),
-          ...(q.row['Outcome / Rating'] ? { [H('outcome')]: q.row['Outcome / Rating'] } : {}) };
+          ...(q.row['Outcome / Rating'] ? { [H('outcome')]: q.row['Outcome / Rating'] } : {}),
+          ...(q.row['Tags'] ? { [H('tags')]: [...new Set([...parseTags(r[H('tags')]), ...parseTags(q.row['Tags'])])].join(', ') } : {}),
+          ...(q.row['Asleep At'] ? { [H('asleep')]: q.row['Asleep At'] } : {}) };
         break;
       }
     }

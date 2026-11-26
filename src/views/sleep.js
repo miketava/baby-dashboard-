@@ -79,6 +79,8 @@ function renderSleep(){
       $('#efTake').textContent = !best ? '' : ok.length < 2 || worst.v - best.v < 5 ? L(`Bedtime takes about ${fmtDur(Math.round(mean(ef.map(d => d.effort))))} whatever the last wake window.`, `Le coucher prend environ ${fmtDur(Math.round(mean(ef.map(d => d.effort))))}, peu importe la dernière période d’éveil.`)
         : L(`Bedtime is quickest after ${best.l} awake (${fmtDur(Math.round(best.v))}) and slowest after ${worst.l} (${fmtDur(Math.round(worst.v))}).`, `Le coucher est le plus rapide après ${best.l} d’éveil (${fmtDur(Math.round(best.v))}) et le plus lent après ${worst.l} (${fmtDur(Math.round(worst.v))}).`); } }
 
+  renderSoothe(days);   // v1.27: what helps her settle
+
   // Outings & travel impact (Feature D) — non-exclusive slices
   const quiet = d => !d.visit && !d.homeVisit && !d.medical && !d.outing && !d.car && !d.afterVisit;
   const slices = [
