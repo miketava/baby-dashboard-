@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.22.1 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- Upcoming items lead with how far away they are: *Next visits* in Today's plan ("in 6 days (Dec 1 11:00–12:30)"), "Coming up" appointments in the banner ("tomorrow (Thu, Nov 26 09:30)") and the vaccine reminder.
+
 ## v1.22.0 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - **Sleep tab redone** (same data, easier to read; each card opens with a one-line takeaway in bold):

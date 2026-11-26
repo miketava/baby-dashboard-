@@ -1096,11 +1096,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.22.0';
+const APP_VERSION = '1.22.1';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.22.1', date:'2026-11-25',
+    en:['Upcoming visits, appointments and vaccines say “tomorrow” or “in 3 days” first, with the date after.'],
+    fr:['Les visites, rendez-vous et vaccins à venir indiquent d’abord « demain » ou « dans 3 jours », puis la date.'] },
   { v:'1.22.0', date:'2026-11-25',
     en:['Sleep tab redone: Sleep per day (night + naps with a 7-day average), Wake windows as one row each against your target, Naps and the night after, and Easiest bedtime by last wake window. Each card opens with a one-line takeaway. Outings & travel highlights what’s worse or better than a quiet home day.',
         'Logged by: set “Who am I” in Settings → General (kept on each device). Entries you add are signed, and the name shows small under each entry’s time.'],
@@ -3383,7 +3386,7 @@ function todayState(){
   if (mod('schedule') && m.visit && (S.todayTpl?.date !== isoOf(D) || S.todayTpl.id === 'auto')) S0.callouts.push({ cls:'info', html:L(`🏠 Off-site visit at ${fmtTime(m.visitStart)} → using <b>${esc(tp.name)}</b> (visits ≤ ${t.earlyVisitCutoff} use the early template)`, `🏠 Visite à l’extérieur à ${fmtTime(m.visitStart)} → modèle <b>${esc(tp.name)}</b> (les visites avant ${t.earlyVisitCutoff} utilisent le modèle matinal)`) });
   // upcoming appointments / vaccines in the next 7 days (pre-filled rows)
   DATA.events.filter(e => (e.k === 'medical' || e.k === 'vaccine') && e.s > nowA && e.s <= nowA + 7*DAY && !(e.d === D)).slice(0, 3)
-    .forEach(e => S0.callouts.push({ cls:'info', html:`📅 ${L('Coming up:', 'À venir :')} ${cat(e.cat).icon} <b>${esc(e.notes || catL(e.cat))}</b> · ${fmtDay(e.d)}${e.st != null ? ' ' + fmtTime(e.st) : ''}` }));
+    .forEach(e => S0.callouts.push({ cls:'info', html:`📅 ${L('Coming up:', 'À venir :')} ${cat(e.cat).icon} <b>${esc(e.notes || catL(e.cat))}</b> · <b>${relDay(e.d)}</b> (${fmtDay(e.d)}${e.st != null ? ' ' + fmtTime(e.st) : ''})` }));
   if (m.ribbon?.some(e => e.k === 'incident' && e.outcome === 'Follow-up Needed')) S0.callouts.push({ cls:'bad', html:L('✚ A health note today is marked <b>Follow-up Needed</b>.', '✚ Une note de santé d’aujourd’hui est marquée <b>Suivi requis</b>.') });
   medCallouts(D).forEach(c => S0.callouts.push(c));
   nudgeCallouts(m, D).forEach(c => S0.callouts.push(c));
@@ -3694,7 +3697,7 @@ function renderTodayPlan(){
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
-        return `<div class="pl-up">🗓️ <b>${L('Next visits', 'Prochaines visites')}:</b> ${up.length ? up.map(v => `${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''}`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>`; })();
+        return `<div class="pl-up">🗓️ <b>${L('Next visits', 'Prochaines visites')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>`; })();
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */
 function renderTodayEntries(){
@@ -5580,6 +5583,8 @@ const evById = id => DATA.events.find(e => e.id === +id);
    teething vs sleep, and a plain-text day log to paste into an AI assistant.
    ════════════════════════════════════════════════════════════════════════════ */
 
+/** “today” / “tomorrow” / “in 3 days” / “3 days ago” for a day index. */
+const relDay = D => { const n = D - todayIdx(); return n === 0 ? L('today', 'aujourd’hui') : n === 1 ? L('tomorrow', 'demain') : n === -1 ? L('yesterday', 'hier') : n > 0 ? L(`in ${n} days`, `dans ${n} jours`) : L(`${-n} days ago`, `il y a ${-n} jours`); };
 const medianOf = a => { const b = a.filter(x => x != null && !isNaN(x)).sort((x, y) => x - y); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
 const daysBack = (n, from = todayIdx() - 1) => { const out = []; for (let d = from; d > from - n; d--) { const m = DAYS.get(d); if (m) out.push(m); } return out; };
 
@@ -5746,7 +5751,7 @@ function vaxCallouts(){
   const st = vaxStatus(); if (!st || viewOnly()) return [];
   const T0 = todayIdx(), out = [];
   const next = st.filter(s => !s.got && s.due - T0 <= 14).pop(); if (next && next.due - T0 >= -60)
-    out.push({ cls:'info', html: next.due >= T0 ? L(`💉 ${next.to ? '4–6 year' : next.mo + '-month'} vaccines due ${esc(fmtDay(next.due))} (Québec schedule).`, `💉 Vaccins de ${next.to ? '4–6 ans' : next.mo + ' mois'} prévus le ${esc(fmtDay(next.due))} (calendrier du Québec).`)
+    out.push({ cls:'info', html: next.due >= T0 ? L(`💉 ${next.to ? '4–6 year' : next.mo + '-month'} vaccines due <b>${relDay(next.due)}</b> (${esc(fmtDay(next.due))}, Québec schedule).`, `💉 Vaccins de ${next.to ? '4–6 ans' : next.mo + ' mois'} prévus <b>${relDay(next.due)}</b> (${esc(fmtDay(next.due))}, calendrier du Québec).`)
       : L(`💉 ${next.mo}-month vaccines were due ${esc(fmtDay(next.due))}. Log a Vaccine row once they’re done.`, `💉 Les vaccins de ${next.mo} mois étaient prévus le ${esc(fmtDay(next.due))}. Ajoutez une ligne Vaccine une fois faits.`) });
   const recent = st.filter(s => s.got && T0 - s.got.d <= (s.late ? 14 : 2));
   recent.forEach(s => { const dn = T0 - s.got.d;
