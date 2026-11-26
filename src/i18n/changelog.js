@@ -1,4 +1,9 @@
 const CHANGELOG = [
+  { v:'1.27.1', date:'2026-11-26',
+    en:['Apps Script: SECRET and VIEWERS are now at the very top, above a line marking where updates start. And “Copy script” (Settings → Setup guide) fills in your secret and viewer keys, so updating is: select all in Apps Script, paste, deploy.',
+        'Viewer keys are shared between your devices through the Sheet, so the copied script has them whichever device you copy from.'],
+    fr:['Apps Script : SECRET et VIEWERS sont maintenant tout en haut, au-dessus d’une ligne qui marque où commencent les mises à jour. Et « Copier le script » (Réglages → Guide) y met votre secret et vos clés de lecture : pour mettre à jour, tout sélectionner dans Apps Script, coller, déployer.',
+        'Les clés de lecture sont partagées entre vos appareils par la feuille; le script copié les contient, peu importe l’appareil.'] },
   { v:'1.27.0', date:'2026-11-26',
     en:['Going up vs. asleep: a nap’s or bedtime’s start stays when the routine starts (diaper, milk, rocking), so schedule targets and the score are unchanged. Sleep amounts, night sleep and wake windows now count from when she was actually asleep: the new optional “Asleep at” time (with +5 / +10 / +15 / +20 / +30 min buttons), else the end of an Awake / Restless entry at the start, else a typical settling time (15 min; Settings → Targets → Falling asleep). Car naps start asleep. Entries show “1h 18m asleep · 10:12”.',
         'What helped: pills on naps, bedtimes and Awake / Restless entries (on own, rocking, holding, walking, lullaby, humming, shushing, white noise, story, patting, back rub, pacifier, milk, lovey, stroller, contact), also when ending a nap. Sleep tab → What Helps Her Settle compares the time to fall asleep and how long restless stretches lasted with each.',

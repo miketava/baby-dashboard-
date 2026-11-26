@@ -1,5 +1,22 @@
-// Baby Routine Dashboard — Apps Script v1.5 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+//  YOUR SETTINGS: keep these two when you update the script (or use “Copy script” in the dashboard,
+//  Settings → Setup guide, which fills them in for you).
+// ══════════════════════════════════════════════════════════════════════════════════════════════
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
+
+// Optional read-only viewer keys (e.g. for a caseworker). A viewer key can only read, never add rows.
+// Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's
+// dashboard and reports show a "Not included: …" line naming those categories.
+// Create a line in the dashboard (Settings → Sharing) and paste it between the braces:
+const VIEWERS = {
+  // 'long-random-viewer-key': { label: 'Caseworker', exclude: ['Guest', 'Outing / Excursion'], from: '2026-10-01' },
+  // With several children, add  child: ['ava'], childName: 'Ava', blank: true  to share only that child's rows.
+};
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+//  To update: replace everything from here down with the new version.
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// Baby Routine Dashboard — Apps Script v1.5 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
 const SCRIPT_VERSION = '1.5';                       // the dashboard checks this to tell you when to redeploy
 
@@ -18,14 +35,6 @@ const NOT_VISIT = /home visit|visite à domicile|à domicile|cancel|annul/i;   /
 const APPOINTMENTS = true;
 const APPT_MATCH = /m[ée]decin|m[ée]dical|docteur|doctor|\bdr\b|p[ée]diatr|pediatr|dentist|dentiste|orthodont|clsc|clinique|clinic|vaccin|rendez-vous|\brdv\b|appointment|\bappt\b|optom|ophtalm|audiolog|orthophon|physio|ergoth|h[ôo]pital|hospital|urgence|checkup|check-up|bilan de sant[ée]/i;
 
-// Optional read-only viewer keys (e.g. for a caseworker). A viewer key can only read, never add rows.
-// Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's
-// dashboard and reports show a "Not included: …" line naming those categories.
-// Create a line in the dashboard (Settings → Sharing) and paste it between the braces:
-const VIEWERS = {
-  // 'long-random-viewer-key': { label: 'Caseworker', exclude: ['Guest', 'Outing / Excursion'], from: '2026-10-01' },
-  // With several children, add  child: ['ava'], childName: 'Ava', blank: true  to share only that child's rows.
-};
 const ALL_KIDS_ = ['all', 'both', 'everyone', 'tous', 'toutes', 'les deux', 'kids', 'enfants'];
 const kidNames_ = c => String(c || '').toLowerCase().split(/\s*(?:,|;|&|\+|\/|\band\b|\bet\b)\s*/).map(x => x.trim()).filter(String);
 /** Does a Child cell belong to one of these names? Blank cells count when blankOk. */

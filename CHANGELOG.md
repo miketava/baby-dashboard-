@@ -8,6 +8,13 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.27.1 — 2026-11-26 · Apps Script v1.5 (layout only, no behaviour change)
+
+- **Easier script updates.** In `Code.gs`, `SECRET` and `VIEWERS` are now at the very top, above a line marking where updates start: keep those, replace the rest.
+- Even simpler: **Copy script** (*Settings → Setup guide*) now fills in your secret (your connection token) and the viewer keys created in *Settings → Sharing*. In Apps Script: select all, paste, *Deploy → Manage deployments → ✏️ → New version*. The toast says what was included; viewer lines added to the script by hand aren't.
+- Viewer keys are now shared between your devices through the Sheet (Config tab), so the copied script has them whichever device you copy from.
+- Secrets and labels with apostrophes or backslashes are quoted correctly in the copied script and the viewer lines.
+
 ## v1.27.0 — 2026-11-26 · **Apps Script v1.5** (update needed to save soothing tags and the asleep time when ending a nap)
 
 - **Going up vs. asleep.** A nap's or bedtime's Start Time stays the start of the routine (diaper, milk, rocking), so schedule targets and the routine score are unchanged: going up at 9:57 still counts as an on-time nap.

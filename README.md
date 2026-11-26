@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.27.0** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.27.1** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -184,7 +184,7 @@ The files share one global scope and run top to bottom in `BUILD_ORDER`, so a ne
 ## Updating
 
 - **The dashboard:** replace `index.html` in your repo. Everyone gets the new version on their next open, with a short "What's new" note.
-- **The Apps Script** has its own version number and changes less often. When a release needs it, the dashboard shows a 🔧 notice. Then paste the new `Code.gs`, keep your `SECRET`, and use *Deploy → Manage deployments →* ✏️ *→ Version: New version → Deploy* (same URL). *Settings → About & changes* shows both versions.
+- **The Apps Script** has its own version number and changes less often. When a release needs it, the dashboard shows a 🔧 notice. Then either use **Copy script** in *Settings → Setup guide* (it fills in your `SECRET` and viewer keys) and paste it over everything in Apps Script, or replace everything below the "To update" line at the top of `Code.gs`, keeping your `SECRET` and `VIEWERS` above it. Then use *Deploy → Manage deployments →* ✏️ *→ Version: New version → Deploy* (same URL). *Settings → About & changes* shows both versions.
 
 ## Troubleshooting
 

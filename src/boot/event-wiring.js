@@ -222,7 +222,10 @@ function wire(){
       case 'clearQueue': if (confirm(`Discard ${QUEUE.length} quick-log entr${QUEUE.length>1?'ies':'y'} that are not in the Sheet?`)) { QUEUE = []; saveQueue(); reingest(); renderSettings(); } break;
       case 'csv': $('#csvInput').click(); break;
       case 'demo': loadDemo(); lsSet(LS_CACHE, null); renderSettings(); toast('Demo data loaded'); break;
-      case 'copyScript': toast(await copyText(APPS_SCRIPT) ? 'Script copied' : 'Copy failed — select it manually'); break;
+      case 'copyScript': { const c = scriptWithSettings();
+        toast(!(await copyText(c.text)) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')
+          : c.secret ? L(`Script copied with your secret${c.viewers ? ` and ${c.viewers} viewer key${c.viewers > 1 ? 's' : ''}` : ''}. In Apps Script, select all and paste over it. Viewer lines you added by hand aren’t included.`, `Script copié avec votre secret${c.viewers ? ` et ${c.viewers} clé${c.viewers > 1 ? 's' : ''} de lecture` : ''}. Dans Apps Script, sélectionnez tout et collez par-dessus. Les lignes de lecture ajoutées à la main ne sont pas incluses.`)
+          : L('Script copied. Set SECRET at the top before deploying.', 'Script copié. Changez SECRET en haut avant de déployer.')); break; }
       case 'copyNtfy': toast(await copyText(ntfySnippet()) ? 'Snippet copied' : 'Copy failed — select it manually'); break;
       case 'genTopic': S.ntfyTopic = 'baby-' + [...crypto.getRandomValues(new Uint8Array(9))].map(x => x.toString(36).padStart(2,'0')).join('').slice(0, 16); saveSettings(); renderSettings(); break;
       case 'testRem': chime(); if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); if ('Notification' in window && Notification.permission === 'granted') new Notification('Test reminder', { body:'Reminders are working 👍' }); else toast('🔔 Test reminder — notifications unavailable here, showing in-page'); renderSettings(); break;

@@ -7,7 +7,15 @@ function shareCats(){
   const names = [...new Set([...[...CATS.values()].filter(c => c.known && c.group !== 'Care').map(c => c.name), ...present.keys(), ...VDEF])];
   return names.map(n => ({ name:n, n: present.get(n) || 0, icon: CATS.get(n)?.icon || '•' }));
 }
-const q1 = x => JSON.stringify(String(x)).replace(/"/g, "'");
+const q1 = x => "'" + String(x).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, '\\n') + "'";   // a safe single-quoted JS string
+/** The Apps Script with this family's SECRET (the connection token) and viewer keys filled in, so updating is copy, paste over everything, deploy (v1.27.1). */
+function scriptWithSettings(){
+  let s = APPS_SCRIPT;
+  if (S.token) s = s.replace("const SECRET = 'change-me-to-a-long-random-phrase';", `const SECRET = ${q1(S.token)};`);
+  const vs = S.share?.viewers || [];
+  if (vs.length) s = s.replace(/const VIEWERS = \{([\s\S]*?)\n\};/, (m, body) => `const VIEWERS = {${body}\n${vs.map(viewerLine).join('\n')}\n};`);
+  return { text: s, secret: !!S.token, viewers: vs.length };
+}
 const viewerLine = v => `  ${q1(v.key)}: { label: ${q1(v.label || 'Viewer')}, exclude: [${v.exclude.map(q1).join(', ')}]${v.from ? `, from: '${v.from}'` : ''}${v.child ? `, child: [${v.child.keys.map(q1).join(', ')}], childName: ${q1(v.child.name)}, blank: ${!!v.child.blank}` : ''} },`;
 function sharingPaneHTML(){
   const cats = shareCats(), ex = new Set((S.share.exclude || []).map(exclKey));
@@ -30,7 +38,7 @@ function sharingPaneHTML(){
       <div><b>${esc(v.label || 'Viewer')}</b>${v.child ? ' · ' + esc(v.child.name) : ''} <span class="faint">· created ${esc(new Date(v.created).toLocaleDateString(LOC()))}</span></div>
       <div class="sub">Not included: ${v.exclude.length ? esc(v.exclude.join(', ')) : 'nothing'}${v.from ? ' · from ' + esc(v.from) : ''}</div>
       <ol class="hint">
-        <li>In Apps Script, paste this line between the braces of <span class="mono">const VIEWERS = { … }</span>:<pre class="code">${esc(viewerLine(v))}</pre></li>
+        <li>In Apps Script, paste this line between the braces of <span class="mono">const VIEWERS = { … }</span> at the top (or use <b>Copy script</b> in the Setup guide, which includes it):<pre class="code">${esc(viewerLine(v))}</pre></li>
         <li>Save, then <b>Deploy → Manage deployments → ✏️ → Version: New version → Deploy</b> (same URL).</li>
         <li>Send them the link to your dashboard and this viewer config file — it holds the viewer key, never your main secret.</li></ol>
       <div class="row wrap"><button class="btn sm" data-act="vCopy" data-i="${i}">Copy line</button><button class="btn sm primary" data-act="vExport" data-i="${i}">Export viewer config</button><button class="btn sm danger" data-act="vRemove" data-i="${i}">Remove</button></div>

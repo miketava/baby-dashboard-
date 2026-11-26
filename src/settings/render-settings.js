@@ -30,7 +30,7 @@ function renderSettings(){
     <ol class="steps">
       <li>Open your Sheet. The tab must be named <b>Daily Log</b> with headers <span class="mono">Date, Start Time, End Time, Duration (min), Category, Milk (oz), Notes</span> and (v2, optional) <span class="mono">Water (ml), Tags, Outcome / Rating</span> in columns H–J.</li>
       <li>Go to <b>Extensions → Apps Script</b>, replace any existing code with the script below.</li>
-      <li>Change <span class="mono">SECRET</span> to a long random phrase. Save (💾).</li>
+      <li>Change <span class="mono">SECRET</span> (at the very top) to a long random phrase. Save (💾). <span class="faint">Once connected, <b>Copy script</b> fills in your secret and viewer keys, so updating is: select all, paste, deploy.</span></li>
       <li><b>First time:</b> Deploy → New deployment → gear → <b>Web app</b>; <b>Execute as: Me</b>, <b>Who has access: Anyone</b>; Deploy and authorize.<br><b>Upgrading from v1:</b> Deploy → <b>Manage deployments</b> → ✏️ Edit → Version: <b>New version</b> → Deploy. The URL stays the same.</li>
       <li>Copy the <b>Web app URL</b> (ends in <span class="mono">/exec</span>) into <b>Data source</b> with your token, then <b>Save &amp; sync</b>. The <b>＋ Quick Log</b> button now writes rows straight into the Sheet.</li>
       <li><b>Timestamps (v3, recommended):</b> in the Apps Script toolbar choose <span class="mono">markExistingRows</span> and click ▸ <b>Run</b> once. This adds a <b>Logged At</b> column, labels existing rows “before tracking”, and from then on every new row — Quick Log or typed into the Sheet — is stamped with the time it was entered. Corrections to a row never change its stamp.</li>
