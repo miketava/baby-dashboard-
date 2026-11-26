@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.24.3 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Swipe down to close** (phones): drag Quick Log or the More panel down and let go to close it, like ✕; a quick flick works too. From the handle or title bar it always works; inside the list, only when the list is scrolled to the top (otherwise the drag scrolls the list). A short drag springs back. Taps on buttons are unaffected.
+
 ## v1.24.2 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **One 🍽 Meal button** in Quick Log instead of a button named for the time of day plus a separate Snack. The form opens with **Breakfast / Lunch / Snack / Dinner** at the top, the one for the time of day already picked; the Sheet still gets that category.
