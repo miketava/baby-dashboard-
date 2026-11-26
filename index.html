@@ -1096,11 +1096,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.22.1';
+const APP_VERSION = '1.23.0';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
-const REQUIRED_SCRIPT = '1.2';
+const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.23.0', date:'2026-11-25',
+    en:['Shared settings live in the Sheet (needs Apps Script v1.3): child profiles, targets, day templates, scoring, family rules and medications are kept in two new tabs, Config and Medications, so every caregiver’s device stays in step. The tabs are created for you, and the first device that syncs copies its current settings into them. Medications are one readable row each and can be edited right in the Sheet. Language, theme, filters, reminders and Who am I stay on each device. Status and a “Push this device’s settings” button: Settings → Data source.'],
+    fr:['Les réglages partagés vivent dans la feuille (Apps Script v1.3 requis) : profils, cibles, modèles de journée, pointage, règles familiales et médicaments sont gardés dans deux nouveaux onglets, Config et Medications, pour que tous les appareils restent synchronisés. Les onglets sont créés automatiquement et le premier appareil qui se synchronise y copie ses réglages actuels. Chaque médicament est une ligne lisible, modifiable directement dans la feuille. Langue, thème, filtres, rappels et « Qui suis-je » restent propres à chaque appareil. État et bouton « Envoyer les réglages de cet appareil » : Réglages → Source des données.'] },
   { v:'1.22.1', date:'2026-11-25',
     en:['Upcoming visits, appointments and vaccines say “tomorrow” or “in 3 days” first, with the date after.'],
     fr:['Les visites, rendez-vous et vaccins à venir indiquent d’abord « demain » ou « dans 3 jours », puis la date.'] },
@@ -1688,10 +1691,10 @@ const ALLERGENS = [
 /* ════════════════════════════════════════════════════════════════════════════
    APPS SCRIPT — read (doGet) + Quick Log append (doPost). Shown in Settings → Setup guide.
    ════════════════════════════════════════════════════════════════════════════ */
-const APPS_SCRIPT = `// Baby Routine Dashboard — Apps Script v1.2 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+const APPS_SCRIPT = `// Baby Routine Dashboard — Apps Script v1.3 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.2';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.3';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -1728,6 +1731,46 @@ function loggedCol_(sh) {
   const h = headers_(sh); let c = h.indexOf('Logged At') + 1;
   if (!c) { c = h.length + 1; sh.getRange(1, c).setValue('Logged At'); }
   return c;
+}
+
+// Shared settings (v1.3). Two tabs, created automatically on first use:
+//  • Config: one row per setting — Key | Value (JSON) | Updated At | Updated By. Child profiles, templates, targets…
+//    are best changed from the dashboard; the JSON is there so nothing is lost.
+//  • Medications: one row per medication — easy to read and edit by hand.
+// Only the family's own key reads or writes these; viewer keys never receive them.
+const CONFIG_SHEET = 'Config', MEDS_SHEET = 'Medications';
+const MED_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note', 'Updated At', 'Updated By'];
+function tab_(name, headers) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet(); let sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@'); sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  return sh;
+}
+function readConfig_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG_SHEET), out = {};
+  if (!sh || sh.getLastRow() < 2) return out;
+  sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues().forEach(r => { if (!r[0]) return; let v; try { v = JSON.parse(r[1]); } catch (err) { v = r[1]; } out[r[0]] = { value: v, updated: r[2], by: r[3] }; });
+  return out;
+}
+function readMeds_() {   // null = no Medications tab yet
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MEDS_SHEET); if (!sh) return null;
+  if (sh.getLastRow() < 2) return [];
+  const h = headers_(sh);
+  return sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getDisplayValues().filter(r => r.some(c => String(c).trim() !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i]])));
+}
+function writeConfig_(items, by) {
+  const sh = tab_(CONFIG_SHEET, ['Key', 'Value', 'Updated At', 'Updated By']), now = new Date().toISOString(), out = {};
+  const keys = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues().map(r => r[0]) : [];
+  items.forEach(it => { const row = [it.key, JSON.stringify(it.value), now, by || ''], i = keys.indexOf(it.key);
+    if (i >= 0) sh.getRange(i + 2, 1, 1, 4).setValues([row]); else { sh.appendRow(row); keys.push(it.key); }
+    out[it.key] = now; });
+  return out;
+}
+function writeMeds_(rows, by) {
+  const sh = tab_(MEDS_SHEET, MED_COLS), now = new Date().toISOString();
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+  const vals = rows.map(r => MED_COLS.map(c => c === 'Updated At' ? now : c === 'Updated By' ? (r['Updated By'] || by || '') : (r[c] == null ? '' : String(r[c]))));
+  if (vals.length) sh.getRange(2, 1, vals.length, MED_COLS.length).setValues(vals);
+  return now;
 }
 
 function calendars_() {
@@ -1778,7 +1821,8 @@ function doGet(e) {
   const rows = data.map(r => Object.assign(Object.fromEntries(headers.map((h, i) => [h, r[i]])), viewer ? {} : { _row: r._row }));
   let planned = [], calError = '';
   if (!viewer) try { planned = plannedVisits_(); } catch (err) { calError = String(err.message || err); }
-  return out_({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, p.callback);
+  const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_() };
+  return out_(Object.assign({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
 }
 
 // WRITE (Quick Log) — POST {token, action: 'append' | 'end', row: {Header: value}}
@@ -1788,6 +1832,8 @@ function doPost(e) {
   if (p.token !== SECRET) return out_({ ok: false, error: VIEWERS[p.token] ? 'This is a read-only viewer key' : 'Unauthorized: token mismatch' });
   const lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
+    if (p.action === 'config') return out_({ ok: true, updated: writeConfig_(p.items || [], p.by) });
+    if (p.action === 'meds') return out_({ ok: true, updated: writeMeds_(p.rows || [], p.by) });
     const sh = sheet_(), row = p.row || {};
     loggedCol_(sh);
     const headers = headers_(sh);
@@ -2459,7 +2505,7 @@ const viewOnly = () => !!DATA?.viewer;
 const LS_ME = 'bld.me.v1';
 let ME = lsGet(LS_ME, null) || { name:'', role:'' };
 const saveMe = () => lsSet(LS_ME, ME);
-const saveSettings = () => { lsSet(LS_SETTINGS, S); if (typeof flashSaved === 'function') flashSaved(); };
+const saveSettings = () => { lsSet(LS_SETTINGS, S); if (typeof flashSaved === 'function') flashSaved(); if (typeof cfgQueuePush === 'function') cfgQueuePush(); };
 /** Apps Script version reported by the last sync ('' = not synced this session; '0' = older script without a version). */
 let SCRIPT_SEEN = '';
 const scriptOutdated = () => DATA.source === 'live' && SCRIPT_SEEN && !viewOnly() && cmpVer(SCRIPT_SEEN, REQUIRED_SCRIPT) < 0;
@@ -2834,6 +2880,7 @@ async function syncLive({ quiet=false, skipFlush=false } = {}){
     if (data.calError) toast(L('Calendar: ', 'Agenda : ') + data.calError, true);
     ingest({ headers: headers || Object.keys(records[0] || {}), records, planned: Array.isArray(data.planned) ? data.planned : null }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
     SCRIPT_SEEN = data.scriptVersion || '0'; renderNotice(); if (typeof renderVerPill === 'function') renderVerPill();
+    if (typeof cfgOnSync === 'function') cfgOnSync(data).catch(e => console.warn('config sync', e));
     if (!quiet) toast(`Synced ${DATA.events.length} events`);
     return true;
   } catch (err) { toast('Sync failed: ' + err.message, true); return false; }
@@ -5895,7 +5942,7 @@ function renderMedsCard(){
 function medSettingsHTML(){
   const meds = S.meds || [];
   return `<h4>${L('Medications', 'Médicaments')}</h4>
-    <p class="hint">${L('For a regular medication: reminders at dose time, a ✓ Given button (it writes a Meds row to the Sheet) and a check-off history in Health. Leave “until” blank if it’s ongoing. This list is saved on this device — export your config to share it with other caregivers.', 'Pour un médicament régulier : rappel à l’heure de la dose, bouton ✓ Donné (il écrit une ligne Meds dans la feuille) et historique dans Santé. Laissez « jusqu’au » vide si c’est en continu. Cette liste est gardée sur cet appareil — exportez votre configuration pour la partager avec les autres personnes.')}</p>
+    <p class="hint">${L('For a regular medication: reminders at dose time, a ✓ Given button (it writes a Meds row to the Sheet) and a check-off history in Health. Leave “until” blank if it’s ongoing. With Apps Script v1.3+ this list is kept in the Sheet’s Medications tab and shared by every device.', 'Pour un médicament régulier : rappel à l’heure de la dose, bouton ✓ Donné (il écrit une ligne Meds dans la feuille) et historique dans Santé. Laissez « jusqu’au » vide si c’est en continu. Avec l’Apps Script v1.3+, cette liste est gardée dans l’onglet Medications de la feuille et partagée entre les appareils.')}</p>
     ${meds.map((md, i) => `<div class="fgrid medrow" data-mi="${i}">
       <label class="field">${L('Name', 'Nom')}<input type="text" data-md="name" value="${esc(md.name || '')}" placeholder="${esc(L('e.g. Amoxicillin', 'p. ex. Amoxicilline'))}"></label>
       <label class="field">${L('Dose', 'Dose')}<input type="text" data-md="dose" value="${esc(md.dose || '')}" placeholder="2 ml"></label>
@@ -5945,6 +5992,141 @@ function pickMedInForm(i){
   const set = (n, v) => { const el = f.querySelector(`[name="${n}"]`); if (el) { el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); } };
   set('Notes', `${m.name}${m.dose ? ' ' + m.dose : ''}`); set('Tags', medSlug(m.name)); if (m.dose) set('Value', m.dose);
   f.querySelectorAll('[data-medpick]').forEach(b => b.classList.toggle('off', +b.dataset.medpick !== i));
+}
+/* ════════════════════════════════════════════════════════════════════════════
+   v1.23 — Shared settings in the Sheet (Apps Script v1.3+).
+   • Config tab: one row per setting (Key | Value JSON | Updated At | Updated By).
+     Per child: child:<id>:<key> for profile, targets, templates, score, cocoon, report.
+     Family-wide: kids, blankKid, title, dayBoundary, foodWords, presets, catColors,
+     checkinAt, contactRules, vaxSchedule, todayTpl.
+   • Medications tab: one readable row per medication (Child | Name | Dose | Times | From | Until | Note).
+   On each sync: an empty Sheet is seeded from this device; a value that changed in the
+   Sheet (another device, or edited by hand) is applied here; a value changed on this
+   device is pushed. Device-only: language, theme, filters, reminders, connection, Who am I.
+   ════════════════════════════════════════════════════════════════════════════ */
+const LS_CFGSYNC = 'bld.cfgsync.v1';
+const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl'];
+const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
+let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
+let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
+const cfgSave = () => lsSet(LS_CFGSYNC, CFGS);
+const cfgJSON = v => JSON.stringify(v === undefined ? null : v);
+const cfgCan = () => DATA.source === 'live' && !!S.endpoint && !viewOnly() && !!SCRIPT_SEEN && cmpVer(SCRIPT_SEEN, '1.3') >= 0;
+const kidCfgId = i => S.kids?.length ? S.kids[i].id : 'main';
+
+/** What this device would write to the Config tab, as { key: value }. */
+function cfgLocal(){
+  const out = {};
+  CFG_GLOBAL_KEYS.forEach(k => {
+    if (k === 'kids') out.kids = (S.kids || []).map(x => ({ id: x.id, aliases: x.aliases || [] }));
+    else if (S[k] !== undefined) out[k] = S[k];
+  });
+  const n = S.kids?.length || 1;
+  for (let i = 0; i < n; i++) { const sn = kidSnap(i) || {}; CFG_CHILD_KEYS.forEach(k => { if (sn[k] !== undefined) out[`child:${kidCfgId(i)}:${k}`] = sn[k]; }); }
+  return out;
+}
+/** This device's medications as Medications-tab rows. */
+function medsLocalRows(){
+  const n = S.kids?.length || 1, rows = [];
+  for (let i = 0; i < n; i++) (kidSnap(i)?.meds || []).filter(m => m.name).forEach(m =>
+    rows.push({ Child: S.kids?.length > 1 ? kidName(i) : '', Name: m.name || '', Dose: m.dose || '', Times: m.times || '', From: m.from || '', Until: m.until || '', Note: m.note || '' }));
+  return rows;
+}
+const medsNorm = rows => cfgJSON((rows || []).map(r => MED_SHEET_COLS.map(c => String(r[c] ?? '').trim())).filter(r => r[1]));
+
+/** Find (or create) the child a Config key / Medications row belongs to. */
+function cfgKidIdx(id){
+  if (!S.kids?.length) return id === 'main' ? 0 : -1;
+  return S.kids.findIndex(k => k.id === id);
+}
+function cfgSetKid(i, key, val){
+  if (i === kidIdx()) S[key] = val;
+  else { S.kids[i].snap = S.kids[i].snap || {}; S.kids[i].snap[key] = val; }
+}
+/** Apply a remote value here (no push back). */
+function cfgApply(key, val){
+  if (key === 'kids') {
+    const remote = Array.isArray(val) ? val : [];
+    if (remote.length > 1 && !(S.kids?.length)) { ensureKidList(); S.kids[0].id = remote[0].id; }
+    remote.forEach(r => {
+      const k = (S.kids || []).find(x => x.id === r.id);
+      if (k) { k.aliases = r.aliases || []; return; }
+      if (!(S.kids?.length)) return;
+      const base = structuredClone(DEFAULT_SETTINGS);
+      S.kids.push({ id: r.id, aliases: r.aliases || [], snap: Object.fromEntries(KID_KEYS.map(x => [x, base[x]])) });
+    });
+    return;
+  }
+  const m = /^child:([^:]+):(\w+)$/.exec(key);
+  if (m) { const i = cfgKidIdx(m[1]); if (i >= 0 && CFG_CHILD_KEYS.includes(m[2])) cfgSetKid(i, m[2], val); return; }
+  if (CFG_GLOBAL_KEYS.includes(key)) S[key] = val;
+}
+function medsApply(rows){
+  const n = S.kids?.length || 1, per = Array.from({ length: n }, () => []);
+  rows.forEach(r => {
+    if (!String(r.Name || '').trim()) return;
+    let i = 0;
+    if (n > 1) { const c = String(r.Child || '').trim().toLowerCase(); i = c ? S.kids.findIndex((_, j) => kidKeys(j).includes(c)) : (S.blankKid ?? 0); if (i < 0) return; }
+    const md = { name: String(r.Name).trim(), dose: String(r.Dose || '').trim(), times: String(r.Times || '').trim() };
+    ['From', 'Until', 'Note'].forEach(c => { const v = String(r[c] || '').trim(); if (v) md[c.toLowerCase()] = v; });
+    per[i].push(md);
+  });
+  // keep half-filled rows still being typed on this device (no name yet)
+  per.forEach((list, i) => cfgSetKid(i, 'meds', [...list, ...((kidSnap(i)?.meds || []).filter(m => !m.name))]));
+}
+
+async function cfgPost(body){
+  const r = await fetch(S.endpoint.trim(), { method: 'POST', body: JSON.stringify({ token: S.token, by: ME.name || '', ...body }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+  const j = JSON.parse(await r.text()); if (!j.ok) throw new Error(j.error || 'Endpoint error'); return j;
+}
+/** Push what changed on this device since the last sync (or everything with all=true). */
+async function cfgPush({ all = false, quiet = true } = {}){
+  if (!cfgCan()) return false;
+  const loc = cfgLocal(), items = Object.entries(loc).filter(([k, v]) => all || CFGS.hash[k] !== cfgJSON(v)).map(([key, value]) => ({ key, value }));
+  const mr = medsLocalRows(), medsChanged = all || CFGS.hash.__meds !== medsNorm(mr);
+  if (!items.length && !medsChanged) { if (!quiet) toast(L('The Sheet already has these settings', 'La feuille a déjà ces réglages')); return true; }
+  try {
+    if (items.length) await cfgPost({ action: 'config', items });
+    if (medsChanged) await cfgPost({ action: 'meds', rows: mr });
+    items.forEach(it => CFGS.hash[it.key] = cfgJSON(it.value));
+    if (medsChanged) CFGS.hash.__meds = medsNorm(mr);
+    CFGS.at = new Date().toISOString(); cfgSave();
+    if (!quiet) toast(L('Settings saved to the Sheet', 'Réglages enregistrés dans la feuille'));
+    return true;
+  } catch (err) { if (!quiet) toast(L('Could not save settings to the Sheet: ', 'Impossible d’enregistrer les réglages dans la feuille : ') + err.message, true); return false; }
+}
+/** Called after every sync with the doGet payload. */
+async function cfgOnSync(data){
+  if (!cfgCan() || !data || data.config === undefined) return;
+  const remote = data.config || {}, rMeds = data.meds;
+  const empty = !Object.keys(remote).length && !(Array.isArray(rMeds) && rMeds.length);
+  if (empty) { cfgReady = true; const ok = await cfgPush({ all: true }); if (ok) toast(L('This device’s settings were copied to the Sheet (Config and Medications tabs)', 'Les réglages de cet appareil ont été copiés dans la feuille (onglets Config et Medications)')); return; }
+  const changed = [];
+  cfgApplying = true;
+  try {
+    const keys = Object.keys(remote).sort((a, b) => (a === 'kids' ? -1 : b === 'kids' ? 1 : 0));
+    keys.forEach(k => { const h = cfgJSON(remote[k].value); if (CFGS.hash[k] !== h) { cfgApply(k, remote[k].value); CFGS.hash[k] = h; changed.push(k); } });
+    if (Array.isArray(rMeds)) { const h = medsNorm(rMeds); if (CFGS.hash.__meds !== h) { medsApply(rMeds); CFGS.hash.__meds = h; changed.push('meds'); } }
+    if (changed.length) { lsSet(LS_SETTINGS, S); FOOD_DICT = null; }
+  } finally { cfgApplying = false; }
+  cfgReady = true; CFGS.at = new Date().toISOString(); cfgSave();
+  if (changed.length && S.profile?.onboarded && $('#mWizard')?.classList.contains('on') && !W?.addKid) closeModals();   // a new device that joins a set-up family skips the setup wizard
+  if (changed.length) { reingest(); if (typeof renderSettings === 'function' && $('#mSettings')?.classList.contains('on')) renderSettings(); toast(L('Settings updated from the Sheet', 'Réglages mis à jour depuis la feuille')); }
+  cfgPush();   // anything changed here while offline or before this version
+}
+/** saveSettings hook: push shared changes a moment later (typing in a field saves often). */
+function cfgQueuePush(){
+  if (cfgApplying || !cfgReady || !cfgCan()) return;
+  clearTimeout(cfgPushTimer); cfgPushTimer = setTimeout(() => cfgPush(), 1500);
+}
+function cfgStatusHTML(){
+  if (DATA.source !== 'live') return '';
+  const head = `<h4>${L('Shared settings', 'Réglages partagés')}</h4>`;
+  if (viewOnly()) return head + `<p class="hint">${L('View-only connections don’t receive the family’s settings.', 'Les accès en lecture seule ne reçoivent pas les réglages de la famille.')}</p>`;
+  if (!cfgCan()) return head + `<p class="hint">${L(`Update the Apps Script to v${REQUIRED_SCRIPT} to keep child profiles, templates and medications in the Sheet (Config and Medications tabs), shared by every device.`, `Mettez l’Apps Script à jour (v${REQUIRED_SCRIPT}) pour garder profils, modèles et médicaments dans la feuille (onglets Config et Medications), partagés entre les appareils.`)}</p>`;
+  return head + `<p class="hint">${L('Child profiles, targets, templates, scoring, medications and family rules live in the Sheet’s Config and Medications tabs, so every caregiver’s device stays in step. Language, theme, filters and reminders stay on each device.', 'Profils, cibles, modèles, pointage, médicaments et règles familiales vivent dans les onglets Config et Medications de la feuille : tous les appareils restent synchronisés. Langue, thème, filtres et rappels restent propres à chaque appareil.')}${CFGS.at ? ' ' + L('Last synced ', 'Dernière synchro ') + esc(new Date(CFGS.at).toLocaleString(S.lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short' })).replace(/\.?$/, '.') : ''}</p>
+    <button class="btn sm" data-act="cfgPushAll">⬆ ${L('Push this device’s settings to the Sheet', 'Envoyer les réglages de cet appareil à la feuille')}</button>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -6589,6 +6771,7 @@ function renderSettings(){
     ${QUEUE.length ? `<h4>Quick-log entries not in the Sheet</h4>
       <p>${loc ? `<b>${loc}</b> saved on this device only` : ''}${loc && pend ? ' · ' : ''}${pend ? `<b>${pend}</b> waiting to retry` : ''}.</p>
       <div class="row wrap">${S.endpoint ? `<button class="btn primary" data-act="sendLocal">Send ${QUEUE.length} to Sheet</button>` : ''}<button class="btn" data-act="exportQueue">Download as CSV</button><button class="btn danger" data-act="clearQueue">Discard</button></div>` : ''}
+    ${cfgStatusHTML()}
     <h4>Offline / one-off data</h4>
     <div class="row wrap"><button class="btn" data-act="csv">Import Daily Log CSV…</button><button class="btn" data-act="demo">Load demo week</button>
       ${chk('cacheData','Keep last data on this device for offline viewing')}</div>
@@ -6950,6 +7133,7 @@ function wire(){
       case 'tplDel': if (S.templates.length > 1 && confirm(`Delete “${tp.name}”?`)) { S.templates.splice(tplIdx, 1); tplIdx = 0; if (!S.templates.some(x => x.id === S.overlayTpl)) S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
       case 'tplReset': if (confirm('Restore the three default templates? Custom templates will be removed.')) { S.templates = structuredClone(DEFAULT_TEMPLATES); tplIdx = 0; S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
       case 'medSave': saveMed(+e.target.closest('[data-act]').dataset.mi); break;
+      case 'cfgPushAll': cfgPush({ all:true, quiet:false }).then(() => { if (setPane === 'source') renderSettings(); }); break;
       case 'medAdd': S.meds = [...(S.meds || []), { name:'', dose:'', times:'19:30', from: isoOf(todayIdx()) }]; saveSettings(); renderSettings(); break;
       case 'medDel': { const i = +e.target.closest('[data-act]').dataset.mi; if (confirm(L('Remove this medication schedule? Doses already logged stay in the Sheet.', 'Retirer cet horaire de médicament? Les doses déjà notées restent dans la feuille.'))) { S.meds.splice(i, 1); saveSettings(); renderSettings(); renderAll(); } break; }
       case 'tiAdd': tp.items.push({ label:'New target', kind:'nap', start:'12:00', end:'13:00' }); settingsChanged(true); renderSettings(); break;

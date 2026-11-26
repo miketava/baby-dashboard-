@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.22.1** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.23.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -78,7 +78,7 @@ Make a spreadsheet with the columns below, export it as CSV and drag it onto the
 4. **Optional: visits from your calendar.** If off-site visits are in your Google Calendar (your own or a shared one, like a family calendar) with "visit" or "visite" in the title, choose `checkCalendar` in the Apps Script toolbar and click ▸ **Run** once to approve calendar access. The dashboard then picks the visit-day template ahead of time. Only dates and times are read. Set `CALENDAR_ID = ''` in the script if you don't want this.
 5. **Optional: timestamps.** In the Apps Script toolbar choose `markExistingRows` and click ▸ **Run** once. From then on every row records when it was entered (*Logged At*) and when it was corrected (*Edited At*).
 6. **Connect.** Dashboard → ⚙️ *Settings → Data source*: paste the URL and your secret, then **Save & sync**.
-7. **Share with co-caregivers.** *Settings → Backup & sync → Export config* creates a small file. Send it **privately** (it contains the secret); they open the dashboard and import it.
+7. **Share with co-caregivers.** *Settings → Backup & sync → Export config* creates a small file. Send it **privately** (it contains the secret); they open the dashboard and import it. After that, shared settings come from the Sheet (see below), so later changes reach everyone without a new export.
 
 ---
 
@@ -117,6 +117,15 @@ One row per event. Only **Date** and **Category** are required.
 **Categories understood out of the box:** Sleep - Night, Sleep - Nap, Sleep - Car Nap, Awake / Restless, Breastfeed, Bottle, Pump, Milk, Water, Breakfast, Lunch, Dinner, Snack, Tummy Time, Play, Bath, Car Ride, Visit, Home Visit, Outing / Excursion, Guest, Family Contact, Handover, Medical / Appointment, Health / Incident, Vaccine, Temperature, Weight, Height, Head Circumference, Tooth, Milestone, Behaviour, Diaper - Wet, Diaper - Poop, Meds, and the `Check-in - …` rows written by the check-in form.
 
 You can invent your own (`Daycare`, `Swim class`…). New categories are picked up automatically with their own colour, and typos like `Sleep - Npa` are flagged rather than silently counted.
+
+### Shared settings: the Config and Medications tabs (Apps Script v1.3+)
+
+The script creates two more tabs the first time a dashboard syncs with it; you don't need to prepare them. The first device to sync copies its current settings in.
+
+- **Config:** one row per setting (`Key`, `Value` as JSON, `Updated At`, `Updated By`). Child profiles (`child:<id>:profile`), targets, day templates, scoring, the family-contact rules, check-in time and similar. Change these from the dashboard; the JSON is there so nothing is lost.
+- **Medications:** one row per medication (`Child`, `Name`, `Dose`, `Times`, `From`, `Until`, `Note`). Fine to edit by hand: several times are separated by commas, dates are `YYYY-MM-DD`, blank *Until* means ongoing.
+
+Every device applies changes made elsewhere on its next sync and pushes its own changes a moment after you make them. Language, theme, filters, reminders and *Who am I* stay on each device. View-only keys never receive these tabs. Don't let an AI assistant write to them.
 
 **Turning written notes into rows with an AI assistant?** The full spec of every column, category, tag and outcome, with examples, is in [docs/daily-log-schema.md](docs/daily-log-schema.md). Paste it into your assistant's instructions.
 

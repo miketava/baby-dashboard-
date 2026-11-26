@@ -1,7 +1,7 @@
-// Baby Routine Dashboard — Apps Script v1.2 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Baby Routine Dashboard — Apps Script v1.3 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.2';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.3';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -38,6 +38,46 @@ function loggedCol_(sh) {
   const h = headers_(sh); let c = h.indexOf('Logged At') + 1;
   if (!c) { c = h.length + 1; sh.getRange(1, c).setValue('Logged At'); }
   return c;
+}
+
+// Shared settings (v1.3). Two tabs, created automatically on first use:
+//  • Config: one row per setting — Key | Value (JSON) | Updated At | Updated By. Child profiles, templates, targets…
+//    are best changed from the dashboard; the JSON is there so nothing is lost.
+//  • Medications: one row per medication — easy to read and edit by hand.
+// Only the family's own key reads or writes these; viewer keys never receive them.
+const CONFIG_SHEET = 'Config', MEDS_SHEET = 'Medications';
+const MED_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note', 'Updated At', 'Updated By'];
+function tab_(name, headers) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet(); let sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@'); sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  return sh;
+}
+function readConfig_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG_SHEET), out = {};
+  if (!sh || sh.getLastRow() < 2) return out;
+  sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues().forEach(r => { if (!r[0]) return; let v; try { v = JSON.parse(r[1]); } catch (err) { v = r[1]; } out[r[0]] = { value: v, updated: r[2], by: r[3] }; });
+  return out;
+}
+function readMeds_() {   // null = no Medications tab yet
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MEDS_SHEET); if (!sh) return null;
+  if (sh.getLastRow() < 2) return [];
+  const h = headers_(sh);
+  return sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getDisplayValues().filter(r => r.some(c => String(c).trim() !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i]])));
+}
+function writeConfig_(items, by) {
+  const sh = tab_(CONFIG_SHEET, ['Key', 'Value', 'Updated At', 'Updated By']), now = new Date().toISOString(), out = {};
+  const keys = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues().map(r => r[0]) : [];
+  items.forEach(it => { const row = [it.key, JSON.stringify(it.value), now, by || ''], i = keys.indexOf(it.key);
+    if (i >= 0) sh.getRange(i + 2, 1, 1, 4).setValues([row]); else { sh.appendRow(row); keys.push(it.key); }
+    out[it.key] = now; });
+  return out;
+}
+function writeMeds_(rows, by) {
+  const sh = tab_(MEDS_SHEET, MED_COLS), now = new Date().toISOString();
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+  const vals = rows.map(r => MED_COLS.map(c => c === 'Updated At' ? now : c === 'Updated By' ? (r['Updated By'] || by || '') : (r[c] == null ? '' : String(r[c]))));
+  if (vals.length) sh.getRange(2, 1, vals.length, MED_COLS.length).setValues(vals);
+  return now;
 }
 
 function calendars_() {
@@ -88,7 +128,8 @@ function doGet(e) {
   const rows = data.map(r => Object.assign(Object.fromEntries(headers.map((h, i) => [h, r[i]])), viewer ? {} : { _row: r._row }));
   let planned = [], calError = '';
   if (!viewer) try { planned = plannedVisits_(); } catch (err) { calError = String(err.message || err); }
-  return out_({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, p.callback);
+  const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_() };
+  return out_(Object.assign({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
 }
 
 // WRITE (Quick Log) — POST {token, action: 'append' | 'end', row: {Header: value}}
@@ -98,6 +139,8 @@ function doPost(e) {
   if (p.token !== SECRET) return out_({ ok: false, error: VIEWERS[p.token] ? 'This is a read-only viewer key' : 'Unauthorized: token mismatch' });
   const lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
+    if (p.action === 'config') return out_({ ok: true, updated: writeConfig_(p.items || [], p.by) });
+    if (p.action === 'meds') return out_({ ok: true, updated: writeMeds_(p.rows || [], p.by) });
     const sh = sheet_(), row = p.row || {};
     loggedCol_(sh);
     const headers = headers_(sh);

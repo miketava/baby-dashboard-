@@ -1,6 +1,6 @@
-# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.22)
+# Daily Log schema — instructions for Gemini (v5, matches dashboard v1.23)
 
-Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions.
+Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions. Write only to the **Daily Log** tab: never add or change rows in the **Config** or **Medications** tabs, which the dashboard manages.
 
 The dashboard reads these rows. It can count feeds, sleep, reactions, handovers, meals, measurements and family contact only when the rows use the exact categories, tags and outcome words below. Otherwise it can only display the notes.
 

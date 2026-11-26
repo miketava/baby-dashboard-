@@ -8,6 +8,16 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.23.0 — 2026-11-25 · Apps Script v1.3 (update needed)
+
+- **Shared settings in the Sheet.** Child profiles, targets, day templates, scoring, family-contact rules, check-in time and medications now live in two tabs, **Config** and **Medications**, so every caregiver's device stays in step without re-exporting the config.
+  - Nothing to prepare: the script creates both tabs. The first device that syncs after the update copies its current settings into them.
+  - **Medications** is one readable row per medication and can be edited right in the Sheet; the dashboards pick up the change on their next sync.
+  - Changes made on a device are pushed about a second later; changes made elsewhere are applied on the next sync, with a short notice.
+  - Kept per device: language, theme, filters, reminders, connection and *Who am I*. View-only keys never receive these tabs.
+  - *Settings → Data source* shows the status and a **Push this device's settings to the Sheet** button (to make one device's settings the reference).
+- **Apps Script v1.3:** returns the Config and Medications tabs to the family's key and accepts `config` and `meds` writes. Paste the new `Code.gs`, keep your `SECRET`, then *Deploy → Manage deployments → ✏️ → New version*. No new permissions.
+
 ## v1.22.1 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - Upcoming items lead with how far away they are: *Next visits* in Today's plan ("in 6 days (Dec 1 11:00–12:30)"), "Coming up" appointments in the banner ("tomorrow (Thu, Nov 26 09:30)") and the vaccine reminder.
