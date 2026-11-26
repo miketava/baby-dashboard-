@@ -1,5 +1,6 @@
 # Files concatenated, in this order, into index.html by ../build.sh.
 # @apps-script = ../apps-script/Code.gs, inlined as the APPS_SCRIPT string (Settings shows / copies it).
+# @reminders = ../apps-script/Reminders.gs, inlined as REMINDERS_GS (Settings → Reminders copies it with your topic and options).
 shell/head.html
 shell/styles-base.html
 shell/styles-responsive.html
@@ -14,6 +15,7 @@ demo/newborn.js
 data/who-lms.js
 core/modules-paths-allergens.js
 @apps-script
+@reminders
 demo/demo-data.js
 core/utils.js
 i18n/lang.js

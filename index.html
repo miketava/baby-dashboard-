@@ -1153,11 +1153,14 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.27.1';
+const APP_VERSION = '1.28.0';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.5';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.28.0', date:'2026-11-26',
+    en:['Lock-screen reminders (ntfy) rebuilt as Reminders v2. They follow the same day as the dashboard: calendar visits pick the early, late-morning, midday or afternoon visit day, accepted appointments the appointment days, with the same time alignment; your template override for today; bedtime routines on their nights. Medication doses are reminded at their time, and again an hour later if not checked off. Nap and bedtime reminders stay quiet while she’s asleep or once she went down early. Templates and medications are read from the Sheet, so editing them here no longer means re-pasting. Settings → Reminders → Copy add-on (needs Apps Script v1.5).'],
+    fr:['Les rappels sur l’écran verrouillé (ntfy) sont refaits (Rappels v2). Ils suivent la même journée que le tableau de bord : les visites de l’agenda choisissent le jour de visite tôt, fin d’avant-midi, midi ou après-midi, les rendez-vous acceptés les jours de rendez-vous, avec le même alignement des heures; votre modèle choisi pour aujourd’hui; les routines du coucher selon les soirs. Les doses de médicaments sont rappelées à l’heure, puis une heure plus tard si non cochées. Les rappels de sieste et de coucher se taisent pendant qu’elle dort ou si elle s’est couchée plus tôt. Modèles et médicaments sont lus dans la feuille : plus besoin de recoller après un changement. Réglages → Rappels → Copier le module (Apps Script v1.5 requis).'] },
   { v:'1.27.1', date:'2026-11-26',
     en:['Apps Script: SECRET and VIEWERS are now at the very top, above a line marking where updates start. And “Copy script” (Settings → Setup guide) fills in your secret and viewer keys, so updating is: select all in Apps Script, paste, deploy.',
         'Viewer keys are shared between your devices through the Sheet, so the copied script has them whichever device you copy from.'],
@@ -2095,6 +2098,168 @@ function markExistingRows() {
   const r = sh.getRange(2, c, n, 1), v = r.getValues();
   r.setValues(v.map(x => [x[0] === '' ? 'before tracking' : x[0]]));
 }`;
+const REMINDERS_GS = `// ══════════════════════════════════════════════════════════════════════════════════════════════
+//  Optional add-on: lock-screen phone reminders through ntfy.sh (they arrive with the dashboard closed).
+//  Reminders v2 — needs Code.gs v1.5 in the same Apps Script project.
+//
+//  Setup: ＋ → Script, name it Reminders, paste this file (next to Code.gs, not over it), Save,
+//  choose installReminderTrigger in the toolbar ▸ Run once and approve. Subscribe to NTFY_TOPIC in the ntfy app.
+//  ▸ Run previewReminders any time to see today's list in the log.
+//
+//  It reads your schedule from the Sheet's Config and Medications tabs (kept up to date by the dashboard),
+//  so editing a template or a medication in the dashboard changes the reminders too: no need to re-paste.
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+//  YOUR SETTINGS (the dashboard fills these in when you copy it from Settings → Reminders)
+const NTFY_TOPIC = 'baby-routine-CHANGE-ME';   // long + unguessable = private (anyone with the name can read it)
+const LEAD_MIN = 15;                           // minutes of warning before naps, meals, bedtime…
+const REMIND = { naps: true, meals: true, cutoff: true, routines: true, visits: true, meds: true };
+const MED_NUDGE_MIN = 60;                      // second reminder if a dose isn't checked off after this long (0 = never)
+const DASHBOARD_URL = '';                      // tapping a reminder opens this (your dashboard's address), if set
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+const REMINDERS_VERSION = '2.0';
+
+const hm_ = m => { m = ((m % 1440) + 1440) % 1440; return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); };
+const mins_ = s => { const m = String(s || '').match(/(\\d{1,2})[:h](\\d{2})\\s*([AP])?/i); if (!m) return null;
+  let h = +m[1]; if (m[3]) h = h % 12 + (/p/i.test(m[3]) ? 12 : 0); return h * 60 + +m[2]; };
+const slug_ = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const WD_ = { su: 0, mo: 1, tu: 2, we: 3, th: 4, fr: 5, sa: 6, di: 0, lu: 1, ma: 2, me: 3, je: 4, ve: 5 };
+function onDay_(item, dow) {   // template steps limited to some weekdays ("Mon, Thu, Sun" / "lun, jeu, dim")
+  if (!item.days) return true;
+  const set = String(item.days).toLowerCase().split(/[\\s,;/]+/).map(w => w.normalize('NFD').replace(/[^a-z]/g, '').slice(0, 2)).filter(k => k in WD_).map(k => WD_[k]);
+  return !set.length || set.indexOf(dow) >= 0;
+}
+
+/** Today's rows from the Daily Log, as objects. */
+function todayRows_(tz, today) {
+  const sh = sheet_(); if (!sh || sh.getLastRow() < 2) return [];
+  const v = sh.getDataRange().getDisplayValues(), h = v.shift().map(String);
+  const rows = v.map(r => Object.fromEntries(h.map((k, i) => [k.trim(), r[i]])));
+  const norm = d => { const m = String(d).match(/(\\d{4})-(\\d{1,2})-(\\d{1,2})/); if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    const x = new Date(d); return isNaN(x) ? '' : Utilities.formatDate(x, tz, 'yyyy-MM-dd'); };
+  const yest = Utilities.formatDate(new Date(new Date(today + 'T12:00:00').getTime() - 864e5), tz, 'yyyy-MM-dd');
+  return rows.filter(r => { const d = norm(r.Date); r._date = d; return d === today || d === yest; });
+}
+
+/** The day template for one child, picked the same way as the dashboard. */
+function planFor_(cfg, kid, rows, today, nowMin, dow) {
+  const get = k => cfg[k] && cfg[k].value;
+  const tpls = get('child:' + kid.id + ':templates') || [], targets = get('child:' + kid.id + ':targets') || {};
+  const byId = id => tpls.filter(t => t.id === id)[0];
+  if (!tpls.length) return null;
+  const mine = r => kid.match(r.Child);
+  // a visit logged today, else one on the calendar; else an appointment marked for this child
+  const vRow = rows.filter(r => r._date === today && mine(r) && /visit|visite/i.test(r.Category) && !/home|domicile/i.test(r.Category) && mins_(r['Start Time']) != null)
+    .sort((a, b) => mins_(a['Start Time']) - mins_(b['Start Time']))[0];
+  let anchor = vRow ? { st: mins_(vRow['Start Time']), en: mins_(vRow['End Time']), logged: true } : null;
+  if (!anchor && typeof plannedVisits_ === 'function') { try { const p = plannedVisits_().filter(x => x.date === today)[0]; if (p) anchor = { st: mins_(p.start), en: mins_(p.end) }; } catch (err) {} }
+  let appt = null;
+  if (!anchor && typeof appointments_ === 'function') {
+    try { const forKid = get('apptFor') || {};
+      appt = appointments_().filter(a => a.date === today && forKid[a.id] === kid.id).map(a => ({ st: mins_(a.start), en: mins_(a.end), title: a.title }))
+        .filter(a => a.st >= 480 && a.st <= 990).sort((a, b) => a.st - b.st)[0] || null; } catch (err) {}
+  }
+  let tp = null;
+  const ov = get('todayTpl');
+  if (ov && ov.date === today && ov.id && ov.id !== 'auto') tp = byId(ov.id);
+  if (!tp && anchor) {
+    const cut = mins_(targets.earlyVisitCutoff) || 570, late = byId('late-visit'), vs = anchor.st;
+    tp = vs <= cut ? byId('early-visit') : vs <= 690 ? late : vs <= 795 ? (byId('midday-visit') || late) : (byId('afternoon-visit') || late);
+  }
+  if (!tp && appt) tp = appt.st < 660 ? byId('appt-am') : appt.st <= 795 ? (byId('appt-midday') || byId('appt-pm')) : byId('appt-pm');
+  tp = tp || byId('baseline') || tpls[0];
+  let items = tp.items.filter(i => onDay_(i, dow)).map(i => Object.assign({}, i));
+  // line the visit / appointment and the naps right around it up with the real time (15 min – 4 h off)
+  const a = anchor || appt, band = a && items.filter(i => i.kind === 'visit' && !!i.appt === !!appt && mins_(i.start) != null && mins_(i.end) != null)[0];
+  if (band) {
+    const vs = mins_(band.start), ve = mins_(band.end), off = a.st - vs;
+    if (Math.abs(off) >= 15 && Math.abs(off) <= 240) items = items.map(i => { const s = mins_(i.start), e = mins_(i.end);
+      const near = i === band || (i.kind === 'nap' && !i.optional && e != null && ((e <= vs && vs - e <= 45) || (s >= ve && s - ve <= 45)));
+      return near ? Object.assign(i, { start: hm_(s + off), end: e != null ? hm_(e + off) : i.end }) : i; });
+  }
+  // bedtime routines follow bedtime; the Baseline's routines also apply on other days
+  const base = byId('baseline');
+  if (base && tp !== base && !items.some(i => i.beforeBed)) base.items.filter(i => i.beforeBed && onDay_(i, dow)).forEach(i => items.push(Object.assign({}, i)));
+  const beds = items.filter(i => i.kind === 'bedtime' && mins_(i.start) != null).map(i => mins_(i.start)).sort((x, y) => x - y);
+  items.forEach(i => { if (i.beforeBed && beds.length) i.start = hm_(beds[0] - +i.beforeBed); });
+  return { tp: tp, items: items, anchor: a, appt: !!appt };
+}
+
+/** Everything due now for every child: [{ key, title, text, priority, tags }]. */
+function dueReminders_(at, all) {
+  const tz = Session.getScriptTimeZone(), now = at || new Date();
+  const today = Utilities.formatDate(now, tz, 'yyyy-MM-dd'), nowMin = mins_(Utilities.formatDate(now, tz, 'HH:mm'));
+  const dow = new Date(today + 'T12:00:00Z').getUTCDay();
+  const cfg = typeof readConfig_ === 'function' ? readConfig_() : {};
+  const rows = todayRows_(tz, today), out = [];
+  const kidsCfg = (cfg.kids && cfg.kids.value) || [], blank = (cfg.blankKid && cfg.blankKid.value) || 0;
+  const kids = kidsCfg.length ? kidsCfg.map((k, i) => { const p = (cfg['child:' + k.id + ':profile'] || {}).value || {}, keys = [String(p.name || '').toLowerCase()].concat((k.aliases || []).map(x => String(x).toLowerCase())).filter(String);
+      return { id: k.id, name: p.name || '', keys: keys, match: c => kidMatch_(c, keys, i === blank) }; })
+    : [{ id: 'main', name: ((cfg['child:main:profile'] || {}).value || {}).name || '', keys: [], match: () => true }];
+  const who = k => kids.length > 1 && k.name ? k.name + ' · ' : '';
+  kids.forEach(kid => {
+    const plan = planFor_(cfg, kid, rows, today, nowMin, dow);
+    if (plan) {
+      // a sleep in progress (started, no end) mutes nap and bedtime reminders
+      const asleep = rows.some(r => kid.match(r.Child) && /^sleep/i.test(r.Category) && !String(r['End Time']).trim() && String(r['Start Time']).trim());
+      plan.items.forEach(i => {
+        const t = mins_(i.start); if (t == null) return;
+        const k = i.kind, sleepy = k === 'nap' || k === 'bedtime' || (k === 'note' && i.beforeBed);
+        const on = (k === 'nap' && !i.optional && REMIND.naps) || (k === 'bedtime' && REMIND.naps) || (k === 'meal' && REMIND.meals) || (k === 'cutoff' && REMIND.cutoff)
+          || (k === 'note' && REMIND.routines) || (k === 'visit' && REMIND.visits);
+        if (!on) return;
+        const until = t - nowMin;
+        if (!all && !(until > 0 && until <= LEAD_MIN)) return;
+        if (!all && sleepy && asleep) return;
+        // a nap or bedtime already started early doesn't need a reminder
+        if (!all && (k === 'nap' || k === 'bedtime') && rows.some(r => r._date === today && kid.match(r.Child) && /^sleep/i.test(r.Category) && mins_(r['Start Time']) != null && mins_(r['Start Time']) >= t - 60)) return;
+        out.push({ key: today + '|' + kid.id + '|' + i.start + '|' + i.label, at: t, title: who(kid) + (plan.tp.name || 'Routine'),
+          text: i.label + ' at ' + i.start + (all ? '' : ' (in ' + until + ' min)') + (i.note ? ' · ' + i.note : ''), priority: 'default', tags: k === 'meal' ? 'fork_and_knife' : k === 'visit' ? 'car' : 'baby_bottle' });
+      });
+    }
+    if (REMIND.meds && typeof readMeds_ === 'function') {
+      (readMeds_() || []).forEach(m => {
+        const name = String(m.Name || '').trim(); if (!name) return;
+        if (kids.length > 1 && !kid.match(m.Child)) return;
+        if ((m.From && m.From > today) || (m.Until && m.Until < today)) return;
+        const s = slug_(name);
+        String(m.Times || '').split(/[,;]+/).map(x => mins_(x)).filter(x => x != null).forEach(t => {
+          const given = rows.some(r => r._date === today && kid.match(r.Child) && /^meds?$/i.test(String(r.Category).trim())
+            && (slug_(r.Tags).indexOf(s) >= 0 || slug_(r.Notes).indexOf(s) >= 0) && (mins_(r['Start Time']) == null || mins_(r['Start Time']) >= t - 120));
+          const dose = name + (m.Dose ? ' ' + m.Dose : '');
+          if (all) { out.push({ key: today + '|med|' + s + '|' + t, at: t, title: who(kid) + 'Medication', text: '💊 ' + dose + ' at ' + hm_(t) + (given ? ' (given)' : ''), priority: 'high', tags: 'pill' }); return; }
+          if (given) return;
+          if (nowMin >= t && nowMin < t + 10) out.push({ key: today + '|med|' + s + '|' + t, title: who(kid) + 'Medication', text: '💊 ' + dose + ' now (' + hm_(t) + '). Check it off in the dashboard.', priority: 'high', tags: 'pill' });
+          if (MED_NUDGE_MIN > 0 && nowMin >= t + MED_NUDGE_MIN && nowMin < t + MED_NUDGE_MIN + 10) out.push({ key: today + '|med2|' + s + '|' + t, title: who(kid) + 'Medication', text: '💊 ' + dose + ' (' + hm_(t) + ') isn’t checked off yet.', priority: 'high', tags: 'pill,warning' });
+        });
+      });
+    }
+  });
+  return out.sort((a, b) => (a.at || 0) - (b.at || 0));
+}
+
+/** Runs every 5 minutes (installReminderTrigger). */
+function sendReminders(e, at) {
+  const cache = CacheService.getScriptCache();
+  dueReminders_(at).forEach(r => {
+    if (cache.get(r.key)) return;
+    const headers = { Title: r.title, Tags: r.tags, Priority: r.priority };
+    if (DASHBOARD_URL) headers.Click = DASHBOARD_URL;
+    UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: r.text, headers: headers, muteHttpExceptions: true });
+    cache.put(r.key, '1', 21600);
+  });
+}
+/** ▸ Run to see today's reminders in the log (nothing is sent). */
+function previewReminders() {
+  const list = dueReminders_(null, true);
+  Logger.log(list.length ? list.map(r => r.title + ' — ' + r.text).join('\\n') : 'Nothing found. Open the dashboard once (connected to this Sheet) so the Config tab has your templates.');
+}
+/** ▸ Run once: sends a test to your topic, then checks for reminders every 5 minutes. */
+function installReminderTrigger() {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'sendReminders').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('sendReminders').timeBased().everyMinutes(5).create();
+  UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: 'Reminders are on. You’ll get naps, meals, bedtime and medications here.', headers: { Title: 'Baby routine', Tags: 'white_check_mark' }, muteHttpExceptions: true });
+}
+`;
 
 /* ════════════════════════════════════════════════════════════════════════════
    2. DEMO DATA — 7 past days + today, generated relative to *now* so the Today banner is live.
@@ -7317,49 +7482,16 @@ const timeField = (path, label, hint='') => `<label class="field">${label}<input
 const chk = (path, label) => `<label class="switch"><input type="checkbox" data-set="${path}" ${getPath(path) ? 'checked' : ''}> ${label}</label>`;
 function getPath(p){ return p.split('.').reduce((o,k) => o?.[k], S); }
 function setPath(p, v){ const ks = p.split('.'); const last = ks.pop(); ks.reduce((o,k) => o[k], S)[last] = v; }
-/** Optional Apps Script add-on: lock-screen reminders through ntfy.sh, generated from your templates. */
+/** Optional Apps Script add-on: lock-screen reminders through ntfy.sh (Reminders.gs v2). It reads the schedule from the
+    Sheet's Config and Medications tabs, so only the topic and options are filled in here (v1.28). */
 function ntfySnippet(){
-  const topic = S.ntfyTopic || 'baby-routine-CHANGE-ME';
-  const set = id => { const tp = tplById(id) || S.templates[0]; return (tp?.items || []).filter(i => (i.kind === 'nap' && !i.optional) || i.kind === 'meal' || i.kind === 'cutoff' || i.kind === 'bedtime').map(i => [i.start, i.label]); };
-  const fmt = a => '[' + a.map(([h, l]) => `['${h}', ${JSON.stringify(l)}]`).join(', ') + ']';
-  const lead = +S.reminders.lead || 15;
-  return `// ── Optional add-on: lock-screen phone reminders via ntfy.sh (works with the dashboard closed) ──
-// Paste BELOW the main script, Save, then select installReminderTrigger ▸ Run once and authorize.
-const NTFY_TOPIC = '${topic}';   // long + unguessable = private
-const LEAD_MIN = ${lead};                            // minutes of warning
-const EARLY_VISIT_CUTOFF = '${T().earlyVisitCutoff}'; // off-site Visit at/before this → early template
-const SETS = {                                       // generated from your dashboard templates
-  baseline: ${fmt(set('baseline'))},
-  early:    ${fmt(set('early-visit'))},
-  late:     ${fmt(set('late-visit'))},
-};
-const mins_ = s => { const m = String(s).match(/(\\d{1,2}):(\\d{2})\\s*([AP])?/i); if (!m) return null;
-  let h = +m[1]; if (m[3]) h = h % 12 + (/p/i.test(m[3]) ? 12 : 0); return h * 60 + +m[2]; };
-function todaysSet_(tz, today) {           // same auto-template rule as the dashboard
-  const range = sheet_().getDataRange(), raw = range.getValues(), disp = range.getDisplayValues(), h = disp[0].map(String);
-  const iD = h.indexOf('Date'), iC = h.indexOf('Category'), iS = h.indexOf('Start Time');
-  for (let r = raw.length - 1; r > 0; r--) {
-    const d = raw[r][iD] instanceof Date ? Utilities.formatDate(raw[r][iD], tz, 'yyyy-MM-dd') : String(raw[r][iD]).slice(0, 10);
-    if (d === today && String(disp[r][iC]).trim() === 'Visit') return mins_(disp[r][iS]) <= mins_(EARLY_VISIT_CUTOFF) ? SETS.early : SETS.late;
-  }
-  return SETS.baseline;
-}
-function sendReminders() {
-  const tz = Session.getScriptTimeZone(), now = new Date(), cache = CacheService.getScriptCache();
-  const today = Utilities.formatDate(now, tz, 'yyyy-MM-dd'), nowMin = mins_(Utilities.formatDate(now, tz, 'HH:mm'));
-  todaysSet_(tz, today).forEach(([hhmm, label]) => {
-    const until = mins_(hhmm) - nowMin, key = today + hhmm;
-    if (until > 0 && until <= LEAD_MIN && !cache.get(key)) {   // trigger runs every 5 min
-      UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: label + ' at ' + hhmm + ' (in ' + until + ' min)',
-        headers: { Title: 'Baby routine reminder', Tags: 'baby_bottle' } });
-      cache.put(key, '1', 21600);
-    }
-  });
-}
-function installReminderTrigger() {
-  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'sendReminders').forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('sendReminders').timeBased().everyMinutes(5).create();
-}`;
+  const r = S.reminders || {}, url = /^https:/.test(location.href) ? location.href.split(/[?#]/)[0] : '';
+  return REMINDERS_GS
+    .replace("const NTFY_TOPIC = 'baby-routine-CHANGE-ME';", `const NTFY_TOPIC = ${q1(S.ntfyTopic || 'baby-routine-CHANGE-ME')};`)
+    .replace('const LEAD_MIN = 15;', `const LEAD_MIN = ${Math.max(5, +r.lead || 15)};`)
+    .replace('const REMIND = { naps: true, meals: true, cutoff: true, routines: true, visits: true, meds: true };',
+      `const REMIND = { naps: ${r.naps !== false}, meals: ${r.meals !== false}, cutoff: ${r.cutoff !== false}, routines: true, visits: true, meds: true };`)
+    .replace("const DASHBOARD_URL = '';", `const DASHBOARD_URL = ${q1(url)};`);
 }
 /* ── Sharing: leave categories out, and read-only viewer keys ── */
 const VDEF = ['Guest', 'Outing / Excursion'];
@@ -7479,16 +7611,17 @@ function renderSettings(){
       ${mod('newborn') ? `<div class="fgrid" style="margin-top:10px">${numField('reminders.feedEvery','Feed reminder: minutes after a feed starts (0 = off)',15,'e.g. 150 = remind 2½ h after each feed began')}</div>` : ''}
       <div class="row wrap" style="margin-top:10px"><button class="btn" data-act="testRem">Send a test reminder</button><span class="muted">Notification permission: <b>${esc(perm)}</b></span></div>
       <p class="hint">Uses today's active template (auto-selected from today's rows, or your override in the Today banner). System notifications need the page served over https (GitHub Pages, Netlify) or localhost; otherwise reminders appear as in-page alerts with the chime. Desktop and Android Chrome work well; iOS Safari only notifies for pages added to the Home Screen.</p>
-      <h4>Phone push (works when the phone is locked)</h4>
+      <h4>${L('Phone push (works when the phone is locked)', 'Notifications sur le téléphone (même verrouillé)')}</h4>
       <ol class="steps">
-        <li>Install the free <b>ntfy</b> app (iOS / Android) on each caregiver's phone.</li>
-        <li>Pick a long, private topic name below and <b>subscribe</b> to it in the app on every phone.</li>
-        <li>Paste the generated snippet <b>below</b> the main script in Apps Script, Save, then choose <span class="mono">installReminderTrigger</span> in the toolbar and click ▸ <b>Run</b> once (authorize when asked).</li>
+        <li>${L('Install the free <b>ntfy</b> app (Android / iPhone) on each caregiver’s phone.', 'Installez l’app gratuite <b>ntfy</b> (Android / iPhone) sur le téléphone de chaque personne.')}</li>
+        <li>${L('Pick a long, private topic name below and <b>subscribe</b> to it in the app on every phone.', 'Choisissez ci-dessous un nom de sujet long et privé, et <b>abonnez-vous</b>-y dans l’app sur chaque téléphone.')}</li>
+        <li>${L('In Apps Script (your Sheet → Extensions → Apps Script): <b>＋ → Script</b>, name it <span class="mono">Reminders</span>, paste the copied add-on there (next to <span class="mono">Code.gs</span>, not over it) and Save.', 'Dans Apps Script (votre feuille → Extensions → Apps Script) : <b>＋ → Script</b>, nommez-le <span class="mono">Reminders</span>, collez-y le module copié (à côté de <span class="mono">Code.gs</span>, pas par-dessus) et enregistrez.')}</li>
+        <li>${L('Choose <span class="mono">installReminderTrigger</span> in the toolbar, click ▸ <b>Run</b> once and approve. A test message arrives on your phones. No new deployment is needed.', 'Choisissez <span class="mono">installReminderTrigger</span> dans la barre d’outils, cliquez ▸ <b>Exécuter</b> une fois et autorisez. Un message test arrive sur vos téléphones. Aucun nouveau déploiement n’est requis.')}</li>
       </ol>
-      <div class="fgrid" style="grid-template-columns:1fr auto;align-items:end"><label class="field">ntfy topic<input type="text" data-set="ntfyTopic" value="${esc(S.ntfyTopic)}" placeholder="baby-routine-…"></label><button class="btn" data-act="genTopic">Generate random</button></div>
-      <div class="row sp" style="margin-top:10px"><b>Reminder add-on (generated from your templates)</b><button class="btn sm" data-act="copyNtfy">Copy snippet</button></div>
+      <div class="fgrid" style="grid-template-columns:1fr auto;align-items:end"><label class="field">ntfy topic<input type="text" data-set="ntfyTopic" value="${esc(S.ntfyTopic)}" placeholder="baby-routine-…"></label><button class="btn" data-act="genTopic">${L('Generate random', 'Générer')}</button></div>
+      <div class="row sp" style="margin-top:10px"><b>${L('Reminders add-on (v2)', 'Module de rappels (v2)')}</b><button class="btn sm" data-act="copyNtfy">${L('Copy add-on', 'Copier le module')}</button></div>
       <pre class="code" id="ntfyCode">${esc(ntfySnippet())}</pre>
-      <p class="hint">Runs every 5 minutes on Google's servers (well inside the free quota) and picks today's template with the same Visit rule as the dashboard. Re-copy the snippet after editing templates. Anyone who knows the topic name can read the reminders, so keep it unguessable.</p>${medSettingsHTML()}`;
+      <p class="hint">${L('Runs every 5 minutes on Google’s servers (well inside the free quota). It follows the same day as the dashboard (visit and appointment days from your calendar, today’s template if you changed it, bedtime routines on their nights), reminds you of medication doses (and again an hour later if not checked off), and stays quiet while she’s asleep. It reads your templates and medications from the Sheet’s Config and Medications tabs, so changes made here reach it without re-pasting. Needs Apps Script v1.5. In Apps Script, ▸ Run <span class="mono">previewReminders</span> to see today’s list. Anyone who knows the topic name can read the reminders, so keep it unguessable.', 'S’exécute toutes les 5 minutes sur les serveurs de Google (bien dans le quota gratuit). Il suit la même journée que le tableau de bord (jours de visite et de rendez-vous de votre agenda, modèle du jour si vous l’avez changé, routines du coucher selon les soirs), rappelle les doses de médicaments (et encore une heure plus tard si non cochées), et reste silencieux pendant qu’elle dort. Il lit vos modèles et médicaments dans les onglets Config et Medications de la feuille : vos changements l’atteignent sans recoller. Requiert l’Apps Script v1.5. Dans Apps Script, ▸ Exécuter <span class="mono">previewReminders</span> montre la liste du jour. Toute personne qui connaît le nom du sujet peut lire les rappels : gardez-le impossible à deviner.')}</p>${medSettingsHTML()}`;
   }
   else if (setPane === 'general') h = `
     <h4>${L('On this device', 'Sur cet appareil')}</h4>
@@ -7829,7 +7962,7 @@ function wire(){
         toast(!(await copyText(c.text)) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')
           : c.secret ? L(`Script copied with your secret${c.viewers ? ` and ${c.viewers} viewer key${c.viewers > 1 ? 's' : ''}` : ''}. In Apps Script, select all and paste over it. Viewer lines you added by hand aren’t included.`, `Script copié avec votre secret${c.viewers ? ` et ${c.viewers} clé${c.viewers > 1 ? 's' : ''} de lecture` : ''}. Dans Apps Script, sélectionnez tout et collez par-dessus. Les lignes de lecture ajoutées à la main ne sont pas incluses.`)
           : L('Script copied. Set SECRET at the top before deploying.', 'Script copié. Changez SECRET en haut avant de déployer.')); break; }
-      case 'copyNtfy': toast(await copyText(ntfySnippet()) ? 'Snippet copied' : 'Copy failed — select it manually'); break;
+      case 'copyNtfy': toast(!(await copyText(ntfySnippet())) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main') : S.ntfyTopic ? L('Reminders add-on copied with your topic. Paste it as a second script file named Reminders.', 'Module copié avec votre sujet. Collez-le dans un deuxième fichier de script nommé Reminders.') : L('Copied. Pick a topic first, or change NTFY_TOPIC at the top before saving.', 'Copié. Choisissez d’abord un sujet, ou changez NTFY_TOPIC en haut avant d’enregistrer.')); break;
       case 'genTopic': S.ntfyTopic = 'baby-' + [...crypto.getRandomValues(new Uint8Array(9))].map(x => x.toString(36).padStart(2,'0')).join('').slice(0, 16); saveSettings(); renderSettings(); break;
       case 'testRem': chime(); if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); if ('Notification' in window && Notification.permission === 'granted') new Notification('Test reminder', { body:'Reminders are working 👍' }); else toast('🔔 Test reminder — notifications unavailable here, showing in-page'); renderSettings(); break;
       case 'tplNew': S.templates.push({ id:'tpl-' + Date.now().toString(36), name:'New template', targets:{}, items:[{ label:'Bedtime', kind:'bedtime', start:'20:00' }] }); tplIdx = S.templates.length - 1; settingsChanged(true); renderSettings(); break;

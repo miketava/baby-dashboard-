@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.27.1** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.28.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -139,7 +139,7 @@ Every device applies changes made elsewhere on its next sync and pushes its own 
 | `index.html` | The whole dashboard. Contains **no personal data**; safe to publish. |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png`, `apple-touch-icon.png` | Make it installable on phones and usable offline |
 | `apps-script/Code.gs` | Google Apps Script for your Sheet: read (sync), Quick Log writes, edits and deletes, timestamps, read-only viewer keys, planned visits from Google Calendar |
-| `apps-script/Reminders.gs` | *Optional.* Lock-screen phone reminders through ntfy.sh. Add it as a second script file, set a private topic, run `installReminderTrigger` once, subscribe in the ntfy app. |
+| `apps-script/Reminders.gs` | *Optional.* Lock-screen phone reminders through ntfy.sh (v2): naps, meals, bedtime routines, visits and medication doses, following the same day template as the dashboard (calendar visits and appointments included) and reading templates and medications from the Sheet's Config and Medications tabs. Copy it from *Settings → Reminders* (topic filled in), add it as a second script file named `Reminders`, run `installReminderTrigger` once, subscribe in the ntfy app. Needs `Code.gs` v1.5. |
 | `README.md`, `CHANGELOG.md` | This file and the version history |
 
 `Code.gs` in this repo has a placeholder `SECRET`. **Never commit your real secret**, your Web app URL, or an exported config file.
@@ -169,7 +169,8 @@ The files share one global scope and run top to bottom in `BUILD_ORDER`, so a ne
 **Releasing:** bump `APP_VERSION` and add an English + French entry at the top of `src/i18n/changelog.js`, mirror it in `CHANGELOG.md`, build, test, commit. Bump `SCRIPT_VERSION` (in `Code.gs`) and `REQUIRED_SCRIPT` (in `src/core/version.js`) only when the script changes.
 
 **Tests:**
-- `node tests/apps_script.test.js`: runs `Code.gs` against an in-memory Sheet (append, end, edit, delete, Config and Medications tabs).
+- `node tests/apps_script.test.js`: runs `Code.gs` against an in-memory Sheet (append, end, edit, delete, Config and Medications tabs, calendar appointments).
+- `node tests/reminders.test.js`: runs `Reminders.gs` with `Code.gs` (which day template, routines on their nights, quiet while asleep, calendar visits and appointments, medication doses and nudges).
 - `python tests/smoke.py`: opens the built page in Chromium (Playwright): every section in three family setups, English and French, phone and computer, without errors; Quick Log, score sliders, filter buttons, the whole tour, the day panel and phone swipes. Setup: `pip install playwright` then `python -m playwright install chromium`.
 
 ## Privacy

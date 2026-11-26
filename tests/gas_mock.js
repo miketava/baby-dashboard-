@@ -22,7 +22,8 @@ function mkSheet(name, rows) {
     appendRow: a => { rows.splice(lastRow(), 0, a); }, deleteRow: r => { rows.splice(r - 1, 1); }, rows,
   });
 }
-function load({ secret = 'test-secret', dailyLog, calendars = [] } = {}) {
+function load({ secret = 'test-secret', dailyLog, calendars = [], reminders = false } = {}) {
+  const sent = [], cacheStore = {}, logs = [];
   const tabs = {};
   tabs['Daily Log'] = mkSheet('Daily Log', dailyLog || [['Date', 'Start Time', 'End Time', 'Duration (min)', 'Category', 'Milk (oz)', 'Notes', 'Water (ml)', 'Tags', 'Outcome / Rating', 'Value']]);
   const g = {
@@ -33,13 +34,17 @@ function load({ secret = 'test-secret', dailyLog, calendars = [] } = {}) {
     CalendarApp: { getAllCalendars: () => calendars.map(c => ({ getName: () => c.name, isHidden: () => false, isSelected: () => true,
       getEvents: (a, b) => c.events.filter(e => e.start >= a && e.start <= b).map((e, i) => ({ getTitle: () => e.title, isAllDayEvent: () => !!e.allDay, getStartTime: () => e.start, getEndTime: () => e.end, getId: () => c.name + '#' + i })) })) },
     Session: { getScriptTimeZone: () => 'UTC' },
-    Utilities: { formatDate: (d, tz, p) => { const iso = d.toISOString(); return p === 'HH:mm' ? iso.slice(11, 16) : iso.slice(0, 10); } }, Logger: { log() {} },
+    Utilities: { formatDate: (d, tz, p) => { const iso = d.toISOString(); return p === 'HH:mm' ? iso.slice(11, 16) : iso.slice(0, 10); } }, Logger: { log: x => logs.push(String(x)) },
+    CacheService: { getScriptCache: () => ({ get: k => cacheStore[k] || null, put: (k, v) => { cacheStore[k] = v; } }) },
+    UrlFetchApp: { fetch: (url, o) => { sent.push({ url, ...o }); return {}; } },
+    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }) }) }) },
   };
   const code = fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8').replace(/const SECRET = '[^']*'/, `const SECRET = '${secret}'`);
-  const fn = new Function(...Object.keys(g), code + '\nreturn { doGet, doPost };');
+  const rem = reminders ? '\n' + fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Reminders.gs'), 'utf8') : '';
+  const fn = new Function(...Object.keys(g), code + rem + '\nreturn { doGet, doPost' + (reminders ? ', sendReminders, dueReminders_, previewReminders, installReminderTrigger' : '') + ' };');
   const api = fn(...Object.values(g));
   return {
-    tabs, secret,
+    tabs, secret, sent, logs, api,
     get: (params = {}) => JSON.parse(api.doGet({ parameter: { token: secret, ...params } })),
     post: body => JSON.parse(api.doPost({ postData: { contents: JSON.stringify({ token: secret, ...body }) } })),
   };

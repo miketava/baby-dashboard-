@@ -8,6 +8,18 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.28.0 — 2026-11-26 · Apps Script v1.5 · **Reminders v2** (re-paste the Reminders file)
+
+- **Lock-screen reminders (ntfy) rebuilt.** The add-on now reads your templates and medications from the Sheet's Config and Medications tabs, so editing them in the dashboard changes the reminders with no re-pasting. It follows the same day as the dashboard:
+  - Visit days from a logged visit or your calendar (early, late morning, midday, afternoon), and accepted calendar appointments (morning, midday, afternoon), lined up with the real time.
+  - Your "today's template" override, weekday-only steps and bedtime routines on their nights (bath night follows bedtime).
+  - **Medications:** a high-priority reminder at each dose time, and a second one after an hour if the dose isn't logged (Meds row naming it). Nothing once it's given.
+  - **Quiet while she's asleep:** no nap or bedtime reminder while a sleep is in progress, or once she already went down early.
+  - Tapping a reminder opens the dashboard. Each child's name prefixes the title when there are several.
+  - ▸ Run `previewReminders` in Apps Script to see today's list; `installReminderTrigger` now sends a test message.
+- **Settings → Reminders → Copy add-on** fills in your topic, warning time and which reminders are on. Paste it as a second script file named `Reminders` (replacing the old one), then ▸ Run `installReminderTrigger` once. Needs `Code.gs` v1.5.
+- Tests: `tests/reminders.test.js` (8 checks).
+
 ## v1.27.1 — 2026-11-26 · Apps Script v1.5 (layout only, no behaviour change)
 
 - **Easier script updates.** In `Code.gs`, `SECRET` and `VIEWERS` are now at the very top, above a line marking where updates start: keep those, replace the rest.

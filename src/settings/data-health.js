@@ -34,47 +34,14 @@ const timeField = (path, label, hint='') => `<label class="field">${label}<input
 const chk = (path, label) => `<label class="switch"><input type="checkbox" data-set="${path}" ${getPath(path) ? 'checked' : ''}> ${label}</label>`;
 function getPath(p){ return p.split('.').reduce((o,k) => o?.[k], S); }
 function setPath(p, v){ const ks = p.split('.'); const last = ks.pop(); ks.reduce((o,k) => o[k], S)[last] = v; }
-/** Optional Apps Script add-on: lock-screen reminders through ntfy.sh, generated from your templates. */
+/** Optional Apps Script add-on: lock-screen reminders through ntfy.sh (Reminders.gs v2). It reads the schedule from the
+    Sheet's Config and Medications tabs, so only the topic and options are filled in here (v1.28). */
 function ntfySnippet(){
-  const topic = S.ntfyTopic || 'baby-routine-CHANGE-ME';
-  const set = id => { const tp = tplById(id) || S.templates[0]; return (tp?.items || []).filter(i => (i.kind === 'nap' && !i.optional) || i.kind === 'meal' || i.kind === 'cutoff' || i.kind === 'bedtime').map(i => [i.start, i.label]); };
-  const fmt = a => '[' + a.map(([h, l]) => `['${h}', ${JSON.stringify(l)}]`).join(', ') + ']';
-  const lead = +S.reminders.lead || 15;
-  return `// ── Optional add-on: lock-screen phone reminders via ntfy.sh (works with the dashboard closed) ──
-// Paste BELOW the main script, Save, then select installReminderTrigger ▸ Run once and authorize.
-const NTFY_TOPIC = '${topic}';   // long + unguessable = private
-const LEAD_MIN = ${lead};                            // minutes of warning
-const EARLY_VISIT_CUTOFF = '${T().earlyVisitCutoff}'; // off-site Visit at/before this → early template
-const SETS = {                                       // generated from your dashboard templates
-  baseline: ${fmt(set('baseline'))},
-  early:    ${fmt(set('early-visit'))},
-  late:     ${fmt(set('late-visit'))},
-};
-const mins_ = s => { const m = String(s).match(/(\\d{1,2}):(\\d{2})\\s*([AP])?/i); if (!m) return null;
-  let h = +m[1]; if (m[3]) h = h % 12 + (/p/i.test(m[3]) ? 12 : 0); return h * 60 + +m[2]; };
-function todaysSet_(tz, today) {           // same auto-template rule as the dashboard
-  const range = sheet_().getDataRange(), raw = range.getValues(), disp = range.getDisplayValues(), h = disp[0].map(String);
-  const iD = h.indexOf('Date'), iC = h.indexOf('Category'), iS = h.indexOf('Start Time');
-  for (let r = raw.length - 1; r > 0; r--) {
-    const d = raw[r][iD] instanceof Date ? Utilities.formatDate(raw[r][iD], tz, 'yyyy-MM-dd') : String(raw[r][iD]).slice(0, 10);
-    if (d === today && String(disp[r][iC]).trim() === 'Visit') return mins_(disp[r][iS]) <= mins_(EARLY_VISIT_CUTOFF) ? SETS.early : SETS.late;
-  }
-  return SETS.baseline;
-}
-function sendReminders() {
-  const tz = Session.getScriptTimeZone(), now = new Date(), cache = CacheService.getScriptCache();
-  const today = Utilities.formatDate(now, tz, 'yyyy-MM-dd'), nowMin = mins_(Utilities.formatDate(now, tz, 'HH:mm'));
-  todaysSet_(tz, today).forEach(([hhmm, label]) => {
-    const until = mins_(hhmm) - nowMin, key = today + hhmm;
-    if (until > 0 && until <= LEAD_MIN && !cache.get(key)) {   // trigger runs every 5 min
-      UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: label + ' at ' + hhmm + ' (in ' + until + ' min)',
-        headers: { Title: 'Baby routine reminder', Tags: 'baby_bottle' } });
-      cache.put(key, '1', 21600);
-    }
-  });
-}
-function installReminderTrigger() {
-  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'sendReminders').forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('sendReminders').timeBased().everyMinutes(5).create();
-}`;
+  const r = S.reminders || {}, url = /^https:/.test(location.href) ? location.href.split(/[?#]/)[0] : '';
+  return REMINDERS_GS
+    .replace("const NTFY_TOPIC = 'baby-routine-CHANGE-ME';", `const NTFY_TOPIC = ${q1(S.ntfyTopic || 'baby-routine-CHANGE-ME')};`)
+    .replace('const LEAD_MIN = 15;', `const LEAD_MIN = ${Math.max(5, +r.lead || 15)};`)
+    .replace('const REMIND = { naps: true, meals: true, cutoff: true, routines: true, visits: true, meds: true };',
+      `const REMIND = { naps: ${r.naps !== false}, meals: ${r.meals !== false}, cutoff: ${r.cutoff !== false}, routines: true, visits: true, meds: true };`)
+    .replace("const DASHBOARD_URL = '';", `const DASHBOARD_URL = ${q1(url)};`);
 }
