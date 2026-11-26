@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.30.1 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **Today's plan keeps the last 45 minutes in view.** Items that ended (or, without an end, started) up to 45 minutes ago stay in the list, slightly dimmed, instead of folding under *Earlier today*. One that isn't logged yet shows "due 20m ago" instead of "not logged", so running a few minutes behind on a nap or meal doesn't hide it. Older items still fold away.
+
 ## v1.30.0 — 2026-11-26 · **Apps Script v1.7** (update it)
 
 - **No secret in the script any more.** The secret and the viewer keys live in the script's *Script properties* (⚙ Project Settings), not in its code, so setting up is: paste the script, deploy, paste its URL into *Settings → Data source*.

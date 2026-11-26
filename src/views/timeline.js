@@ -190,16 +190,17 @@ function renderTodayPlan(){
   const beds = items.filter(i => i.kind === 'bedtime');
   if (beds.length > 1 && bedT != null) items = items.filter(i => i.kind !== 'bedtime' || i.a === bedT);
   const isPast = i => (i.b ?? i.a) < now, isNow = i => i.b != null && i.a <= now && now <= i.b;
+  const isRecent = i => now - (i.b ?? i.a) <= PLAN_GRACE_MIN;   // v1.30.1: just past stays in view, in case you're running a bit late
   const nextI = items.findIndex(i => i.a > now && !isNow(i));
   const rows = items.map((it, k) => {
-    const act = planActual(it, m, used), past = isPast(it), cur = isNow(it), next = k === nextI;
+    const act = planActual(it, m, used), past = isPast(it), cur = isNow(it), next = k === nextI, recent = past && !cur && isRecent(it);
     const st = cur ? `<span class="pl-tag now">${L('now', 'en cours')}</span>` : next ? `<span class="pl-tag next">${L(`in ${fmtDur(it.a - now)}`, `dans ${fmtDur(it.a - now)}`)}</span>` : '';
-    const did = act ? `<span class="pl-did">✓ ${act.replace(/<(?!\/?span\b)/g, '&lt;')}</span>` : past && ['nap', 'meal', 'wake'].includes(it.kind) ? `<span class="pl-miss">${it.optional ? L('skipped', 'sautée') : L('not logged', 'non noté')}</span>` : '';
-    return `<div class="pl-row${past && !cur ? ' past' : ''}${cur ? ' cur' : ''}${next ? ' nxt' : ''}" style="--k:${KIND_STYLE[it.kind]?.color || '#64748b'}">
+    const did = act ? `<span class="pl-did">✓ ${act.replace(/<(?!\/?span\b)/g, '&lt;')}</span>` : past && ['nap', 'meal', 'wake'].includes(it.kind) ? (recent && !it.optional ? `<span class="pl-tag">${L(`due ${fmtDur(now - it.a)} ago`, `prévu il y a ${fmtDur(now - it.a)}`)}</span>` : `<span class="pl-miss">${it.optional ? L('skipped', 'sautée') : L('not logged', 'non noté')}</span>`) : '';
+    return `<div class="pl-row${past && !cur ? ' past' : ''}${recent ? ' recent' : ''}${cur ? ' cur' : ''}${next ? ' nxt' : ''}" style="--k:${KIND_STYLE[it.kind]?.color || '#64748b'}">
       <div class="pl-time">${fmtTime(it.a)}${it.b != null ? `<span>–${fmtTime(it.b)}</span>` : ''}</div>
       <div class="pl-what"><b>${esc(it.label)}</b>${it.beforeBed ? ` <span class="faint">· ${L(`${it.beforeBed} min before bedtime`, `${it.beforeBed} min avant le coucher`)}</span>` : ''}${it.optional ? ` <span class="faint">(${L('optional', 'facultatif')})</span>` : ''} ${st}${it.note ? `<div class="pl-note">${esc(it.note)}</div>` : ''}</div>
       <div class="pl-act">${did}</div></div>`; });
-  const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && k !== nextI).length, open = !!UI.planPast;
+  const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && !isRecent(it) && k !== nextI).length, open = !!UI.planPast;
   $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
   const pv = !m.visit ? plannedVisit(m.D) : null, ap = !m.visit && !pv ? apptOn(m.D) : null;
   $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;

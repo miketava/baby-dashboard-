@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.30.1', date:'2026-11-26',
+    en:['Today’s plan keeps anything that ended in the last 45 minutes in view instead of folding it under “Earlier today”, so a nap or meal you’re a few minutes late for is still there. Not logged yet, it says “due 20m ago” rather than “not logged”.'],
+    fr:['Le plan du jour garde visible ce qui s’est terminé dans les 45 dernières minutes au lieu de le replier sous « Plus tôt aujourd’hui » : une sieste ou un repas avec quelques minutes de retard reste là. Pas encore noté, il indique « prévu il y a 20 min » plutôt que « non noté ».'] },
   { v:'1.30.0', date:'2026-11-26',
     en:['Easier setup: the Apps Script no longer has a secret to edit. Paste it, deploy, paste its URL into Settings → Data source: this phone creates a private secret and stores it in the script (Script properties, not the code).',
         'Settings → Data source → Connect another phone: send the link privately; opening it connects that phone to the same Sheet. No file to export.',
