@@ -1077,11 +1077,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.21.3';
+const APP_VERSION = '1.21.4';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.21.4', date:'2026-11-25',
+    en:['Routine score: “No nap past cutoff” is graded. Up to 10 minutes past the cutoff costs nothing, then the points slide to none at an hour past, and the detail says by how much.'],
+    fr:['Score de routine : « Aucune sieste après l’heure limite » est noté progressivement. Jusqu’à 10 minutes de dépassement ne coûtent rien, puis les points baissent jusqu’à zéro à une heure de dépassement; le détail indique de combien.'] },
   { v:'1.21.3', date:'2026-11-25',
     en:['Tighter phone header: title, Refresh, Settings and the version share one row; the live Sheet shows as a Google Sheets icon with the last sync time.'],
     fr:['En-tête plus compact au téléphone : titre, Actualiser, Paramètres et version sur une seule ligne; la feuille en direct s’affiche comme une icône Google Sheets avec l’heure de la dernière synchronisation.'] },
@@ -4096,7 +4099,10 @@ function scoreDay(m){
   const max = m.targets.maxDaySleep, ds = m.daySleep;
   if ((m.napCount || m.wake != null) && !(today && now < cutoff)) set('budget', ds <= max ? (ds >= max * .5 ? 1 : ds / (max * .5)) : 1 - (ds - max) / 60, `${fmtDur(ds)} of ${fmtDur(max)} max`);
   else set('budget', null, today ? 'still accumulating' : 'no naps logged');
-  if (m.napCount) set('cutoff', m.lateNap ? 0 : 1, m.lateNap ? 'a nap ran past the cutoff' : 'all naps ended by the cutoff'); else set('cutoff', null, 'no naps');
+  // graded: up to 10 min past the cutoff costs nothing, then it slides to none at 60 min past
+  if (m.napCount) { const over = Math.max(0, ...m.naps.filter(n => napLate(m, n)).map(n => (n.t - D*DAY) - cutoff));
+    set('cutoff', clamp(1 - (over - 10) / 50, 0, 1), over > 0 ? L(`a nap ran ${fmtDur(Math.round(over))} past the ${fmtTime(cutoff)} cutoff`, `une sieste a dépassé de ${fmtDur(Math.round(over))} l’heure limite de ${fmtTime(cutoff)}`) : L('all naps ended by the cutoff', 'toutes les siestes finies avant l’heure limite')); }
+  else set('cutoff', null, 'no naps');
   const br = bedRange(m);
   if (m.bed != null && br) { const diff = Math.abs(bedOff(m, m.bed)); set('bedtime', diff <= 20 ? 1 : 1 - (diff - 20) / 40, br[0] === br[1] ? `${fmtTime(m.bed)} vs ${fmtTime(br[2])} target` : `${fmtTime(m.bed)} vs ${fmtTime(br[0])}–${fmtTime(br[1])} target`); } else set('bedtime', null, 'no bedtime logged');
   if (m.nightKnown && !today) { const aw = m.overnightAwake, sp = t.splitNightMin;
