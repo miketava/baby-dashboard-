@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.23.3 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- The ⓘ and filter buttons stay pinned in the top-right corner of each section when the ⓘ text is open, instead of dropping below it.
+
 ## v1.23.2 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Who am I in Quick Log:** until a name is set on a device, Quick Log opens with "Who's logging on this device?" (first name and role). *Not now* hides it for the session. Once set, the bottom of Quick Log shows "Logging as Mike · Father" with a *change* link. It's still in *Settings → General → On this device* too.
