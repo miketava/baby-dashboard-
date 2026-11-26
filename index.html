@@ -553,7 +553,7 @@ svg.teeth .tooth.in rect{fill:#fffbeb;stroke:#d97706;stroke-width:1.8;stroke-das
 .wt{position:relative;height:18px;border-radius:9px;background:var(--bg)} .wt b{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--good) 22%,transparent);border-radius:4px}
 .wt i{position:absolute;top:5px;height:8px;border-radius:4px;opacity:.85} .wt u{position:absolute;top:1px;bottom:1px;width:3px;margin-left:-1.5px;background:var(--text);border-radius:2px}
 .wwaxis{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--faint);margin-top:6px;padding-left:calc(min(30%, 160px))}
-.cmp td.worse{background:color-mix(in srgb,var(--warn) 14%,transparent)} .cmp td.better{background:color-mix(in srgb,var(--good) 14%,transparent)}
+.cmp td.worse{background:color-mix(in srgb,var(--warn) 14%,transparent)} .cmp td.better{background:var(--good-soft)}
 @media (max-width:720px){ .wwaxis{padding-left:0} }
 .evlist .tm .by{display:block;font-size:10.5px;color:var(--faint);font-weight:500;margin-top:2px;font-family:inherit}
 .vsplan{color:var(--good)} .vsplan.bad{color:var(--warn)}
@@ -651,6 +651,18 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
   .filterbar.open .line:first-child > .collapsible{flex-basis:100%}
 }
 @media print{ .bbar,.tabs{display:none!important} body{padding:0!important} }
+/* score weights: 100-point pool */
+.swbox{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:6px 0 4px}
+.sw-pool{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:8px;margin-bottom:8px;font-size:14px}
+.sw-pool b{font-size:18px}.sw-pool span{font-size:12px;opacity:.8}
+.sw-pool.warn{background:var(--warn-soft);color:var(--text)}
+.sw-pool.ok{background:var(--good-soft)}
+.sw-row{display:grid;grid-template-columns:minmax(120px,1fr) 30px minmax(90px,2fr) 30px 32px;align-items:center;gap:6px;padding:3px 0}
+.sw-row .sw-l{font-size:13px}.sw-row .sw-v{text-align:right;font-variant-numeric:tabular-nums}
+.sw-row.zero .sw-l,.sw-row.zero .sw-v{opacity:.45}
+.sw-b{width:28px;height:28px;padding:0!important;font-size:17px;line-height:1;border:1px solid var(--border)!important;border-radius:50%!important;display:grid;place-items:center}.sw-b:disabled{opacity:.3}
+.sw-row input[type=range]{width:100%;accent-color:var(--accent)}
+@media (max-width:520px){.sw-row{grid-template-columns:30px 1fr 30px 32px;padding:5px 0}.sw-row .sw-l{grid-column:1/-1;margin-bottom:-2px}}
 </style>
 </head>
 <body>
@@ -1096,11 +1108,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.23.0';
+const APP_VERSION = '1.23.1';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.23.1', date:'2026-11-25',
+    en:['Routine score weights are now a 100-point pool: a slider with − / + for each part and a counter of points left. A part can’t go up once all 100 are used (lower another first), and a warning shows while points are unspent. “Default split” and “Clear all” buttons. The “how each part is scored” notes now describe the graded nap timing and cutoff.'],
+    fr:['Les poids du score de routine forment maintenant une réserve de 100 points : un curseur avec − / + pour chaque volet et un compteur des points restants. Un volet ne peut plus monter quand les 100 points sont utilisés (baissez-en un autre d’abord), et un avertissement s’affiche tant qu’il reste des points. Boutons « Répartition par défaut » et « Tout remettre à 0 ». Les explications des volets décrivent maintenant le pointage progressif des siestes et de l’heure limite.'] },
   { v:'1.23.0', date:'2026-11-25',
     en:['Shared settings live in the Sheet (needs Apps Script v1.3): child profiles, targets, day templates, scoring, family rules and medications are kept in two new tabs, Config and Medications, so every caregiver’s device stays in step. The tabs are created for you, and the first device that syncs copies its current settings into them. Medications are one readable row each and can be edited right in the Sheet. Language, theme, filters, reminders and Who am I stay on each device. Status and a “Push this device’s settings” button: Settings → Data source.'],
     fr:['Les réglages partagés vivent dans la feuille (Apps Script v1.3 requis) : profils, cibles, modèles de journée, pointage, règles familiales et médicaments sont gardés dans deux nouveaux onglets, Config et Medications, pour que tous les appareils restent synchronisés. Les onglets sont créés automatiquement et le premier appareil qui se synchronise y copie ses réglages actuels. Chaque médicament est une ligne lisible, modifiable directement dans la feuille. Langue, thème, filtres, rappels et « Qui suis-je » restent propres à chaque appareil. État et bouton « Envoyer les réglages de cet appareil » : Réglages → Source des données.'] },
@@ -4176,6 +4191,42 @@ const SCORE_PARTS = [
   ['naps',   'Naps on schedule'], ['budget', 'Daytime sleep in budget'], ['cutoff', 'No nap past cutoff'],
   ['bedtime','Bedtime on target'], ['night', 'Unbroken night'], ['milk', 'Milk in target range'], ['meals', 'Meals accepted'],
 ];
+/* v1.23.1 — Score weights as a 100-point pool (like a character's skill points): sliders and −/+ that
+   can't go past what's left, and a warning while points are unspent. */
+const SCORE_POOL = 100, SW_STEP = 5, SW_MAX = 50;
+const swTotal = () => sum(SCORE_PARTS.map(([k]) => +S.score.weights[k] || 0));
+const swLabel = (k, l) => L(l, SCORE_FR[k]);
+function scoreWeightsHTML(){
+  const W = S.score.weights;
+  return `<div class="swbox" id="swBox"><div class="sw-pool" id="swPool"></div>
+    ${SCORE_PARTS.map(([k, l]) => { const v = +W[k] || 0; return `<div class="sw-row" data-k="${k}"><span class="sw-l">${esc(swLabel(k, l))}</span>
+      <button class="btn sm ghost sw-b" data-act="swStep" data-k="${k}" data-d="-${SW_STEP}" aria-label="−">−</button>
+      <input type="range" min="0" max="${SW_MAX}" step="${SW_STEP}" value="${Math.min(v, SW_MAX)}" data-sw="${k}" aria-label="${esc(swLabel(k, l))}">
+      <button class="btn sm ghost sw-b" data-act="swStep" data-k="${k}" data-d="${SW_STEP}" aria-label="+">+</button>
+      <b class="sw-v">${v}</b></div>`; }).join('')}
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn sm ghost" data-act="swReset">↺ ${L('Default split', 'Répartition par défaut')}</button><button class="btn sm ghost" data-act="swClear">${L('Clear all', 'Tout remettre à 0')}</button></div></div>`;
+}
+/** Set one weight, capped so the total never passes 100. */
+function setScoreWeight(k, v, input){
+  const others = swTotal() - (+S.score.weights[k] || 0);
+  v = Math.max(0, Math.min(v, SW_MAX, SCORE_POOL - others));
+  S.score.weights[k] = v; if (input) input.value = v;
+  saveSettings(); syncScoreWeights();
+  clearTimeout(setScoreWeight.t); setScoreWeight.t = setTimeout(() => { analyze(); renderAll(); }, 250);
+}
+function syncScoreWeights(){
+  const box = $('#swBox'); if (!box) return;
+  const tot = swTotal(), left = SCORE_POOL - tot;
+  box.querySelectorAll('.sw-row').forEach(r => { const k = r.dataset.k, v = +S.score.weights[k] || 0;
+    r.querySelector('.sw-v').textContent = v; const inp = r.querySelector('input'); if (+inp.value !== v) inp.value = Math.min(v, SW_MAX);
+    r.querySelector('[data-d^="-"]').disabled = v <= 0; r.querySelector('[data-d]:not([data-d^="-"])').disabled = left <= 0 || v >= SW_MAX;
+    r.classList.toggle('zero', !v); inp.style.setProperty('--p', (Math.min(v, SW_MAX) / SW_MAX * 100) + '%'); });
+  const pool = $('#swPool');
+  pool.className = 'sw-pool ' + (left > 0 ? 'warn' : 'ok');
+  pool.innerHTML = left > 0
+    ? `<b>${left}</b> ${L(`point${left > 1 ? 's' : ''} left to assign`, `point${left > 1 ? 's' : ''} à répartir`)}<span>${L(`The parts add up to ${tot} of 100. Scores still work (they’re scaled to what you assigned), but each number only reads as a share of the score once all 100 are used.`, `Les volets totalisent ${tot} sur 100. Le score fonctionne quand même (il est ajusté à ce qui est attribué), mais chaque nombre ne correspond à une part du score qu’une fois les 100 points utilisés.`)}</span>`
+    : `✓ ${L('All 100 points assigned', 'Les 100 points sont attribués')}<span>${L('To raise a part, lower another first.', 'Pour monter un volet, baissez-en d’abord un autre.')}</span>`;
+}
 const SCORE_FR = { naps:'Siestes à l’heure', budget:'Sommeil de jour dans la cible', cutoff:'Pas de sieste après l’heure limite', bedtime:'Coucher à l’heure', night:'Nuit sans réveil', milk:'Lait dans la cible', meals:'Repas acceptés' };
 /**
  * Routine score (0–100): how closely the day followed YOUR routine. Each component scores 0–1 and is
@@ -6860,14 +6911,14 @@ function renderSettings(){
   else if (setPane === 'score') {
     const W = S.score.weights;
     h = `<h4>Routine score</h4>
-      <p class="hint" style="margin-top:0">A 0–100 score per day for how closely it followed <b>your</b> routine. Each part scores 0–100% and is weighted below (0 = ignore). Parts with no data that day are skipped; a day needs at least three parts to get a score.</p>
-      <div class="fgrid">${SCORE_PARTS.map(([k, l]) => numField('score.weights.' + k, l + ' (weight)', 5)).join('')}</div>
+      <p class="hint" style="margin-top:0">${L('A 0–100 score per day for how closely it followed <b>your</b> routine. Share out 100 points between the parts: the more points, the more that part counts. 0 = ignore it. Parts with no data that day are skipped; a day needs at least three parts to get a score.', 'Un score de 0 à 100 par jour selon le respect de <b>votre</b> routine. Répartissez 100 points entre les volets : plus un volet a de points, plus il compte. 0 = ignoré. Les volets sans données ce jour-là sont omis; il en faut au moins trois pour obtenir un score.')}</p>
+      ${scoreWeightsHTML()}
       <h4>Colour bands</h4><div class="fgrid">${numField('score.good','Good from',5)}${numField('score.ok','OK from',5)}</div>
       <h4>How each part is scored</h4>
       <ul class="hint" style="margin-top:0">
-        <li><b>Naps on schedule</b> — share of the template's (non-optional) nap windows with a nap that overlaps the window and starts within 45 min of it.</li>
+        <li><b>Naps on schedule</b> — for each (non-optional) nap in the template: full credit for a nap starting within 20 min of the planned start, sliding to none at 75 min off; a missed nap scores 0.</li>
         <li><b>Daytime sleep in budget</b> — full marks up to the max (and at least half of it); loses credit for each minute over, reaching 0 at 60 min over.</li>
-        <li><b>No nap past cutoff</b> — all or nothing (optional naps such as the bridge nap don't count).</li>
+        <li><b>No nap past cutoff</b> — full up to 10 min past the cutoff, sliding to none at 60 min past (optional naps such as the bridge nap don't count).</li>
         <li><b>Bedtime on target</b> — full within 20 min of the template bedtime, 0 at 60 min off.</li>
         <li><b>Unbroken night</b> — full at ≤ 10 min awake, 40% at the split-night threshold (${T().splitNightMin} min), 0 at 20 min beyond it.</li>
         <li><b>Milk in range</b> — full inside the target range, 0 at 3 oz outside it.</li>
@@ -6911,6 +6962,7 @@ function renderSettings(){
       <div class="row wrap"><button class="btn" data-act="clearCache">Clear cached data</button><button class="btn danger" data-act="resetAll">Reset all settings</button></div>
       <p class="hint">Everything is stored only in this browser (localStorage). Clearing site data removes it. Dashboard v${APP_VERSION} · <a href="#" data-act="about">${L('what’s new', 'nouveautés')}</a>.</p>`;
   $('#setPane').innerHTML = `<section class="on">${h}</section>`;
+  if (setPane === 'score') syncScoreWeights();
 }
 function describeFilter(f){ const r = { last7:'Last 7 days', last14:'Last 14 days', week:'This week', all:'All time', custom:'Custom range' }[f.range] || f.range; return [r, f.dayType !== 'all' ? f.dayType + ' days' : '', f.q ? `“${f.q}”` : '', f.hidden?.length ? f.hidden.length + ' hidden categories' : ''].filter(Boolean).join(' · '); }
 function savePreset(){ const name = prompt('Name this preset:', describeFilter(F)); if (!name) return; S.presets.push({ name, filter: structuredClone(F) }); saveSettings(); renderFilterBar(); if ($('#mSettings').classList.contains('on')) renderSettings(); toast('Preset saved'); }
@@ -7078,6 +7130,7 @@ function wire(){
   const pane = $('#setPane');
   pane.addEventListener('input', e => {
     const el = e.target;
+    if (el.dataset.sw) { setScoreWeight(el.dataset.sw, +el.value, el); return; }
     if (el.dataset.set) {
       let v = el.type === 'checkbox' ? el.checked : el.value;
       if (el.type === 'number' || el.dataset.num != null) v = Number(v);
@@ -7134,6 +7187,9 @@ function wire(){
       case 'tplReset': if (confirm('Restore the three default templates? Custom templates will be removed.')) { S.templates = structuredClone(DEFAULT_TEMPLATES); tplIdx = 0; S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
       case 'medSave': saveMed(+e.target.closest('[data-act]').dataset.mi); break;
       case 'cfgPushAll': cfgPush({ all:true, quiet:false }).then(() => { if (setPane === 'source') renderSettings(); }); break;
+      case 'swStep': { const b = e.target.closest('[data-act]'), k = b.dataset.k; setScoreWeight(k, (+S.score.weights[k] || 0) + +b.dataset.d); break; }
+      case 'swReset': S.score.weights = { ...DEFAULT_SETTINGS.score.weights }; setScoreWeight('naps', S.score.weights.naps); break;
+      case 'swClear': SCORE_PARTS.forEach(([k]) => S.score.weights[k] = 0); setScoreWeight('naps', 0); break;
       case 'medAdd': S.meds = [...(S.meds || []), { name:'', dose:'', times:'19:30', from: isoOf(todayIdx()) }]; saveSettings(); renderSettings(); break;
       case 'medDel': { const i = +e.target.closest('[data-act]').dataset.mi; if (confirm(L('Remove this medication schedule? Doses already logged stay in the Sheet.', 'Retirer cet horaire de médicament? Les doses déjà notées restent dans la feuille.'))) { S.meds.splice(i, 1); saveSettings(); renderSettings(); renderAll(); } break; }
       case 'tiAdd': tp.items.push({ label:'New target', kind:'nap', start:'12:00', end:'13:00' }); settingsChanged(true); renderSettings(); break;

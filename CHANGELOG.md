@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.23.1 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Routine score weights as a 100-point pool** (*Settings → Routine score*): each part has a slider with − / +, and a counter shows the points left. Once all 100 are used, a part can only go up after another goes down. While points are unspent, a warning says how many (scores still work in the meantime, scaled to what's assigned). **Default split** and **Clear all** buttons.
+- The "how each part is scored" notes now describe the graded nap timing (full within 20 min, none at 75 min) and cutoff (full up to 10 min past, none at 60 min).
+
 ## v1.23.0 — 2026-11-25 · Apps Script v1.3 (update needed)
 
 - **Shared settings in the Sheet.** Child profiles, targets, day templates, scoring, family-contact rules, check-in time and medications now live in two tabs, **Config** and **Medications**, so every caregiver's device stays in step without re-exporting the config.
