@@ -202,6 +202,14 @@ Note: *"9 month checkup 9:30. 19 lb 8 oz, 28.4 in. All good. Bottom front left t
 2026-11-21 | | | | Tooth | | Bottom front left tooth showing | | lower central left | | | |
 ```
 
+Note: *"Up for nap 9:57, diaper and milk, rocked and sang, asleep by 10:12. Woke 11:20. Bedtime took forever: up at 7:30, fussed until 8:05, finally down with the pacifier, slept till 6:40."*
+```
+2026-11-21 | 09:57 | 11:20 | | Sleep - Nap | | Diaper and milk, rocked and sang | | rocking, lullaby | | | | | 10:12
+2026-11-21 | 19:30 | 20:05 | | Awake / Restless | | Fussed at bedtime | | pacifier | | | | |
+2026-11-21 | 19:30 | 06:40 | | Sleep - Night | | Bedtime took forever | | pacifier | Rough | | | |
+```
+(The nap starts when the routine started, with Asleep At from the note. The long settling is an Awake / Restless row from going up until she settled; the dashboard then counts night sleep from 20:05.)
+
 Two children (only if the family uses the Child column): *"Bath for both kids at 6:30. Leo had 4 oz at 7."*
 ```
 2026-11-21 | 18:30 | | | Bath | | | | | | | | Ava, Leo
