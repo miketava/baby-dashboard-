@@ -561,7 +561,18 @@ header.app{position:relative}
 .verpill{border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));background:color-mix(in srgb,var(--accent) 9%,var(--panel));color:var(--accent);border-radius:999px;padding:4px 10px;font:600 12px/1.2 inherit;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
 .verpill:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
 .verpill .vs{display:block;font-size:10px;font-weight:500;opacity:.8}
-@media (max-width:720px){ .verpill{position:absolute;top:10px;right:12px;z-index:2} header.app h1{padding-right:64px} }
+#srcPill .gs{flex:none;vertical-align:-2px} #srcPill .syncs{display:none}
+@media (min-width:721px){ header.app{flex-wrap:nowrap} header.app .meta{flex:1;min-width:0} }
+@media (max-width:720px){
+  header.app{gap:6px 6px;padding:8px 10px}
+  header.app h1{order:1;flex:1;min-width:0;font-size:16px} header.app h1 #appTitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  header.app .actions{order:2;margin-left:0;gap:4px} header.app .actions .btn{padding:6px 8px}
+  header.app .meta{order:3;flex-basis:100%;gap:6px}
+  .verpill{padding:3px 8px}
+  #syncInfo{display:none}
+  #scriptPill .lg{display:none}
+  #srcPill.live .lbl{display:none} #srcPill.live .syncs{display:inline;margin-left:4px;font-weight:600}
+}
 /* section descriptions live behind an ⓘ button */
 main .card-head .sub.sub-i{display:none}
 main .card.show-sub .card-head .sub.sub-i{display:block;margin-top:4px;padding:8px 10px;border-radius:9px;background:var(--bg);color:var(--muted);font-size:13px;line-height:1.4}
@@ -1066,11 +1077,14 @@ input.tin.bad{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.21.2';
+const APP_VERSION = '1.21.3';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.2';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.21.3', date:'2026-11-25',
+    en:['Tighter phone header: title, Refresh, Settings and the version share one row; the live Sheet shows as a Google Sheets icon with the last sync time.'],
+    fr:['En-tête plus compact au téléphone : titre, Actualiser, Paramètres et version sur une seule ligne; la feuille en direct s’affiche comme une icône Google Sheets avec l’heure de la dernière synchronisation.'] },
   { v:'1.21.2', date:'2026-11-25',
     en:['Score breakdown: one small pip per point (a 20-point part shows 20 pips) instead of one per 5 points.'],
     fr:['Détail du score : une petite pastille par point (une partie de 20 points en affiche 20) au lieu d’une par 5 points.'] },
@@ -3165,10 +3179,13 @@ function renderHeader(){
   $('#appTitle').textContent = titleL(); document.title = titleL();
   const p = $('#srcPill');
   p.className = 'pill ' + (DATA.source === 'demo' ? 'demo' : DATA.source === 'live' ? 'live' : '');
-  p.innerHTML = '<span class="dot"></span>' + esc(DATA.source === 'demo' ? L('Demo Mode', 'Mode démo') : FRL() ? DATA.label.replace('Live · view only', 'En direct · lecture seule').replace('Live · Google Sheet', 'En direct · feuille Google') : DATA.label);
-  p.title = DATA.source === 'demo' ? 'Showing built-in sample data. Connect your Sheet in Settings or drop a CSV.' : '';
+  const lbl = DATA.source === 'demo' ? L('Demo Mode', 'Mode démo') : FRL() ? DATA.label.replace('Live · view only', 'En direct · lecture seule').replace('Live · Google Sheet', 'En direct · feuille Google') : DATA.label;
+  const synced = DATA.source === 'demo' || !DATA.synced ? '' : new Date(DATA.synced).toLocaleTimeString(LOC(), { hour:'2-digit', minute:'2-digit' });
+  const GSHEET = '<svg class="gs" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="#0f9d58" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path fill="#87ceac" d="M14 2v6h6z"/><path fill="#fff" d="M7.5 11h9v7h-9zm1.2 1.2v1.7h2.7v-1.7zm3.9 0v1.7h2.7v-1.7zm-3.9 2.9v1.7h2.7v-1.7zm3.9 0v1.7h2.7v-1.7z"/></svg>';
+  p.innerHTML = (DATA.source === 'live' ? GSHEET : '<span class="dot"></span>') + `<span class="lbl">${esc(lbl)}</span>${synced ? `<span class="syncs">${esc(synced)}</span>` : ''}`;
+  p.title = DATA.source === 'demo' ? 'Showing built-in sample data. Connect your Sheet in Settings or drop a CSV.' : lbl + (DATA.synced ? ' · ' + L('last synced ', 'synchronisé le ') + new Date(DATA.synced).toLocaleString(LOC(), { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '');
   const spl = $('#scriptPill'), old = scriptOutdated(); spl.classList.toggle('hidden', !old);
-  if (old) { spl.textContent = L(`🔧 Script update (v${REQUIRED_SCRIPT})`, `🔧 Mise à jour du script (v${REQUIRED_SCRIPT})`); spl.title = L(`Your Apps Script is ${SCRIPT_SEEN === '0' ? 'before 1.0' : 'v' + SCRIPT_SEEN}; this dashboard needs v${REQUIRED_SCRIPT} for everything to work. Tap for how to update.`, `Votre Apps Script est ${SCRIPT_SEEN === '0' ? 'antérieur à 1.0' : 'en v' + SCRIPT_SEEN}; ce tableau de bord a besoin de la v${REQUIRED_SCRIPT}. Touchez pour savoir comment le mettre à jour.`); }
+  if (old) { spl.innerHTML = L(`🔧 <span class="lg">Script update </span>v${REQUIRED_SCRIPT}`, `🔧 <span class="lg">Mise à jour du script </span>v${REQUIRED_SCRIPT}`); spl.title = L(`Your Apps Script is ${SCRIPT_SEEN === '0' ? 'before 1.0' : 'v' + SCRIPT_SEEN}; this dashboard needs v${REQUIRED_SCRIPT} for everything to work. Tap for how to update.`, `Votre Apps Script est ${SCRIPT_SEEN === '0' ? 'antérieur à 1.0' : 'en v' + SCRIPT_SEEN}; ce tableau de bord a besoin de la v${REQUIRED_SCRIPT}. Touchez pour savoir comment le mettre à jour.`); }
   const scp = $('#scorePill'), tm = mod('score') !== false && mod('schedule') ? DAYS.get(todayIdx()) : null, sc = tm?.score;
   scp.classList.toggle('hidden', !sc || sc.score == null);
   if (sc?.score != null) { scp.innerHTML = `${L('Today', 'Aujourd’hui')} <b>${sc.score}</b>${sc.partial ? `<span class="faint" style="font-weight:500"> ${L('so far', 'jusqu’ici')}</span>` : ''}`; scp.style.color = scoreCol(sc.score); scp.style.background = `color-mix(in srgb, ${scoreCol(sc.score)} 12%, var(--panel))`;

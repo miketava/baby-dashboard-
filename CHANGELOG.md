@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.21.3 — 2026-11-25 · Apps Script v1.2 (no script change)
+
+- **Tighter header.** Phones: the title, Refresh, Settings and the version share the top row; the pills sit in one row below. A live Sheet shows as a Google Sheets icon with the last sync time (full label and date on long-press), the "Last synced" line is gone, and the script pill reads just "🔧 v1.2". Computers: the buttons stay on the title row.
+
 ## v1.21.2 — 2026-11-25 · Apps Script v1.2 (no script change)
 
 - Score breakdown: one small pip per point (a 20-point part shows 20, a 10-point part 10; 100 in all) instead of one pip per 5 points.
