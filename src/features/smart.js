@@ -80,21 +80,23 @@ function visitRecovery(){
 function renderTomorrowCard(){
   const box = $('#tomorrowCard'); if (!box) return;
   const T1 = todayIdx() + 1, pv = plannedVisit(T1), logged = DATA.events.find(e => e.d === T1 && e.k === 'visit' && e.st != null);
-  if (!mod('schedule') || (!pv && !logged) || nowMin() < 15 * 60) { box.innerHTML = ''; return; }
-  const st = logged ? logged.st : pv.st, en = logged ? (logged.t != null ? logged.t % DAY : null) : pv.en;
+  const ap = !pv && !logged ? apptOn(T1) : null;   // v1.29.1: also tomorrow's appointment or home visit
+  if (!mod('schedule') || (!pv && !logged && !ap) || nowMin() < 15 * 60) { box.innerHTML = ''; return; }
+  const st = logged ? logged.st : pv ? pv.st : ap.st, en = logged ? (logged.t != null ? logged.t % DAY : null) : pv ? pv.en : ap.en;
+  const what = ap ? (ap.home ? `🏠 ${L('Tomorrow: home visit', 'Demain : visite à domicile')}` : `🩺 ${L('Tomorrow: appointment', 'Demain : rendez-vous')}`) : `🚗 ${L('Tomorrow: parent visit', 'Demain : visite des parents')}`;
   const stub = { D:T1, visit: !!logged, visitStart: logged ? logged.st : null, naps:[], evs:[] };
   const tp = withRoutines(templateFor(stub), stub); stub.tpl = tp;
   const bedLines = tplItems(tp, 'bedtime').map(i => parseTime(i.start)).filter(x => x != null).sort((a, b) => a - b);
   const items = tp.items.filter(i => ['wake', 'nap', 'visit'].includes(i.kind) || i.beforeBed).map(i => ({ ...i, a: planStart(i, bedLines[0]) })).filter(i => i.a != null).sort((a, b) => a.a - b.a);
-  const r = visitRecovery(), cmp = (v, h, f) => v == null || h == null ? '' : f(v, h);
+  const r = ap ? null : visitRecovery(), cmp = (v, h, f) => v == null || h == null ? '' : f(v, h);
   const rec = r ? [
     cmp(r.awakeV, r.awakeH, (v, h) => L(`awake at night ${fmtDur(Math.round(v))} on average (home days ${fmtDur(Math.round(h))})`, `éveil la nuit ${fmtDur(Math.round(v))} en moyenne (jours à la maison ${fmtDur(Math.round(h))})`)),
     cmp(r.effortV, r.effortH, (v, h) => L(`bedtime took ${fmtDur(Math.round(v))} (home ${fmtDur(Math.round(h))})`, `le coucher a pris ${fmtDur(Math.round(v))} (maison ${fmtDur(Math.round(h))})`)),
     cmp(r.nextV, r.nextH, (v, h) => L(`next-day routine score ${Math.round(v)} (home ${Math.round(h)})`, `score du lendemain ${Math.round(v)} (maison ${Math.round(h)})`)),
   ].filter(Boolean) : [];
   const harder = r && ((r.awakeV ?? 0) > (r.awakeH ?? 0) + 10 || (r.effortV ?? 0) > (r.effortH ?? 0) + 10);
-  box.innerHTML = `<div class="card tmrw" style="margin-top:14px"><div class="card-head"><div><h2>🗓️ ${L('Tomorrow: visit', 'Demain : visite')} ${fmtTime(st)}${en != null ? '–' + fmtTime(en) : ''}</h2>
-    <div class="sub" data-keep>${esc(tp.name)}${tp.shift ? esc(shiftNote(tp)) : ''} · ${esc(fmtDay(T1))}</div></div></div>
+  box.innerHTML = `<div class="card tmrw" style="margin-top:14px"><div class="card-head"><div><h2>${what} ${fmtTime(st)}${en != null ? '–' + fmtTime(en) : ''}</h2>
+    <div class="sub" data-keep>${ap ? esc(ap.title) + ' · ' : ''}${esc(tp.name)}${tp.shift ? esc(shiftNote(tp)) : ''} · ${esc(fmtDay(T1))}</div></div></div>
     <div class="pl">${items.map(i => `<div class="pl-row" style="--k:${KIND_STYLE[i.kind]?.color || '#64748b'}"><div class="pl-time">${fmtTime(i.a)}${i.end && !i.beforeBed ? `<span>–${fmtTime(parseTime(i.end))}</span>` : ''}</div><div class="pl-what"><b>${esc(i.label)}</b>${i.optional ? ` <span class="faint">(${L('optional', 'facultatif')})</span>` : ''}${i.note ? `<div class="pl-note">${esc(i.note)}</div>` : ''}</div><div></div></div>`).join('')}
       ${bedLines.length ? `<div class="pl-row" style="--k:${KIND_STYLE.bedtime?.color || '#4338ca'}"><div class="pl-time">${bedLines.map(fmtTime).join(' / ')}</div><div class="pl-what"><b>${L('Bedtime', 'Coucher')}</b>${bedLines.length > 1 ? `<div class="pl-note">${L('earlier one if she skips the bridge nap', 'le plus tôt si elle saute la sieste de transition')}</div>` : ''}</div><div></div></div>` : ''}</div>
     ${rec.length ? `<p class="hint" style="margin-top:10px">${L(`After the last ${r.n} visits: `, `Après les ${r.n} dernières visites : `)}${rec.join(' · ')}.${harder ? ' ' + L('Those nights tended to be harder, so an earlier, calmer evening may help.', 'Ces nuits ont souvent été plus difficiles : une soirée plus tôt et plus calme peut aider.') : ''}</p>` : ''}</div>`;

@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.29.1 — 2026-11-26 · Apps Script v1.6 (no script change)
+
+- **Upcoming visits by type** in Today's plan: 🚗 **Parent visits** (away, from the calendar), 🏠 **Home visits** and 🩺 **Appointments** (the ones marked for the child), each on its own line, up to three each.
+- **Tomorrow card** (shown from 15:00 the day before): now also before a home visit or an appointment, titled "Tomorrow: home visit 14:00–15:00" / "Tomorrow: appointment", with the event's title and that day's plan. Before a parent visit it still adds how the nights after past visits went.
+
 ## v1.29.0 — 2026-11-26 · **Apps Script v1.6** · **Reminders v2.1** (update both)
 
 - **Visits at home** (e.g. the social worker coming over) are no longer counted as time away with car naps.

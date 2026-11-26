@@ -1,4 +1,9 @@
 const CHANGELOG = [
+  { v:'1.29.1', date:'2026-11-26',
+    en:['Today’s plan lists upcoming visits by type: 🚗 Parent visits (away), 🏠 Home visits and 🩺 Appointments, each on its own line.',
+        'The Tomorrow card (from 15:00 the day before) now also appears before a home visit or an appointment, with that day’s plan; before a parent visit it still adds how past visit nights went.'],
+    fr:['Le plan du jour liste les prochaines visites par type : 🚗 Visites des parents (à l’extérieur), 🏠 Visites à domicile et 🩺 Rendez-vous, chacune sur sa ligne.',
+        'La carte Demain (dès 15 h la veille) paraît maintenant aussi avant une visite à domicile ou un rendez-vous, avec le plan de cette journée; avant une visite des parents, elle ajoute toujours comment se sont passées les nuits après les visites.'] },
   { v:'1.29.0', date:'2026-11-26',
     en:['Visits at home are no longer treated like time away. A calendar event titled “Home visit …”, “… à domicile” or “… à la maison” (e.g. the social worker coming over) is asked about once like an appointment, then uses a Home Visit Day: your usual schedule with the visit added at its real time, no car naps, nothing moved. If it overlaps a nap, the visit block says so. Off-site family visits keep titles like “Visite parents et …”.',
         'Calendar titles: what an event is depends on the part before a dash, so “Home visit - Marie (TS)” can carry who’s coming without changing the plan. Apps Script v1.6 (and Reminders v2.1 for lock-screen reminders).'],

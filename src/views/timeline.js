@@ -206,8 +206,10 @@ function renderTodayPlan(){
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
-        const ua = upcomingAppts(3); const apl = ua.length ? `<div class="pl-up">🩺 <b>${L('Appointments', 'Rendez-vous')}:</b> ${ua.map(a => `${a.home ? '🏠 ' : ''}<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
-        return apl + `<div class="pl-up">🗓️ <b>${L('Next visits', 'Prochaines visites')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>`; })();
+        // v1.29.1: three lines — family visits away, visits at home, appointments
+        const ua = upcomingAppts(6), line = (ic, lab, list) => list.length ? `<div class="pl-up">${ic} <b>${lab}:</b> ${list.slice(0, 3).map(a => `<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
+        const apl = line('🏠', L('Home visits', 'Visites à domicile'), ua.filter(a => a.home)) + line('🩺', L('Appointments', 'Rendez-vous'), ua.filter(a => !a.home));
+        return `<div class="pl-up">🚗 <b>${L('Parent visits', 'Visites des parents')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>` + apl; })();
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */
 function renderTodayEntries(){
