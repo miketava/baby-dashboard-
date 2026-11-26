@@ -4209,7 +4209,8 @@ function scoreWeightsHTML(){
 /** Set one weight, capped so the total never passes 100. */
 function setScoreWeight(k, v, input){
   const others = swTotal() - (+S.score.weights[k] || 0);
-  v = Math.max(0, Math.min(v, SW_MAX, SCORE_POOL - others));
+  const cur = +S.score.weights[k] || 0;
+  v = Math.max(0, v <= cur ? v : Math.min(v, SW_MAX, Math.max(cur, SCORE_POOL - others)));   // lowering is always allowed
   S.score.weights[k] = v; if (input) input.value = v;
   saveSettings(); syncScoreWeights();
   clearTimeout(setScoreWeight.t); setScoreWeight.t = setTimeout(() => { analyze(); renderAll(); }, 250);
