@@ -31,4 +31,23 @@ t('medications rewrite and clear', () => {
   let m = gas.get().meds; assert.strictEqual(m.length, 1); assert.strictEqual(m[0].Dose, '2 ml'); assert.strictEqual(m[0]['Updated By'], 'Mike');
   gas.post({ action: 'meds', rows: [] }); m = gas.get().meds; assert.deepStrictEqual(m, []);
 });
+t('appointments: matched, titled, visits kept apart', () => {
+  const day = (h, m, d = 3) => { const x = new Date(Date.now() + d * 864e5); x.setUTCHours(h, m, 0, 0); return x; };
+  const g2 = load({ calendars: [
+    { name: 'Famille', events: [
+      { title: 'Visite parents et Ava', start: day(12, 0), end: day(13, 30) },
+      { title: 'Dentiste Ava', start: day(14, 30), end: day(15, 15) },
+      { title: 'Visite médicale CLSC', start: day(9, 30, 5), end: day(10, 0, 5) },
+      { title: 'Pédiatre (annulé)', start: day(9, 0, 6), end: day(9, 30, 6) },
+      { title: 'Vaccin', start: day(0, 0, 7), end: day(0, 0, 8), allDay: true } ] },
+    { name: 'Mike travail', events: [{ title: 'Doctor appointment', start: day(16, 0), end: day(16, 30) }] } ] }).get();
+  assert.deepStrictEqual(g2.planned.map(v => v.start), ['12:00'], 'only the parents’ visit is a visit (not “Visite médicale”)');
+  assert.deepStrictEqual(g2.appts.map(a => a.title), ['Dentiste Ava', 'Doctor appointment', 'Visite médicale CLSC'], 'cancelled and all-day ones are left out');
+  assert.ok(g2.appts.every(a => a.id && a.calendar && /^\d\d:\d\d$/.test(a.start)));
+  assert.strictEqual(g2.scriptVersion, '1.4');
+});
+t('viewer keys get no appointments or settings', () => {
+  const code = require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
+  assert.ok(/const shared = viewer \? \{\} :/.test(code));
+});
 console.log(`apps_script: ${n} checks passed`);

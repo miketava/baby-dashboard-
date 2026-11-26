@@ -75,7 +75,7 @@ function ingest(base, source, label, { synced, viewer } = {}){
   DATA.allEvents = DATA.events; filterKidEvents();
   for (const [n, c] of unknownKidNames(DATA.allEvents)) DATA.warnings.push({ row:'—', msg:`Child “${n}” (${c} row${c > 1 ? 's' : ''}) doesn't match any child — add it as an alias in Settings → Child & features` });
   analyze();
-  if (S.cacheData && source !== 'demo') lsSet(LS_CACHE, { headers: base.headers, records: base.records, planned: base.planned || null, source, label, synced: DATA.synced, viewer: DATA.viewer });
+  if (S.cacheData && source !== 'demo') lsSet(LS_CACHE, { headers: base.headers, records: base.records, planned: base.planned || null, appts: base.appts || null, source, label, synced: DATA.synced, viewer: DATA.viewer });
   ensureCustomRange();
   renderAll();
 }
@@ -121,7 +121,7 @@ async function syncLive({ quiet=false, skipFlush=false } = {}){
     if (Array.isArray(records) && Array.isArray(records[0])) { headers = records.shift().map(String); records = records.map(r => Object.fromEntries(headers.map((h,i) => [h, r[i]]))); }
     if (!Array.isArray(records)) throw new Error('Unexpected response shape');
     if (data.calError) toast(L('Calendar: ', 'Agenda : ') + data.calError, true);
-    ingest({ headers: headers || Object.keys(records[0] || {}), records, planned: Array.isArray(data.planned) ? data.planned : null }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
+    ingest({ headers: headers || Object.keys(records[0] || {}), records, planned: Array.isArray(data.planned) ? data.planned : null, appts: Array.isArray(data.appts) ? data.appts : null }, 'live', data.viewer ? 'Live · view only' : 'Live · Google Sheet', { viewer: data.viewer || null });
     SCRIPT_SEEN = data.scriptVersion || '0'; renderNotice(); if (typeof renderVerPill === 'function') renderVerPill();
     if (typeof cfgOnSync === 'function') cfgOnSync(data).catch(e => console.warn('config sync', e));
     if (!quiet) toast(`Synced ${DATA.events.length} events`);

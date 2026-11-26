@@ -219,8 +219,9 @@ function wire(){
       case 'tplNew': S.templates.push({ id:'tpl-' + Date.now().toString(36), name:'New template', targets:{}, items:[{ label:'Bedtime', kind:'bedtime', start:'20:00' }] }); tplIdx = S.templates.length - 1; settingsChanged(true); renderSettings(); break;
       case 'tplDup': S.templates.push({ ...structuredClone(tp), id:'tpl-' + Date.now().toString(36), name: tp.name + ' (copy)' }); tplIdx = S.templates.length - 1; settingsChanged(true); renderSettings(); break;
       case 'tplDel': if (S.templates.length > 1 && confirm(`Delete “${tp.name}”?`)) { S.templates.splice(tplIdx, 1); tplIdx = 0; if (!S.templates.some(x => x.id === S.overlayTpl)) S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
-      case 'tplReset': if (confirm('Restore the three default templates? Custom templates will be removed.')) { S.templates = structuredClone(DEFAULT_TEMPLATES); tplIdx = 0; S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
+      case 'tplReset': if (confirm(L('Restore the default templates (Baseline Home Day, plus the library days that fit)? Custom templates will be removed.', 'Rétablir les modèles par défaut (Journée type, plus les journées de la bibliothèque qui conviennent)? Les modèles personnalisés seront supprimés.'))) { S.templates = structuredClone(DEFAULT_TEMPLATES.filter(t => t.id === 'baseline')); S.libSeen = (S.libSeen || []).filter(k => !k.startsWith(apptKid() + ':')); ensureLibTemplates(); tplIdx = 0; S.overlayTpl = 'auto'; settingsChanged(true); renderSettings(); } break;
       case 'medSave': saveMed(+e.target.closest('[data-act]').dataset.mi); break;
+      case 'libAdd': libAdd(e.target.closest('[data-act]').dataset.id); break;
       case 'cfgPushAll': cfgPush({ all:true, quiet:false }).then(() => { if (setPane === 'source') renderSettings(); }); break;
       case 'swStep': { const b = e.target.closest('[data-act]'), k = b.dataset.k; setScoreWeight(k, (+S.score.weights[k] || 0) + +b.dataset.d); break; }
       case 'swReset': S.score.weights = { ...DEFAULT_SETTINGS.score.weights }; setScoreWeight('naps', S.score.weights.naps); break;

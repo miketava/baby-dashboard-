@@ -16,7 +16,7 @@ LIBDIR = os.environ.get('LIBDIR')
 PROFILES = {
   'placement': "{onboarded:true,path:'placement',units:'imperial',name:'Ava',modules:{newborn:false}}",
   'routine':   "{onboarded:true,path:'routine',units:'imperial',feeding:'solids',name:'Leo',modules:{visits:false,workerReports:false,newborn:false}}",
-  'birth':     "{onboarded:true,path:'birth',units:'metric',feeding:'breast',sex:'f',name:'Mia'}",
+  'birth':     "{onboarded:true,path:'birth',units:'metric',feeding:'breast',sex:'f',name:'Mia',modules:{schedule:false,visits:false,workerReports:false,food:false,hydration:false,cocooning:false,familyContact:false,checkins:false}}",   # as the setup wizard sets it
 }
 PHONE, DESKTOP = (390, 844), (1400, 900)
 results = []
@@ -125,10 +125,32 @@ async def swipes(b):
   await drag(hd[0], hd[1], 0, 300); check('swipe Quick Log down closes it', not await pg.evaluate("$('#qlog').classList.contains('on')"))
   check('no page errors', not errs, errs[:3]); await ctx.close()
 
+async def templates_and_appointments(b):
+  print('Template library and calendar appointments')
+  ctx, pg, errs = await open_page(b)
+  ids = await pg.evaluate("S.templates.map(t=>t.id)")
+  check('placement path gets visit and appointment days', {'early-visit', 'late-visit', 'midday-visit', 'afternoon-visit', 'appt-am', 'appt-midday', 'appt-pm'} <= set(ids), ids)
+  picks = []
+  for st in ('09:00', '11:00', '12:00', '14:30'):
+    picks.append(await pg.evaluate(f"(DATA.base.planned=[{{date:isoOf(todayIdx()+1),start:'{st}',end:'{st}'}}], templateFor({{D:todayIdx()+1}}).id)"))
+  check('visits pick early / late / midday / afternoon by start time', picks == ['early-visit', 'late-visit', 'midday-visit', 'afternoon-visit'], picks)
+  await pg.evaluate("DATA.base.planned=[]; DATA.base.appts=[{id:'t1',date:isoOf(todayIdx()),start:'14:30',end:'15:15',title:'Dentiste',calendar:'Famille'},{id:'t2',date:isoOf(todayIdx()+1),start:'10:00',end:'10:30',title:'Médecin',calendar:'Parent'}]; analyze(); renderAll(); setView('today')")
+  await pg.wait_for_timeout(300)
+  check('new appointments are asked about in the banner', await pg.locator('[data-appt=t1][data-v=yes]').count() == 1)
+  await pg.locator('[data-appt=t1][data-v=yes]').first.click(); await pg.wait_for_timeout(200)
+  check('an accepted afternoon appointment picks its template', await pg.evaluate("templateFor({D:todayIdx()}).id") == 'appt-pm')
+  await pg.locator('[data-appt=t2][data-v=ignore]').first.click(); await pg.wait_for_timeout(200)
+  check('ignoring a calendar clears its questions', await pg.evaluate("apptPending().length") == 0)
+  check('no page errors', not errs, errs[:3]); await ctx.close()
+  for prof, want in (('routine', {'baseline', 'appt-am', 'appt-midday', 'appt-pm'}), ('birth', {'baseline'})):
+    ctx, pg, errs = await open_page(b, prof)
+    got = set(await pg.evaluate("S.templates.map(t=>t.id)"))
+    check(f'{prof} path: no visit templates', got == want, sorted(got)); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(**({'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {}))
-    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes): await t(b)
+    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments): await t(b)
     await b.close()
   bad = [r for r in results if not r[1]]
   print(f'\n{len(results) - len(bad)} / {len(results)} checks passed' + (f' · FAILED: {", ".join(r[0] for r in bad)}' if bad else ''))

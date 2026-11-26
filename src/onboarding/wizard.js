@@ -58,6 +58,8 @@ function finishAddKid(){
   S.report.childLabel = W.name || S.report.childLabel;
   const b = bandFor(ageDays());
   if (b?.ww && mod('schedule')) applyBand(b); else if (b) S.profile.bandAck = b.id;
+  if (!mod('visits')) S.templates = S.templates.filter(t => !['early-visit', 'late-visit'].includes(t.id));
+  ensureLibTemplates();
   W.done = true; W = null; S.kidView = 'one'; storeActiveKid(); saveSettings(); closeModals(); reingest();
   toast(L(`${kidName(kidIdx())} added — log rows for them with “${kidName(kidIdx())}” in the Child column`, `${kidName(kidIdx())} ajouté — indiquez « ${kidName(kidIdx())} » dans la colonne Child pour ses lignes`));
 }
@@ -70,6 +72,8 @@ function finishWizard(){
   const b = bandFor(ageDays());
   if (b?.ww && mod('schedule') && first && !STORED_SETTINGS) applyBand(b);     // brand-new users: start from age-appropriate targets
   else if (b) S.profile.bandAck = (first && !b.ww) || !mod('schedule') ? b.id : (S.profile.bandAck === b.id ? b.id : 'review');   // existing users get a "review suggestions" notice instead of silent changes
+  if (first && !STORED_SETTINGS && !mod('visits')) S.templates = S.templates.filter(t => !['early-visit', 'late-visit'].includes(t.id));   // visit days only on the placement path
+  ensureLibTemplates();
   saveSettings(); FOOD_DICT = null;
   closeModals();
   const go = W.data, tour = W.tour;

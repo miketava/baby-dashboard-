@@ -94,7 +94,7 @@ function renderSettings(){
     <p class="hint">Templates can override max daytime sleep and the milk range (Schedule templates). Bedtime targets per day type also come from the templates.</p>`;
   else if (setPane === 'templates') {
     tplIdx = clamp(tplIdx, 0, S.templates.length - 1); const tp = S.templates[tplIdx]; tp.targets ||= {};
-    h = `<h4>Templates</h4><div class="row wrap"><select id="tplSel">${S.templates.map((x,i) => `<option value="${i}" ${i === tplIdx ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+    h = `${apptPaneHTML()}${libPaneHTML()}<h4>${L('Your templates', 'Vos modèles')}</h4><div class="row wrap"><select id="tplSel">${S.templates.map((x,i) => `<option value="${i}" ${i === tplIdx ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
       <button class="btn sm" data-act="tplNew">＋ New</button><button class="btn sm" data-act="tplDup">Duplicate</button><button class="btn sm danger" data-act="tplDel" ${S.templates.length < 2 ? 'disabled' : ''}>Delete</button><button class="btn sm ghost" data-act="tplReset">Restore defaults</button></div>
       <h4>Edit “${esc(tp.name)}”</h4>
       <div class="fgrid"><label class="field">Name<input type="text" id="tplName" value="${esc(tp.name)}"></label>

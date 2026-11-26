@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },   // manual override for today only
+  apptFor: {}, apptIgnoreCals: [], libSeen: [],   // v1.26: calendar appointments (id → child id or 'no'), ignored calendars, library templates already added
   reminders: { enabled:false, chime:true, lead:15, naps:true, meals:true, cutoff:true, dynamic:true, feedEvery:0 },
   ntfyTopic: '',
   foodWords: '',                 // extra food keywords (comma-separated)
@@ -24,7 +25,7 @@ const DEFAULT_SETTINGS = {
     bathMin: 2, bathMax: 3, earlyVisitCutoff: '09:30',
     wetMin: 0, dirtyMin: 0,          // diapers per day from your provider's guidance (0 = no target)
   },
-  templates: DEFAULT_TEMPLATES,
+  templates: DEFAULT_TEMPLATES.filter(t => t.id === 'baseline'),   // v1.26: visit and appointment days come from the library (features/appointments.js) when they fit
   catColors: {},
   presets: [],
   /** v4 profile: who the dashboard is for and which feature sets are switched on (set by the setup wizard). */

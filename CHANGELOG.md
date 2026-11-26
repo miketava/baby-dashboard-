@@ -8,6 +8,20 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.26.0 — 2026-11-26 · **Apps Script v1.4** (update needed for calendar appointments)
+
+- **Template library** (*Settings → Schedule templates*, at the top): ready-made days that fit the family and the child's current nap count (built for 1 or 2 naps, from the Baseline Home Day).
+  - *Placement path:* **Midday Visit** (12:00–13:30) and **Afternoon Visit** days join the early and late-morning ones. Visits now pick among the four by start time: up to 09:30 early, up to 11:30 late morning, up to 13:15 midday, then afternoon. Times still slide to the real visit.
+  - *Everyone with a schedule:* **Morning**, **Midday** and **Afternoon Appointment** days, and a **1-nap transition day** offered from 12 to 24 months while the baseline still has two naps.
+  - The days the automatic choice needs are added once by themselves (a deleted one isn't re-added); *Add* / *Replace* for the rest. Birth and routine families no longer start with the visit templates; newborns get none.
+- **Appointments from your calendar** (Apps Script v1.4): timed events whose title looks like an appointment (médecin, pédiatre, dentiste, CLSC, clinique, vaccin, rendez-vous, rdv, physio, optométriste…) from the calendars the script reads.
+  - The first time one appears, the **Today banner** asks *for Ava?* with ✓ Yes, plan around it · ✕ No · **Ignore this calendar** (e.g. a parent's work calendar). Answers are kept in the Sheet's Config tab, so they're asked once for the whole family.
+  - An accepted one between 08:00 and 16:30 picks the morning (before 11:00), midday (to 13:15) or afternoon appointment day, with the naps around it moved to the real time. Today's plan names it (🩺) and lists upcoming ones.
+  - *Settings → Schedule templates → Appointments from your calendar*: the last 2 weeks and next 60 days, each marked for the child or not, and the ignored calendars (✕ to stop ignoring).
+  - Privacy: for these events only, the script sends the title and calendar name to the family's key (needed for the question), never to viewer keys. `APPOINTMENTS = false` turns it off. Visits still send only dates and times.
+- "Visite médicale" and similar titles now count as appointments, not as family visits.
+- **To update the script:** paste the new `Code.gs` (keep your `SECRET` and `VIEWERS`), then *Deploy → Manage deployments → ✏️ → New version*. No new permissions.
+
 ## v1.25.4 — 2026-11-26 · Apps Script v1.3 (no script change)
 
 - **Puzzle** added to the play activities (Quick Log → Play, and the Play area of the daily check-in). Stored as the tag `puzzle`.

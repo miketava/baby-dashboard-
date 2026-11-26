@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.25.4** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.26.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -75,7 +75,8 @@ Make a spreadsheet with the columns below, export it as CSV and drag it onto the
    (Metric users can name the milk column `Milk (ml)`. Missing columns like `Child`, `Logged At` or `Edited At` are added automatically when needed.)
 2. **Add the script.** In the Sheet: *Extensions → Apps Script*. Delete the starter code, paste [`apps-script/Code.gs`](apps-script/Code.gs), and change `SECRET` to a long random phrase only your caregivers will know. Set the time zone under ⚙️ *Project Settings*. Save.
 3. **Deploy it.** *Deploy → New deployment →* ⚙️ *Web app*. Execute as **Me**; Who has access: **Anyone** (the script rejects anything without your secret). Approve the permissions; on "Google hasn't verified this app", choose *Advanced → Go to … (unsafe)*, which is expected for your own script. Copy the **Web app URL** (ends in `/exec`).
-4. **Optional: visits from your calendar.** If off-site visits are in your Google Calendar (your own or a shared one, like a family calendar) with "visit" or "visite" in the title, choose `checkCalendar` in the Apps Script toolbar and click ▸ **Run** once to approve calendar access. The dashboard then picks the visit-day template ahead of time. Only dates and times are read. Set `CALENDAR_ID = ''` in the script if you don't want this.
+4. **Optional: visits and appointments from your calendar.** Appointments (doctor, dentist, CLSC, vaccine… in the title) are offered once in the Today banner ("Is this for her?"); the ones you accept pick a morning, midday or afternoon appointment day. Their title and calendar name are sent to your own dashboard for that question, never to viewer keys; set `APPOINTMENTS = false` in the script to turn it off.
+   **Visits:** If off-site visits are in your Google Calendar (your own or a shared one, like a family calendar) with "visit" or "visite" in the title, choose `checkCalendar` in the Apps Script toolbar and click ▸ **Run** once to approve calendar access. The dashboard then picks the visit-day template ahead of time. Only dates and times are read. Set `CALENDAR_ID = ''` in the script if you don't want this.
 5. **Optional: timestamps.** In the Apps Script toolbar choose `markExistingRows` and click ▸ **Run** once. From then on every row records when it was entered (*Logged At*) and when it was corrected (*Edited At*).
 6. **Connect.** Dashboard → ⚙️ *Settings → Data source*: paste the URL and your secret, then **Save & sync**.
 7. **Share with co-caregivers.** *Settings → Backup & sync → Export config* creates a small file. Send it **privately** (it contains the secret); they open the dashboard and import it. After that, shared settings come from the Sheet (see below), so later changes reach everyone without a new export.

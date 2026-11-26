@@ -21,15 +21,18 @@ function mkSheet(name, rows) {
     appendRow: a => { rows.splice(lastRow(), 0, a); }, deleteRow: r => { rows.splice(r - 1, 1); }, rows,
   });
 }
-function load({ secret = 'test-secret', dailyLog } = {}) {
+function load({ secret = 'test-secret', dailyLog, calendars = [] } = {}) {
   const tabs = {};
   tabs['Daily Log'] = mkSheet('Daily Log', dailyLog || [['Date', 'Start Time', 'End Time', 'Duration (min)', 'Category', 'Milk (oz)', 'Notes', 'Water (ml)', 'Tags', 'Outcome / Rating', 'Value']]);
   const g = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: n => tabs[n] || null, insertSheet: n => (tabs[n] = mkSheet(n, [])) }) },
     ContentService: { MimeType: { JSON: 'json', JAVASCRIPT: 'js' }, createTextOutput: t => ({ setMimeType: () => t }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
-    CalendarApp: { getAllCalendars: () => [] }, Session: { getScriptTimeZone: () => 'America/Toronto' },
-    Utilities: { formatDate: d => d.toISOString().slice(0, 10) }, Logger: { log() {} },
+    // calendars: [{ name, events: [{ title, start: Date, end: Date, allDay? }] }]
+    CalendarApp: { getAllCalendars: () => calendars.map(c => ({ getName: () => c.name, isHidden: () => false, isSelected: () => true,
+      getEvents: (a, b) => c.events.filter(e => e.start >= a && e.start <= b).map((e, i) => ({ getTitle: () => e.title, isAllDayEvent: () => !!e.allDay, getStartTime: () => e.start, getEndTime: () => e.end, getId: () => c.name + '#' + i })) })) },
+    Session: { getScriptTimeZone: () => 'UTC' },
+    Utilities: { formatDate: (d, tz, p) => { const iso = d.toISOString(); return p === 'HH:mm' ? iso.slice(11, 16) : iso.slice(0, 10); } }, Logger: { log() {} },
   };
   const code = fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8').replace(/const SECRET = '[^']*'/, `const SECRET = '${secret}'`);
   const fn = new Function(...Object.keys(g), code + '\nreturn { doGet, doPost };');

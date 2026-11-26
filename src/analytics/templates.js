@@ -13,12 +13,14 @@ const upcomingVisits = (n = 3) => (Array.isArray(DATA.base?.planned) ? DATA.base
 /** Visit start for template choice: the logged visit, else the one on the calendar. */
 const visitAt = m => m?.visit && m.visitStart != null ? m.visitStart : plannedVisit(m?.D)?.st ?? null;
 function autoTemplate(m){
-  const vs = visitAt(m);
-  if (vs != null) {
-    const cut = parseTime(T().earlyVisitCutoff) ?? 570;
-    return (vs <= cut ? tplById('early-visit') : tplById('late-visit')) || tplById('baseline') || S.templates[0];
+  const vs = visitAt(m), base = tplById('baseline') || S.templates[0];
+  if (vs != null) {   // v1.26: early ≤ cutoff (09:30) · late morning ≤ 11:30 · midday ≤ 13:15 · afternoon after
+    const cut = parseTime(T().earlyVisitCutoff) ?? 570, late = tplById('late-visit');
+    return (vs <= cut ? tplById('early-visit') : vs <= 690 ? late : vs <= 795 ? tplById('midday-visit') || late : tplById('afternoon-visit') || late) || base;
   }
-  return tplById('baseline') || S.templates[0];
+  const ap = typeof apptOn === 'function' && m?.D != null ? apptOn(m.D) : null;   // an accepted calendar appointment
+  if (ap) return (ap.st < 660 ? tplById('appt-am') : ap.st <= 795 ? tplById('appt-midday') || tplById('appt-pm') : tplById('appt-pm')) || base;   // before 11:00 · until 13:15 · later
+  return base;
 }
 function templateFor(m){ return alignToVisit(forWeekday(templateFor0(m), m), m); }
 /** Template items can be limited to some weekdays (“Mon, Thu, Sun” / “lun, jeu, dim”), e.g. bath-night routines or a weekly home visit. */
@@ -39,16 +41,17 @@ function templateFor0(m){
     and the naps right before / after it (the car naps) by the same amount, so they're judged against the visit that actually happened.
     Meals, the bridge nap, the cutoff and bedtimes stay where they are. */
 function alignToVisit(tp, m){
-  const at = visitAt(m), pv = m?.visit ? null : plannedVisit(m?.D);
+  const ap = visitAt(m) == null && m?.D != null && typeof apptOn === 'function' ? apptOn(m.D) : null;   // appointment days slide the same way
+  const at = visitAt(m) ?? ap?.st, pv = m?.visit ? null : (plannedVisit(m?.D) || ap);
   if (!tp || at == null) return tp;
-  const v = tp.items.find(i => i.kind === 'visit' && parseTime(i.start) != null && parseTime(i.end) != null); if (!v) return tp;
+  const v = tp.items.find(i => i.kind === 'visit' && !!i.appt === !!ap && parseTime(i.start) != null && parseTime(i.end) != null); if (!v) return tp;
   const vs = parseTime(v.start), ve = parseTime(v.end), off = at - vs;
   if (Math.abs(off) < 15 || Math.abs(off) > 240) return pv?.en != null ? { ...tp, items: tp.items.map(i => i === v ? { ...i, end: hhmm(pv.en) } : i) } : tp;
   const hh = x => { x = ((x % DAY) + DAY) % DAY; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
   const near = i => { const a = parseTime(i.start), b = parseTime(i.end); return i.kind === 'visit' || (i.kind === 'nap' && !i.optional && b != null && ((b <= vs && vs - b <= 45) || (a >= ve && a - ve <= 45))); };
-  return { ...tp, shift: off, items: tp.items.map(i => i.end && near(i) ? { ...i, start: hh(parseTime(i.start) + off), end: i === v && pv?.en != null ? hh(pv.en) : hh(parseTime(i.end) + off), shifted: true } : i) };
+  return { ...tp, shift: off, anchor: ap ? 'appt' : 'visit', items: tp.items.map(i => i.end && near(i) ? { ...i, start: hh(parseTime(i.start) + off), end: i === v && pv?.en != null ? hh(pv.en) : hh(parseTime(i.end) + off), shifted: true } : i) };
 }
-const shiftNote = tp => tp?.shift ? L(` (visit-day naps moved ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} to match the visit)`, ` (siestes du jour de visite décalées de ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} selon la visite)`) : '';
+const shiftNote = tp => !tp?.shift ? '' : tp.anchor === 'appt' ? L(` (naps around it moved ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} to match the appointment)`, ` (siestes autour décalées de ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} selon le rendez-vous)`) : L(` (visit-day naps moved ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} to match the visit)`, ` (siestes du jour de visite décalées de ${tp.shift > 0 ? '+' : '−'}${fmtDur(Math.abs(tp.shift))} selon la visite)`);
 /** Global targets with any per-template overrides (blank template values fall back to global). */
 function tplTargets(tp){ const o = { ...T() }; for (const [k, v] of Object.entries(tp?.targets || {})) if (v !== '' && v != null && isFinite(v)) o[k] = +v; return o; }
 const tplItems = (tp, kind) => (tp?.items || []).filter(i => i.kind === kind && parseTime(i.start) != null);

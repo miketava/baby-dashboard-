@@ -11,7 +11,7 @@
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl'];
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen'];
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
@@ -113,7 +113,7 @@ async function cfgOnSync(data){
     const keys = Object.keys(remote).sort((a, b) => (a === 'kids' ? -1 : b === 'kids' ? 1 : 0));
     keys.forEach(k => { const h = cfgJSON(remote[k].value); if (CFGS.hash[k] !== h) { cfgApply(k, remote[k].value); CFGS.hash[k] = h; changed.push(k); } });
     if (Array.isArray(rMeds)) { const h = medsNorm(rMeds); if (CFGS.hash.__meds !== h) { medsApply(rMeds); CFGS.hash.__meds = h; changed.push('meds'); } }
-    if (changed.length) { lsSet(LS_SETTINGS, S); FOOD_DICT = null; }
+    if (changed.length) { ensureLibTemplates(); lsSet(LS_SETTINGS, S); FOOD_DICT = null; }
   } finally { cfgApplying = false; }
   cfgReady = true; CFGS.at = new Date().toISOString(); cfgSave();
   if (changed.length && S.profile?.onboarded && $('#mWizard')?.classList.contains('on') && !W?.addKid) closeModals();   // a new device that joins a set-up family skips the setup wizard

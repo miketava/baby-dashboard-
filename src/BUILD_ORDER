@@ -50,6 +50,7 @@ quicklog/quicklog.js
 quicklog/edit-entry.js
 features/smart.js
 features/meds.js
+features/appointments.js
 sync/config-sync.js
 ui/nav.js
 features/age-bands.js

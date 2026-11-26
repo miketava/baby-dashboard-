@@ -1,7 +1,7 @@
-// Baby Routine Dashboard — Apps Script v1.3 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
+// Baby Routine Dashboard — Apps Script v1.4 — private endpoint for your Google Sheet (read, quick-log, edits, timestamps)
 const SECRET = 'change-me-to-a-long-random-phrase'; // shared with caregivers only
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.3';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.4';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -11,6 +11,12 @@ const SCRIPT_VERSION = '1.3';                       // the dashboard checks this
 const CALENDARS = 'shown';
 const VISIT_MATCH = /\bvisit|\bvisite/i;            // titles that count as an off-site visit…
 const NOT_VISIT = /home visit|visite à domicile|à domicile|cancel|annul/i;   // …unless they also match this
+// Appointments (v1.4): timed events that look like a doctor, dentist, clinic or vaccine appointment, from the same calendars.
+// The dashboard asks once whether each one is for the child; only then does it plan the day around it. For that question it
+// needs the title and calendar name, so those are sent for these events only, to the family's key only (never to viewer keys).
+// Set APPOINTMENTS = false to turn this off.
+const APPOINTMENTS = true;
+const APPT_MATCH = /m[ée]decin|m[ée]dical|docteur|doctor|\bdr\b|p[ée]diatr|pediatr|dentist|dentiste|orthodont|clsc|clinique|clinic|vaccin|rendez-vous|\brdv\b|appointment|\bappt\b|optom|ophtalm|audiolog|orthophon|physio|ergoth|h[ôo]pital|hospital|urgence|checkup|check-up|bilan de sant[ée]/i;
 
 // Optional read-only viewer keys (e.g. for a caseworker). A viewer key can only read, never add rows.
 // Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's
@@ -89,17 +95,32 @@ function calendars_() {
 function plannedVisits_(withTitles) {
   const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
   calendars_().forEach(cal => cal.getEvents(new Date(now - 60 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
-    if (ev.isAllDayEvent() || !VISIT_MATCH.test(ev.getTitle()) || NOT_VISIT.test(ev.getTitle())) return;
+    if (ev.isAllDayEvent() || !VISIT_MATCH.test(ev.getTitle()) || NOT_VISIT.test(ev.getTitle()) || (APPOINTMENTS && APPT_MATCH.test(ev.getTitle()))) return;   // “Visite médicale” is an appointment
     const v = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm') };
     const key = v.date + ' ' + v.start + ' ' + v.end; if (seen[key]) return; seen[key] = 1;   // same visit in two calendars counts once
     out.push(withTitles ? Object.assign(v, { title: ev.getTitle(), calendar: cal.getName() }) : v);
   }));
   return out.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
 }
-// Run once from the editor (▸ Run) to approve calendar access and see which events count as visits, and from which calendar.
+const hash_ = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+function appointments_() {
+  if (!APPOINTMENTS) return [];
+  const tz = Session.getScriptTimeZone(), now = Date.now(), f = (d, p) => Utilities.formatDate(d, tz, p), seen = {}, out = [];
+  calendars_().forEach(cal => cal.getEvents(new Date(now - 14 * 864e5), new Date(now + 60 * 864e5)).forEach(ev => {
+    const t = ev.getTitle();
+    if (ev.isAllDayEvent() || !APPT_MATCH.test(t) || /cancel|annul/i.test(t)) return;
+    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName() };
+    const key = a.date + ' ' + a.start + ' ' + t; if (seen[key]) return; seen[key] = 1;   // the same event in two calendars counts once
+    a.id = hash_(String(ev.getId()) + '|' + a.date + ' ' + a.start);   // stable per event and time: moving it asks again
+    out.push(a);
+  }));
+  return out.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+}
+// Run once from the editor (▸ Run) to approve calendar access and see which events count as visits or appointments, and from which calendar.
 function checkCalendar() {
   Logger.log('Calendars read: ' + calendars_().map(c => c.getName()).join(', '));
-  Logger.log(JSON.stringify(plannedVisits_(true), null, 1));
+  Logger.log('Visits: ' + JSON.stringify(plannedVisits_(true), null, 1));
+  Logger.log('Appointments: ' + JSON.stringify(appointments_(), null, 1));
 }
 
 // READ — GET …/exec?token=SECRET  →  { ok, headers, rows, planned }
@@ -128,7 +149,9 @@ function doGet(e) {
   const rows = data.map(r => Object.assign(Object.fromEntries(headers.map((h, i) => [h, r[i]])), viewer ? {} : { _row: r._row }));
   let planned = [], calError = '';
   if (!viewer) try { planned = plannedVisits_(); } catch (err) { calError = String(err.message || err); }
-  const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_() };
+  let appts = [];
+  if (!viewer) try { appts = appointments_(); } catch (err) { calError = calError || String(err.message || err); }
+  const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_(), appts: appts };
   return out_(Object.assign({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
 }
 
