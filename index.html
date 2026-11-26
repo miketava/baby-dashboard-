@@ -1119,11 +1119,14 @@ main .card-head:has(.sub.sub-i:empty):has(> .fbtn){padding-right:36px}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.23.4';
+const APP_VERSION = '1.23.5';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.23.5', date:'2026-11-25',
+    en:['Who am I is just a first name now: the role picker is gone (it was never written to entries).'],
+    fr:['« Qui suis-je » se limite maintenant au prénom : le choix du rôle est retiré (il n’était jamais écrit dans les entrées).'] },
   { v:'1.23.4', date:'2026-11-25',
     en:['On the adoption / placement path, the Who am I roles read Foster dad, Foster mom and Foster parent, so they can’t be mixed up with the birth parents.'],
     fr:['Sur le parcours adoption / placement, les rôles de « Qui suis-je » sont Papa d’accueil, Maman d’accueil et Parent d’accueil, pour ne pas les confondre avec les parents biologiques.'] },
@@ -2536,9 +2539,9 @@ const PATH_ONLY = { familyContact:['placement'], cocooning:['placement'], checki
 const mod = k => { if (k === 'quicklog' && viewOnly()) return false; const v = S.profile?.modules?.[k]; if (v === undefined && PATH_ONLY[k]) return PATH_ONLY[k].includes(S.profile?.path || 'placement'); return v !== false; };
 /** Connected with a read-only viewer key (the server says so) — no Quick Log, scope shown everywhere. */
 const viewOnly = () => !!DATA?.viewer;
-/** Who is using this device (name + role). Kept per device, never in the exported config, so each caregiver sets their own. */
+/** Who is using this device (first name). Kept per device, never in the exported config, so each caregiver sets their own. */
 const LS_ME = 'bld.me.v1';
-let ME = lsGet(LS_ME, null) || { name:'', role:'' };
+let ME = lsGet(LS_ME, null) || { name:'' };
 const saveMe = () => lsSet(LS_ME, ME);
 const saveSettings = () => { lsSet(LS_SETTINGS, S); if (typeof flashSaved === 'function') flashSaved(); if (typeof cfgQueuePush === 'function') cfgQueuePush(); };
 /** Apps Script version reported by the last sync ('' = not synced this session; '0' = older script without a version). */
@@ -5569,17 +5572,12 @@ function qlPresets(){
   return P;
 }
 /* v1.23.2 — Who am I, right in Quick Log (it was only in Settings → General). */
-// On the adoption / placement path the parents logging are foster parents (and “mom” / “dad” in Family Contact mean the birth parents).
-const ME_ROLES = () => S.profile?.path === 'placement'
-  ? [['', '—'], ['father', L('Foster dad', 'Papa d’accueil')], ['mother', L('Foster mom', 'Maman d’accueil')], ['parent', L('Foster parent', 'Parent d’accueil')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]]
-  : [['', '—'], ['father', L('Father', 'Père')], ['mother', L('Mother', 'Mère')], ['parent', L('Parent', 'Parent')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]];
-const meRoleOpts = () => ME_ROLES().map(([v, t]) => `<option value="${v}" ${ME.role === v ? 'selected' : ''}>${t}</option>`).join('');
 let QL_WHO_EDIT = false;
 function qlWhoHTML(){
-  if (ME.name && !QL_WHO_EDIT) { const role = ME_ROLES().find(r => r[0] === ME.role && r[0]); return `<p class="qlwho faint">👤 ${L('Logging as', 'Noté par')} <b>${esc(ME.name)}</b>${role ? ' · ' + role[1] : ''} <button class="linkbtn" data-qlwho="edit">${L('change', 'modifier')}</button></p>`; }
+  if (ME.name && !QL_WHO_EDIT) return `<p class="qlwho faint">👤 ${L('Logging as', 'Noté par')} <b>${esc(ME.name)}</b> <button class="linkbtn" data-qlwho="edit">${L('change', 'modifier')}</button></p>`;
   if (!ME.name && !QL_WHO_EDIT && sessionStorage.getItem('bld.whoLater')) return `<p class="qlwho faint">👤 <button class="linkbtn" data-qlwho="edit">${L('Sign entries with your name', 'Signer les entrées avec votre nom')}</button></p>`;
   return `<div class="qlwho-form"><b>👤 ${L('Who’s logging on this device?', 'Qui note sur cet appareil?')}</b>
-    <div class="row" style="gap:6px;margin-top:6px"><input type="text" id="qlMeName" value="${esc(ME.name || '')}" placeholder="${esc(L('First name', 'Prénom'))}" maxlength="24" style="flex:2;min-width:0"><select id="qlMeRole" style="flex:1;min-width:0">${meRoleOpts()}</select></div>
+    <div class="row" style="gap:6px;margin-top:6px"><input type="text" id="qlMeName" value="${esc(ME.name || '')}" placeholder="${esc(L('First name', 'Prénom'))}" maxlength="24" style="flex:1;min-width:0"></div>
     <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm primary" data-qlwho="save">✓ ${L('Save', 'Enregistrer')}</button><button class="btn sm ghost" data-qlwho="later">${L('Not now', 'Plus tard')}</button></div>
     <p class="hint" style="margin:6px 0 0">${L('Your entries get a “Logged By” column in the Sheet. Kept on this device only; also in Settings → General.', 'Vos entrées reçoivent une colonne « Logged By » dans la feuille. Gardé sur cet appareil seulement; aussi dans Paramètres → Général.')}</p></div>`;
 }
@@ -6906,7 +6904,6 @@ function renderSettings(){
     <h4>${L('On this device', 'Sur cet appareil')}</h4>
     <div class="fgrid">
       <label class="field">${L('Who am I (first name)', 'Qui suis-je (prénom)')}<input type="text" id="meName" value="${esc(ME.name || '')}" placeholder="${esc(L('e.g. Mike', 'p. ex. Mike'))}" maxlength="24"></label>
-      <label class="field">${L('Role', 'Rôle')}<select id="meRole">${meRoleOpts()}</select></label>
     </div>
     <p class="hint">${L('Entries you add from this device are signed with this name (a “Logged By” column in the Sheet), shown small under each entry’s time. It stays on this device and isn’t included when you export the config, so each person sets their own.', 'Les entrées ajoutées depuis cet appareil sont signées de ce nom (colonne « Logged By » de la feuille), affiché en petit sous l’heure de chaque entrée. Il reste sur cet appareil et n’est pas inclus quand vous exportez la configuration : chaque personne règle le sien.')}</p>
     <h4>Display</h4>
@@ -7134,7 +7131,7 @@ function wire(){
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid);
     const w = e.target.closest('[data-qlwho]'); if (!w) return;
     if (w.dataset.qlwho === 'edit') { QL_WHO_EDIT = true; renderQuickLog(); }
-    else if (w.dataset.qlwho === 'save') { const n = $('#qlMeName').value.trim(); if (!n) { $('#qlMeName').focus(); return; } ME = { name: n, role: $('#qlMeRole').value }; saveMe(); QL_WHO_EDIT = false; renderQuickLog(); toast(L(`Entries from this device are now signed “${n}”`, `Les entrées de cet appareil sont maintenant signées « ${n} »`)); }
+    else if (w.dataset.qlwho === 'save') { const n = $('#qlMeName').value.trim(); if (!n) { $('#qlMeName').focus(); return; } ME = { name: n }; saveMe(); QL_WHO_EDIT = false; renderQuickLog(); toast(L(`Entries from this device are now signed “${n}”`, `Les entrées de cet appareil sont maintenant signées « ${n} »`)); }
     else if (w.dataset.qlwho === 'later') { QL_WHO_EDIT = false; sessionStorage.setItem('bld.whoLater', '1'); renderQuickLog(); } });
   $('#kidSeg').addEventListener('click', onKidSeg);
   wireEditGestures();
@@ -7185,7 +7182,7 @@ function wire(){
       if (el.dataset.set === 'ntfyTopic' || el.dataset.set.startsWith('reminders.')) { saveSettings(); const c = $('#ntfyCode'); if (c) c.textContent = ntfySnippet(); renderToday(); return; }
       if (!['endpoint','token'].includes(el.dataset.set)) settingsChanged(re); else saveSettings();
     }
-    if (el.id === 'meName' || el.id === 'meRole') { ME = { name: $('#meName').value.trim(), role: $('#meRole').value }; saveMe(); flashSaved(); return; }
+    if (el.id === 'meName') { ME = { name: $('#meName').value.trim() }; saveMe(); flashSaved(); return; }
     if (el.dataset.md) { const i = +el.closest('[data-mi]').dataset.mi, md = (S.meds || [])[i]; if (md) { md[el.dataset.md] = el.value.trim(); if (!md[el.dataset.md]) delete md[el.dataset.md]; saveSettings(); renderToday(); if (VIEW === 'today') renderTodayPlan(); } return; }
     if (el.dataset.modset) { S.profile.modules = { ...ALL_ON, ...S.profile.modules, [el.dataset.modset]: el.checked }; saveSettings(); analyze(); renderAll(); return; }
     if (el.dataset.catcolor) { S.catColors[el.dataset.catcolor] = el.value; settingsChanged(false); }

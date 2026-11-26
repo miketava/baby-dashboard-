@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.23.5 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- *Who am I* is just a first name: the role picker is removed from Quick Log and *Settings → General* (the role was never written to entries; *Logged By* has always been the name only).
+
 ## v1.23.4 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - On the adoption / placement path, the *Who am I* roles read **Foster dad**, **Foster mom** and **Foster parent** (Papa / Maman / Parent d'accueil), so they can't be mixed up with the birth parents ("mom" / "dad" in Family Contact). Other paths keep Father / Mother / Parent. Only the name goes into the Sheet's *Logged By* column.
