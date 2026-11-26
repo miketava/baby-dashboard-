@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.24.4 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Swipe between days in the day panel** (the score breakdown and day details), on phones: swipe left for the next day, right for the previous one. The page follows your finger, slides out, and the new day slides in from the other side, so the change is obvious. It stops at today and at the first day logged, with a small bounce and a short note.
+- The **‹ ›** buttons and the ← → keys now always go to the previous / next calendar day (they used to follow the Timeline's sort order), with the same slide, and grey out at either end.
+
 ## v1.24.3 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - **Swipe down to close** (phones): drag Quick Log or the More panel down and let go to close it, like ✕; a quick flick works too. From the handle or title bar it always works; inside the list, only when the list is scrolled to the top (otherwise the drag scrolls the list). A short drag springs back. Taps on buttons are unaffected.

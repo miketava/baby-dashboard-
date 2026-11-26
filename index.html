@@ -683,6 +683,7 @@ html:has(.scrim.on), html:has(.sheet.on), html:has(.filterbar.open){overflow:hid
 .qlgrp h5::after{content:'';flex:1;height:1px;background:var(--border)}
 .qlgrp:first-of-type h5{margin-top:6px}
 .mealchips{margin-top:-2px}.mealchips .chip{font-size:14px;padding:6px 12px}
+.drawer{overflow:hidden} .drawer .body{touch-action:pan-y} #drPrev:disabled,#drNext:disabled{opacity:.3;cursor:default}
 </style>
 </head>
 <body>
@@ -1128,11 +1129,14 @@ html:has(.scrim.on), html:has(.sheet.on), html:has(.filterbar.open){overflow:hid
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.24.3';
+const APP_VERSION = '1.24.4';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.24.4', date:'2026-11-25',
+    en:['Day panel (the score breakdown and day details): swipe left for the next day and right for the previous one on phones. The page slides out and the new day slides in, so the change is obvious. It stops at today and at the first day logged (a small bounce). The ‹ › buttons and arrow keys now always go to the previous / next calendar day, with the same slide, and grey out at either end.'],
+    fr:['Panneau du jour (détail du score et de la journée) : sur téléphone, glissez vers la gauche pour le jour suivant et vers la droite pour le précédent. La page glisse et le nouveau jour arrive, pour bien voir le changement. Ça s’arrête à aujourd’hui et au premier jour noté (petit rebond). Les boutons ‹ › et les flèches du clavier vont toujours au jour précédent / suivant du calendrier, avec le même glissement, et sont grisés aux extrémités.'] },
   { v:'1.24.3', date:'2026-11-25',
     en:['Phones: swipe Quick Log (or the More panel) down to close it, like the ✕. From the handle or title it always works; in the list, when it’s scrolled to the top. A short drag springs back.'],
     fr:['Téléphones : glissez la saisie rapide (ou le panneau Plus) vers le bas pour la fermer, comme le ✕. Depuis la poignée ou le titre, ça marche toujours; dans la liste, quand elle est en haut. Un petit glissement revient en place.'] },
@@ -3870,7 +3874,7 @@ function hideTip(){ tip.classList.remove('on'); }
 let drawerDay = null, drawerEv = null;
 function openDrawer(D, evId=null){ drawerDay = D; drawerEv = evId; renderDrawer(); $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); }
 function closeDrawer(){ drawerDay = null; $('#drawer').classList.remove('on'); if (!$('.modal.on') && !$('.sheet.on')) $('#scrim').classList.remove('on'); }
-function renderDrawer(){
+function renderDrawer(){ setTimeout(syncDrawerArrows, 0);
   const m = DAYS.get(drawerDay); if (!m) return closeDrawer();
   $('#drTitle').textContent = fmtDay(m.D, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
   $('#drPills').innerHTML = dayPills(m) + `<span class="pill" title="Template used for targets">${esc((m.tpl?.name || '') + shiftNote(m.tpl))}</span>`;
@@ -3895,6 +3899,30 @@ function renderDrawer(){
     <div class="hint" style="margin:-6px 0 12px">Night metrics refer to the night ${+S.dayBoundary > 0 ? 'after' : 'before'} this day (day boundary ${fmtTime(+S.dayBoundary)}).${m.complete24 ? '' : ' *24h sleep is partial — missing the adjoining night.'}</div>
     <ul class="evlist">${carry.map(e => li(e, true)).join('')}${own.map(e => li(e, false)).join('')}</ul>`;
   const hit = $('#drBody li.hit'); if (hit) hit.scrollIntoView({ block:'center' });
+}
+/* v1.24.4 — Day panel: previous / next day in calendar order (first logged day … today), with a slide animation.
+   ‹ › buttons, ← → keys and, on phones, swiping left (next day) or right (previous day). */
+const drawerDays = () => [...DAYS.keys()].filter(d => d <= todayIdx()).sort((a, b) => a - b);
+function drawerEdge(){ const ds = drawerDays(), i = ds.indexOf(drawerDay); return { ds, i, first: i <= 0, last: i < 0 || i >= ds.length - 1 }; }
+function syncDrawerArrows(){ const e = drawerEdge(); $('#drPrev').disabled = e.first; $('#drNext').disabled = e.last; }
+let drAnimating = false;
+function goDrawerDay(dir, { fromDrag = 0 } = {}){
+  const body = $('#drBody'), head = $('#drawer header .grow'), e = drawerEdge();
+  if (e.i < 0 || drAnimating) return;
+  const reset = () => { body.style.transition = ''; body.style.transform = ''; body.style.opacity = ''; };
+  if ((dir < 0 && e.first) || (dir > 0 && e.last)) {   // at the first day / today: a small bounce instead
+    reset(); body.animate([{ transform: `translateX(${fromDrag}px)` }, { transform: `translateX(${-dir * 18}px)` }, { transform: 'translateX(0)' }], { duration: 260, easing: 'ease-out' });
+    toast(dir > 0 ? L('That’s today — no later day yet', 'C’est aujourd’hui — pas de jour suivant') : L('That’s the first day logged', 'C’est le premier jour noté')); return;
+  }
+  drAnimating = true;
+  const w = body.offsetWidth || 360, out = dir > 0 ? -w : w;
+  const a1 = [body, head].map(el => el.animate([{ transform: `translateX(${el === body ? fromDrag : 0}px)`, opacity: 1 }, { transform: `translateX(${out * (el === body ? 1 : .35)}px)`, opacity: 0 }], { duration: 150, easing: 'ease-in', fill: 'forwards' }));
+  a1[0].onfinish = () => {
+    reset(); drawerEv = null; drawerDay = e.ds[e.i + dir]; renderDrawer(); body.scrollTop = 0;
+    a1.forEach(a => a.cancel());
+    [body, head].forEach(el => el.animate([{ transform: `translateX(${-out * (el === body ? .6 : .35)}px)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }));
+    setTimeout(() => { drAnimating = false; }, 230);
+  };
 }
 function stepDrawer(dir){ const ds = visibleDays().map(d => d.D); let i = ds.indexOf(drawerDay); if (i < 0) return; i = clamp(i + dir, 0, ds.length-1); drawerEv = null; drawerDay = ds[i]; renderDrawer(); }
 
@@ -3953,6 +3981,34 @@ function chartEmpty(id, msg){ if (CH[id]) { CH[id].destroy(); delete CH[id]; } c
 const hhmmTick = v => fmtTime(v);
 const hrsTick = v => (v/60).toFixed(v % 60 ? 1 : 0) + 'h';
 const dayLabel = d => fmtDay(d.D, { weekday:'short', day:'numeric' });
+
+/* swipe left / right in the day panel (phones) */
+(function drawerSwipe(){
+  const dr = document.getElementById('drawer'); if (!dr) return;
+  let x0 = 0, y0 = 0, t0 = 0, dx = 0, mode = null;
+  dr.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || drAnimating) { mode = 'no'; return; }
+    let el = e.target; mode = null;   // leave sideways-scrolling things (wide tables, charts) alone
+    while (el && el !== dr) { if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) { mode = 'no'; break; } el = el.parentElement; }
+    if (e.target.closest('input, select, textarea, canvas')) mode = 'no';
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); dx = 0;
+  }, { passive: true });
+  dr.addEventListener('touchmove', e => {
+    if (mode === 'no' || mode === 'y') return;
+    const ddx = e.touches[0].clientX - x0, ddy = e.touches[0].clientY - y0;
+    if (!mode) { if (Math.abs(ddx) < 10 && Math.abs(ddy) < 10) return; mode = Math.abs(ddx) > Math.abs(ddy) * 1.2 ? 'x' : 'y'; if (mode === 'y') return; }
+    e.preventDefault(); dx = ddx;
+    const ed = drawerEdge(), atEnd = (dx > 0 && ed.first) || (dx < 0 && ed.last);
+    const b = $('#drBody'); b.style.transition = 'none'; b.style.transform = `translateX(${atEnd ? dx * .25 : dx}px)`; b.style.opacity = String(1 - Math.min(.5, Math.abs(dx) / 600));
+  }, { passive: false });
+  const end = () => {
+    if (mode !== 'x') { mode = null; return; } mode = null;
+    const v = Math.abs(dx) / Math.max(1, Date.now() - t0), b = $('#drBody');
+    if (Math.abs(dx) > 70 || (Math.abs(dx) > 30 && v > .5)) goDrawerDay(dx < 0 ? 1 : -1, { fromDrag: dx });
+    else { b.style.transition = 'transform .2s ease, opacity .2s ease'; b.style.transform = ''; b.style.opacity = ''; setTimeout(() => { b.style.transition = ''; }, 220); }
+  };
+  dr.addEventListener('touchend', end); dr.addEventListener('touchcancel', end);
+})();
 
 /* ════════════════════════════════════════════════════════════════════════════
    15. VIEW 2 — SLEEP DIAGNOSTICS
@@ -7198,7 +7254,7 @@ function wire(){
   // Drill-downs (feeds, tables) → drawer
   for (const sel of ['#v-health', '#newFoods', '#calBox', '#visitBox']) $(sel).addEventListener('click', e => { if (e.target.closest('button,.chip')) return; const li = e.target.closest('[data-day]'); if (li) openDrawer(+li.dataset.day, li.dataset.ev != null ? +li.dataset.ev : null); });
   // Drawer
-  $('#drClose').onclick = closeDrawer; $('#drPrev').onclick = () => stepDrawer(S.sortDays === 'desc' && VIEW === 'timeline' ? 1 : -1); $('#drNext').onclick = () => stepDrawer(S.sortDays === 'desc' && VIEW === 'timeline' ? -1 : 1);
+  $('#drClose').onclick = closeDrawer; $('#drPrev').onclick = () => goDrawerDay(-1); $('#drNext').onclick = () => goDrawerDay(1);
   $('#scrim').onclick = () => { closeModals(); closeDrawer(); closeQuickLog(); closeMore(); };
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if ($('#report.on')) closeReport(); else if ($('.modal.on')) closeModals(); else if ($('.sheet.on')) closeQuickLog(); else closeDrawer(); }
