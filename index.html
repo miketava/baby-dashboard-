@@ -674,6 +674,10 @@ main .card-head > .ibtn{position:absolute;top:0;right:0;margin:0}
 main .card-head > .fbtn{position:absolute;top:0;right:34px;margin:0}
 main .card-head:not(:has(> .ibtn)) > .fbtn, main .card-head:has(.sub.sub-i:empty) > .fbtn{right:0}
 main .card-head:has(.sub.sub-i:empty):has(> .fbtn){padding-right:36px}
+/* v1.23.6 — while Quick Log, a dialog, the day panel or the filter panel is open, the page behind can't scroll */
+html:has(.scrim.on), html:has(.sheet.on), html:has(.filterbar.open){overflow:hidden}
+.sheet, .sheet .body, .drawer .body, .modal .box, .filterbar.open{overscroll-behavior:contain}
+.scrim{touch-action:none}
 </style>
 </head>
 <body>
@@ -1119,11 +1123,16 @@ main .card-head:has(.sub.sub-i:empty):has(> .fbtn){padding-right:36px}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.23.5';
+const APP_VERSION = '1.23.6';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.23.6', date:'2026-11-25',
+    en:['Phones: dragging inside Quick Log (including between buttons), a dialog or the day panel no longer scrolls the page behind it.',
+        'Quick Log has one 🍼 Milk button instead of four (+2 / +3 / +4 / +5 oz). The amounts are quick chips under the Milk field (60 / 90 / 120 / 150 ml in metric), also on Bottle entries.'],
+    fr:['Téléphones : glisser dans la saisie rapide (y compris entre les boutons), une boîte de dialogue ou le panneau du jour ne fait plus défiler la page derrière.',
+        'La saisie rapide a un seul bouton 🍼 Lait au lieu de quatre (+2 / +3 / +4 / +5 oz). Les quantités sont des boutons rapides sous le champ Lait (60 / 90 / 120 / 150 ml en métrique), aussi pour les biberons.'] },
   { v:'1.23.5', date:'2026-11-25',
     en:['Who am I is just a first name now: the role picker is gone (it was never written to entries).'],
     fr:['« Qui suis-je » se limite maintenant au prénom : le choix du rôle est retiré (il n’était jamais écrit dans les entrées).'] },
@@ -5558,7 +5567,7 @@ function qlPresets(){
   const sleepOpen = open.some(isSleep);
   if (!sleepOpen) P.push({ e:'💤', label:'Start Nap', cat:'Sleep - Nap', start:true }, { e:'🌙', label:'Bedtime', cat:'Sleep - Night', start:true });
   P.push({ e:'⚡', label:'Awake / Restless', cat:'Awake / Restless', start:true });
-  (metric() ? [60, 90, 120, 150] : [2, 3, 4, 5]).forEach(a => P.push({ e:'🍼', label:`+${a} ${MU()} Milk`, cat:'Milk', milk: +fromDisp(a).toFixed(2) }));
+  P.push({ e:'🍼', label:L('Milk', 'Lait'), cat:'Milk' });   // v1.23.6: one button; the amounts are chips in the form
   if (mod('hydration')) P.push({ e:'💧', label:'Water', cat:'Milk', water:true });
   if (mod('food')) { P.push({ e:'🍽', label: mealByTime(now), cat: mealByTime(now), meal:true }); if (mealByTime(now) !== 'Snack') P.push({ e:'🍎', label:'Snack', cat:'Snack', meal:true, fixed:true }); }
   if (mod('visits')) P.push({ e:'🤝', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤝', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
@@ -5610,6 +5619,7 @@ function renderQuickLog(){
       <label class="field">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
       ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
       <label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>
+      ${/milk|bottle/i.test(f.row['Category'] || '') ? `<div class="full tchips" data-for="Milk (oz)">${milkChips().map(a => `<button type="button" class="chip ${f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null && Math.abs(toDisp(+f.row['Milk (oz)']) - a) < .01 ? '' : f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null ? 'off' : ''}" data-set-v="${a}">${a} ${MU()}</button>`).join('')}</div>` : ''}
       ${['pump','growth','temp','meds'].includes(catKindNow) ? `<label class="field">${catKindNow === 'meds' ? L('Dose', 'Dose') : catKindNow === 'pump' ? 'Amount pumped' : catKindNow === 'temp' ? 'Temperature' : 'Measurement'}<input type="text" name="Value" value="${v('Value')}" placeholder="${catKindNow === 'meds' ? L('e.g. 2 ml', 'p. ex. 2 ml') : catKindNow === 'pump' ? (metric() ? 'e.g. 90 ml' : 'e.g. 3 oz') : catKindNow === 'temp' ? (metric() ? 'e.g. 37.6 °C' : 'e.g. 99.7 °F') : /head/i.test(f.row['Category']) ? (metric() ? 'e.g. 35.2 cm' : 'e.g. 13.9 in') : /height|length/i.test(f.row['Category']) ? (metric() ? 'e.g. 54 cm' : 'e.g. 21.3 in') : (metric() ? 'e.g. 4.2 kg' : 'e.g. 9 lb 4 oz')}"></label>` : ''}
       <label class="field">Water (ml)<input type="number" step="5" min="0" name="Water (ml)" value="${v('Water (ml)')}"></label>
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
@@ -5631,6 +5641,7 @@ function renderQuickLog(){
 /** Open Quick Log straight into a form for a given row (e.g. from the tooth chart). */
 /** “now · −5 · −15 · −30 min · −1 h” buttons that fill a time field. */
 const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span>${[[0, L('now', 'maintenant')], [5, '−5 min'], [15, '−15 min'], [30, '−30 min'], [60, '−1 h']].map(([d, t]) => `<button type="button" class="chip" data-ago="${d}">${t}</button>`).join('')}</div>`;
+const milkChips = () => metric() ? [60, 90, 120, 150] : [2, 3, 4, 5];
 function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
 function stoolChipsHTML(tagsStr){
   const cur = new Set(parseTags(tagsStr));

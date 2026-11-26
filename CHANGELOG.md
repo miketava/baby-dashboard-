@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.23.6 — 2026-11-25 · Apps Script v1.3 (no script change)
+
+- **Phones:** dragging inside Quick Log (including in the gaps between buttons), a dialog, the day panel or the filter panel no longer scrolls the page behind it.
+- **One 🍼 Milk button** in Quick Log instead of four (+2 / +3 / +4 / +5 oz). The amounts are quick chips under the Milk field: 2 / 3 / 4 / 5 oz, or 60 / 90 / 120 / 150 ml in metric. Bottle entries get the same chips.
+
 ## v1.23.5 — 2026-11-25 · Apps Script v1.3 (no script change)
 
 - *Who am I* is just a first name: the role picker is removed from Quick Log and *Settings → General* (the role was never written to entries; *Logged By* has always been the name only).
