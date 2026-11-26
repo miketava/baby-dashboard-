@@ -1119,11 +1119,14 @@ main .card-head:has(.sub.sub-i:empty):has(> .fbtn){padding-right:36px}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.23.3';
+const APP_VERSION = '1.23.4';
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.3';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.23.4', date:'2026-11-25',
+    en:['On the adoption / placement path, the Who am I roles read Foster dad, Foster mom and Foster parent, so they can’t be mixed up with the birth parents.'],
+    fr:['Sur le parcours adoption / placement, les rôles de « Qui suis-je » sont Papa d’accueil, Maman d’accueil et Parent d’accueil, pour ne pas les confondre avec les parents biologiques.'] },
   { v:'1.23.3', date:'2026-11-25',
     en:['The ⓘ and filter buttons stay in the top-right corner of each section when you open the ⓘ text, instead of dropping below it.'],
     fr:['Les boutons ⓘ et filtre restent dans le coin supérieur droit de chaque section quand vous ouvrez le texte ⓘ, au lieu de passer en dessous.'] },
@@ -5566,7 +5569,10 @@ function qlPresets(){
   return P;
 }
 /* v1.23.2 — Who am I, right in Quick Log (it was only in Settings → General). */
-const ME_ROLES = () => [['', '—'], ['father', L('Father', 'Père')], ['mother', L('Mother', 'Mère')], ['parent', L('Parent', 'Parent')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]];
+// On the adoption / placement path the parents logging are foster parents (and “mom” / “dad” in Family Contact mean the birth parents).
+const ME_ROLES = () => S.profile?.path === 'placement'
+  ? [['', '—'], ['father', L('Foster dad', 'Papa d’accueil')], ['mother', L('Foster mom', 'Maman d’accueil')], ['parent', L('Foster parent', 'Parent d’accueil')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]]
+  : [['', '—'], ['father', L('Father', 'Père')], ['mother', L('Mother', 'Mère')], ['parent', L('Parent', 'Parent')], ['caregiver', L('Caregiver', 'Gardien·ne')], ['other', L('Other', 'Autre')]];
 const meRoleOpts = () => ME_ROLES().map(([v, t]) => `<option value="${v}" ${ME.role === v ? 'selected' : ''}>${t}</option>`).join('');
 let QL_WHO_EDIT = false;
 function qlWhoHTML(){
