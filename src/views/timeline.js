@@ -203,7 +203,7 @@ function renderTodayPlan(){
   const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && !isRecent(it) && k !== nextI).length, open = !!UI.planPast;
   $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
   const pv = !m.visit ? plannedVisit(m.D) : null, ap = !m.visit && !pv ? apptOn(m.D) : null;
-  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
+  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift || tp.wakeShift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';

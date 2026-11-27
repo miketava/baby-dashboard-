@@ -8,6 +8,13 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.37.0 — 2026-11-27 · Apps Script v1.7 (no script change)
+
+- **Early wake-ups move the morning.** When the night ends 20+ minutes before the template's *Wake* time, the morning's meals and routine steps and **Nap 1** move earlier by the same amount, capped at **30 minutes** (*Settings → Targets → Wake windows → Early wake-up: move Nap 1 by up to*; 0 keeps template times).
+  - Capped rather than following the wake window all the way: holding close to the schedule avoids reinforcing early wakings. **Nap 2, the cutoff and bedtime stay put**, so the day eases back to the template.
+  - Today's plan shows the moved times and says why ("woke at 06:15: morning and Nap 1 moved 30m earlier"), as do the day panel and the timeline overlay. The routine score judges Nap 1 against the moved time, so a sensible earlier nap isn't marked late or early.
+  - Uses the logged end of the night (the *End night* in Quick Log). Not on visit or appointment days, where the visit sets the naps.
+  - The Today banner's wake-window hint ("Nap 1 window opens at …") is unchanged and still counts the full wake window from the real wake-up.
 ## v1.36.0 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **🦣 Fiddle Faddler** (a nod to the Mammoth Club): counts refreshes forced on this phone, from the header's ↻ button or a page reload (pulling down in Chrome, F5 on a computer; detected with the Navigation Timing `reload` type). Auto-refresh timers, the sync on opening and syncs after saving don't count. Tiers 5 / 25 / 100 / 250 / 500. Starts at 0 (nothing to count backwards) and is **device-only**: kept in this browser (`bld.fiddle.v1`), never written to the Config tab, so each phone has its own.
