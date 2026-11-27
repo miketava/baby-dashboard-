@@ -1,4 +1,9 @@
 const CHANGELOG = [
+  { v:'1.38.0', date:'2026-11-27',
+    en:['🔒 Private notes (off by default; Settings → General): a second notes box in Quick Log for things only the family should read. They go in their own Private Notes column, show with a 🔒 in the day’s entries, and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key receives.',
+        'Needs Apps Script v1.8, which removes that column before anything is sent to a viewer key: Copy script, paste over Code.gs, deploy a new version (or Update script if one-tap updates are on). The switch stays greyed out until then.'],
+    fr:['🔒 Notes privées (désactivées par défaut; Réglages → Général) : une seconde zone de notes dans l’Entrée rapide pour ce que seule la famille doit lire. Elles vont dans leur propre colonne Private Notes, s’affichent avec un 🔒 dans les entrées du jour et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur.',
+        'Nécessite l’Apps Script v1.8, qui retire cette colonne avant tout envoi à une clé lecteur : Copier le script, coller sur Code.gs, déployer une nouvelle version (ou Mettre le script à jour si les mises à jour en un geste sont activées). L’interrupteur reste grisé d’ici là.'] },
   { v:'1.37.2', date:'2026-11-27',
     en:['Quick Log keeps what you typed: closing it by mistake (Back, ✕, swipe down) with something not saved keeps a draft, and reopening Quick Log offers ↩ Restore or Discard at the top (on this device, for 6 hours).',
         'Quick Log: the −10 … +10 min row under a time no longer repeats “now”; use the Now button beside the field.'],

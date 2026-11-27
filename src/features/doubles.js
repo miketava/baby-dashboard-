@@ -12,6 +12,8 @@ function mergedRow(first, later){
   const row = {}, a = first, b = later, ba = byOf(a), bb = byOf(b), named = ba && bb && ba !== bb;
   const na = String(a.notes || '').trim(), nb = String(b.notes || '').trim();
   if (nb && !norm(na).includes(norm(nb))) row[colOf('notes')] = named ? (na ? `${ba}: ${na}\n${bb}: ${nb}` : `${bb}: ${nb}`) : (na ? `${na}\n${nb}` : nb);
+  const pa = a.priv || '', pb = b.priv || '';
+  if (pb && !norm(pa).includes(norm(pb))) row[colOf('priv')] = named ? (pa ? `${ba}: ${pa}\n${bb}: ${pb}` : `${bb}: ${pb}`) : (pa ? `${pa}\n${pb}` : pb);
   const tags = [...a.tags, ...b.tags.filter(t => !a.tags.includes(t))];
   if (tags.length > a.tags.length) row[colOf('tags')] = tags.join(', ');
   if (b.outcome && !a.outcome) row[colOf('outcome')] = b.outcome;

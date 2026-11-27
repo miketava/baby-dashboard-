@@ -273,6 +273,7 @@ table.dt tr.clickable{cursor:pointer}
 #toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:110;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 /* v1.37.1: toasts are for reading only: taps go through to what's underneath (no tap-to-search / Lens on their text) */
 .toast{pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:var(--text);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:tin .2s ease}
+.privnote{color:var(--muted)!important;font-style:italic} .privfield textarea{border-style:dashed}
 .toast.err{background:var(--bad);color:#fff}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}}
 .warnlist{font-size:12.5px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:10px}
@@ -1201,7 +1202,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.37.2';
+const APP_VERSION = '1.38.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1209,6 +1210,11 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.7';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.38.0', date:'2026-11-27',
+    en:['🔒 Private notes (off by default; Settings → General): a second notes box in Quick Log for things only the family should read. They go in their own Private Notes column, show with a 🔒 in the day’s entries, and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key receives.',
+        'Needs Apps Script v1.8, which removes that column before anything is sent to a viewer key: Copy script, paste over Code.gs, deploy a new version (or Update script if one-tap updates are on). The switch stays greyed out until then.'],
+    fr:['🔒 Notes privées (désactivées par défaut; Réglages → Général) : une seconde zone de notes dans l’Entrée rapide pour ce que seule la famille doit lire. Elles vont dans leur propre colonne Private Notes, s’affichent avec un 🔒 dans les entrées du jour et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur.',
+        'Nécessite l’Apps Script v1.8, qui retire cette colonne avant tout envoi à une clé lecteur : Copier le script, coller sur Code.gs, déployer une nouvelle version (ou Mettre le script à jour si les mises à jour en un geste sont activées). L’interrupteur reste grisé d’ici là.'] },
   { v:'1.37.2', date:'2026-11-27',
     en:['Quick Log keeps what you typed: closing it by mistake (Back, ✕, swipe down) with something not saved keeps a draft, and reopening Quick Log offers ↩ Restore or Discard at the top (on this device, for 6 hours).',
         'Quick Log: the −10 … +10 min row under a time no longer repeats “now”; use the Now button beside the field.'],
@@ -1763,6 +1769,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },
+  privateNotes: false,                    // 🔒 Private notes field in Quick Log (v1.38)
   dupKeep: [],                            // entries logged twice that were kept apart on purpose (v1.33)
   trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only
   apptFor: {}, apptIgnoreCals: [], libSeen: [],   // v1.26: calendar appointments (id → child id or 'no'), ignored calendars, library templates already added
@@ -1967,8 +1974,9 @@ const SECRET_MIN = 16;
 // Optional read-only viewer keys (e.g. for a caseworker), created in the dashboard (Settings → Sharing) and stored here.
 // Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's dashboard and reports
 // show a "Not included: …" line naming those categories. Each key: { label, exclude: [...], from, child, childName, blank }.
+const PRIVATE_COL = /^\\s*priv(ate|é|e)/i;   // private columns, never sent to viewer keys (v1.8)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.7';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.8';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -2123,14 +2131,16 @@ function doGet(e) {
     }
     scope = { label: viewer.label || 'Viewer', excluded: viewer.exclude || [], from: viewer.from || '', child: viewer.childName || '' };
   }
-  const rows = data.map(r => Object.assign(Object.fromEntries(headers.map((h, i) => [h, r[i]])), viewer ? {} : { _row: r._row }));
+  // v1.8: “Private Notes” (and any column whose name starts with Private / Privé) is for the family only: never sent to a viewer key
+  const shown = headers.map((h, i) => viewer && PRIVATE_COL.test(h) ? -1 : i).filter(i => i >= 0);
+  const rows = data.map(r => Object.assign(Object.fromEntries(shown.map(i => [headers[i], r[i]])), viewer ? {} : { _row: r._row }));
   let planned = [], calError = '';
   if (!viewer) try { planned = plannedVisits_(); } catch (err) { calError = String(err.message || err); }
   let appts = [];
   if (!viewer) try { appts = appointments_(); } catch (err) { calError = calError || String(err.message || err); }
   const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_(), appts: appts };
   if (!viewer) shared.selfUpdate = props_().getProperty('ALLOW_SELF_UPDATE') === 'true';
-  return out_(Object.assign({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
+  return out_(Object.assign({ ok: true, headers: shown.map(i => headers[i]), rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
 }
 
 // WRITE (Quick Log) — POST {token, action: 'append' | 'end', row: {Header: value}}
@@ -3171,6 +3181,7 @@ const FIELD_RULES = [
   ['dur',     k => k.startsWith('dur') || k === 'minutes' || k === 'mins'],
   ['cat',     k => k.startsWith('categ') || k === 'type' || k === 'event' || k === 'activity'],
   ['milk',    k => k.startsWith('milk') || k === 'oz' || k === 'ounces'],
+  ['priv',    k => k.startsWith('private') || k.startsWith('privé') || k.startsWith('prive')],
   ['notes',   k => k.startsWith('note') || k.startsWith('comment')],
   ['water',   k => k.startsWith('water') || k.startsWith('hydration') || k === 'ml'],
   ['tags',    k => k === 'tags' || k === 'tag' || k === 'labels'],
@@ -3185,7 +3196,7 @@ const FIELD_RULES = [
   ['asleep',  k => k === 'asleepat' || k === 'asleep' || k === 'fellasleep' || k === 'fellasleepat' || k.startsWith('endormi')],
   ['kid',     k => k === 'child' || k === 'kid' || k === 'baby' || k === 'enfant' || k === 'childname' || k === 'children'],
 ];
-const FIELD_CANON = { date:'Date', start:'Start Time', end:'End Time', dur:'Duration (min)', cat:'Category', milk:'Milk (oz)', notes:'Notes', water:'Water (ml)', tags:'Tags', outcome:'Outcome / Rating', logged:'Logged At', noted:'Noted At', value:'Value', asleep:'Asleep At', kid:'Child', edited:'Edited At', mood:'Mood', qtype:'Question Type', by:'Logged By' };
+const FIELD_CANON = { date:'Date', start:'Start Time', end:'End Time', dur:'Duration (min)', cat:'Category', milk:'Milk (oz)', notes:'Notes', priv:'Private Notes', water:'Water (ml)', tags:'Tags', outcome:'Outcome / Rating', logged:'Logged At', noted:'Noted At', value:'Value', asleep:'Asleep At', kid:'Child', edited:'Edited At', mood:'Mood', qtype:'Question Type', by:'Logged By' };
 function mapHeaders(headers){
   const map = {}, extras = [];
   headers.forEach(h => {
@@ -3251,7 +3262,7 @@ function parseRecords(records, headers){
     const reactPos = !reactNeg && (tags.some(t => REACT_POS.includes(t)) || ['Positive','Calm'].includes(oc.v) && info.kind === 'behaviour');
     const ev = { id:0, row, d, st, en, s, t, dur, cat: catName, k: info.kind, g: info.group, milk, water, outcome: oc.v,
       tags, reactNeg, reactPos, valueRaw: raw.value, loggedAt: parseDateTime(raw.logged), preTracking: /before tracking/i.test(raw.logged), notedAt: parseDateTime(raw.noted),
-      notes: raw.notes, extra, cross: t != null && t > (d+1)*DAY, allDay,
+      notes: raw.notes, priv: String(raw.priv || '').trim(), extra, cross: t != null && t > (d+1)*DAY, allDay,
       open: t == null && !allDay && !raw.end && DURATIONAL.has(info.kind) && !(isFinite(durN) && durN > 0), local: !!rec._local, localId: rec._localId };
     // v4b: measurements in the Value column (standardised to kg / cm / °C / oz)
     ev.kidNames = splitKids(raw.kid); ev.raw = raw; ev.sheetRow = rec._row; ev.editedAt = parseDateTime(raw.edited);
@@ -4334,7 +4345,7 @@ function evLi(e, D, cont, hitId){
     const asl = isSleep(e) && e.so > e.s && !cont ? (e.settleHow === 'assumed' ? L(` asleep · ~${fmtTime((e.so - e.d * DAY) % DAY)}`, ` de sommeil · ~${fmtTime((e.so - e.d * DAY) % DAY)}`) : L(` asleep · ${fmtTime((e.so - e.d * DAY) % DAY)} (${fmtDur(e.so - e.s)} to settle)`, ` de sommeil · ${fmtTime((e.so - e.d * DAY) % DAY)} (${fmtDur(e.so - e.s)} pour s’endormir)`)) : '';
     const bits = [e.t != null ? fmtDur(cont ? e.t - D*DAY : e.dur) + (e.ongoing ? ' so far' : '') + (e.t != null ? asl : '') : e.allDay ? '' : 'instant', e.milk != null ? fmtOz(e.milk) : '', e.water != null ? fmtMl(e.water) : '',
       cont ? L(`continued from ${fmtTime(e.st)} the night before`, `suite de ${fmtTime(e.st)} la veille`) : e.cross && !e.ongoing ? L('continues past midnight', 'se poursuit après minuit') : '', e.local ? L('not in Sheet yet', 'pas encore dans la feuille') : ''].filter(Boolean).join(' · ');
-    return `<li class="${e.id === hitId ? 'hit' : ''}" data-ev="${e.id}"><div class="tm">${tm}${e.raw?.by ? `<span class="by">${esc(e.raw.by)}</span>` : ''}</div><div><div class="c"><i style="background:${col}"></i>${cat(e.cat).icon} ${esc(e.cat)} ${ocPill(e.outcome)}${e.editedAt ? ` <span class="faint" title="Edited At">✎ ${L('edited', 'modifié')}</span>` : ''}${viewOnly() || DATA.source === 'demo' ? '' : `<button class="evedit" data-edit="${e.id}" title="${L('Edit or delete', 'Modifier ou supprimer')}" aria-label="${L('Edit', 'Modifier')}">✏️</button>`}</div><div class="x">${bits}</div>${(v => v ? `<div class="x vsplan ${v.bad ? 'bad' : ''}">🎯 ${esc(v.txt)}</div>` : '')(mod('schedule') && !cont ? sleepVsPlan(e) : null)}${e.tags.length ? `<div class="x">${e.tags.map(t => `<span class="tagchip">${esc(t)}</span>`).join(' ')}</div>` : ''}${e.notes ? `<div class="x" style="color:var(--text);margin-top:2px">${esc(e.notes)}</div>` : ''}${Object.entries(e.extra||{}).map(([k,v]) => `<div class="x">${esc(k)}: ${esc(v)}</div>`).join('')}</div></li>`;
+    return `<li class="${e.id === hitId ? 'hit' : ''}" data-ev="${e.id}"><div class="tm">${tm}${e.raw?.by ? `<span class="by">${esc(e.raw.by)}</span>` : ''}</div><div><div class="c"><i style="background:${col}"></i>${cat(e.cat).icon} ${esc(e.cat)} ${ocPill(e.outcome)}${e.editedAt ? ` <span class="faint" title="Edited At">✎ ${L('edited', 'modifié')}</span>` : ''}${viewOnly() || DATA.source === 'demo' ? '' : `<button class="evedit" data-edit="${e.id}" title="${L('Edit or delete', 'Modifier ou supprimer')}" aria-label="${L('Edit', 'Modifier')}">✏️</button>`}</div><div class="x">${bits}</div>${(v => v ? `<div class="x vsplan ${v.bad ? 'bad' : ''}">🎯 ${esc(v.txt)}</div>` : '')(mod('schedule') && !cont ? sleepVsPlan(e) : null)}${e.tags.length ? `<div class="x">${e.tags.map(t => `<span class="tagchip">${esc(t)}</span>`).join(' ')}</div>` : ''}${e.notes ? `<div class="x" style="color:var(--text);margin-top:2px">${esc(e.notes)}</div>` : ''}${e.priv && !viewOnly() ? `<div class="x privnote" title="${esc(L('Private: only for the family', 'Privé : pour la famille seulement'))}">🔒 ${esc(e.priv)}</div>` : ''}${Object.entries(e.extra||{}).map(([k,v]) => `<div class="x">${esc(k)}: ${esc(v)}</div>`).join('')}</div></li>`;
   }
 /** Today's plan: the template for today as a list (time · what · notes), with what actually happened next to past items. */
 function planActual(it, m, used){
@@ -4422,7 +4433,7 @@ function eventHTML(e){
     ${e.t != null ? `<div>Duration: <b>${fmtDur(e.dur)}</b>${e.ongoing ? ' so far' : ''}</div>` : e.allDay ? '' : '<div class="faint">Instant event</div>'}
     ${e.milk != null ? `<div>Milk: <b>${fmtOz(e.milk)}</b></div>` : ''}${e.water != null ? `<div>Water: <b>${fmtMl(e.water)}</b></div>` : ''}
     ${e.tags.length ? `<div style="margin-top:3px">${e.tags.map(t => `<span class="tagchip">${esc(t)}</span>`).join(' ')}</div>` : ''}${extras}
-    ${e.notes ? `<div class="n">${esc(e.notes)}</div>` : ''}`;
+    ${e.notes ? `<div class="n">${esc(e.notes)}</div>` : ''}${e.priv && !viewOnly() ? `<div class="n privnote">🔒 ${esc(e.priv)}</div>` : ''}`;
 }
 function showTip(e, x, y){
   tip.innerHTML = eventHTML(e); tip.classList.add('on');
@@ -5243,6 +5254,8 @@ function mergedRow(first, later){
   const row = {}, a = first, b = later, ba = byOf(a), bb = byOf(b), named = ba && bb && ba !== bb;
   const na = String(a.notes || '').trim(), nb = String(b.notes || '').trim();
   if (nb && !norm(na).includes(norm(nb))) row[colOf('notes')] = named ? (na ? `${ba}: ${na}\n${bb}: ${nb}` : `${bb}: ${nb}`) : (na ? `${na}\n${nb}` : nb);
+  const pa = a.priv || '', pb = b.priv || '';
+  if (pb && !norm(pa).includes(norm(pb))) row[colOf('priv')] = named ? (pa ? `${ba}: ${pa}\n${bb}: ${pb}` : `${bb}: ${pb}`) : (pa ? `${pa}\n${pb}` : pb);
   const tags = [...a.tags, ...b.tags.filter(t => !a.tags.includes(t))];
   if (tags.length > a.tags.length) row[colOf('tags')] = tags.join(', ');
   if (b.outcome && !a.outcome) row[colOf('outcome')] = b.outcome;
@@ -6445,6 +6458,7 @@ function renderQuickLog(){
       ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : (isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '')) || catKindNow === 'awake' ? soothChipsHTML(f.row['Tags'], catKindNow === 'awake' ? 'awake' : 'sleep') : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' && catKindNow !== 'awake' && !isSleep({ k: catKindNow }) ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     ${showOutcome ? `<label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${[...ocOpts, ...(has('Outcome / Rating') && !ocOpts.includes(f.row['Outcome / Rating']) ? [f.row['Outcome / Rating']] : [])].map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>` : ''}
+    ${privOn() || f.row['Private Notes'] ? `<label class="field full privfield">🔒 ${L('Private notes', 'Notes privées')} <span class="faint">${L('· only for the family, never in reports or shared', '· pour la famille seulement, jamais dans les rapports ni partagées')}</span><textarea name="Private Notes" rows="2">${v('Private Notes')}</textarea></label>` : ''}
     <label class="field full">Notes<textarea name="Notes" rows="2" placeholder="${catKindNow === 'milestone' ? 'e.g. First steps!' : catKindNow === 'incident' ? 'What happened?' : ''}">${v('Notes')}</textarea></label>
     ${f.op === 'update' ? `<div class="full faint" style="font-size:12px">${L(`Sheet row ${f.ev.sheetRow ?? '—'} · first logged ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. Saving stamps “Edited At”; the original entry time is kept.`, `Ligne ${f.ev.sheetRow ?? '—'} de la feuille · saisie le ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. L’enregistrement ajoute « Edited At »; l’heure de saisie originale est conservée.`)}</div>` : ''}
     <div class="full row sp">${f.op === 'update' ? `<button type="button" class="btn danger" id="qlDelete">🗑 ${L('Delete', 'Supprimer')}</button>` : `<button type="button" class="btn" id="qlBack">← Back</button>`}<button type="submit" class="btn primary">${f.op === 'update' ? L('Save changes', 'Enregistrer') : `Save ${S.endpoint ? 'to Sheet' : 'on device'}`}</button></div>
@@ -7573,7 +7587,7 @@ function achDetail(id){
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges'];   // share: viewer keys, so “Copy script” has them on every device
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes'];   // share: viewer keys, so “Copy script” has them on every device
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
@@ -7702,6 +7716,10 @@ function cfgStatusHTML(){
    One-tap updates: if the family switched them on in the Apps Script editor, “Update script” sends the code this
    dashboard carries (APPS_SCRIPT, REMINDERS_GS) and the script replaces itself and redeploys the same URL. */
 let SCRIPT_CAN_UPDATE = false;
+/** Private notes (v1.38): a second notes field for the family only. Off by default; needs script v1.8 when a Sheet is
+    connected, because older scripts would send the column to viewer keys. */
+const privReady = () => DATA.source !== 'live' || scriptAtLeast('1.8');
+const privOn = () => !!S.privateNotes && !viewOnly() && privReady();
 const SECRET_MIN_LEN = 16;
 const newSecret = () => [...crypto.getRandomValues(new Uint8Array(24))].map(x => x.toString(36).padStart(2, '0')).join('').slice(0, 32);
 const scriptAtLeast = v => DATA.source === 'live' && !!SCRIPT_SEEN && cmpVer(SCRIPT_SEEN, v) >= 0;
@@ -8636,6 +8654,9 @@ function renderSettings(){
       <label class="field">Theme<select data-set="theme">${['auto','light','dark'].map(v => `<option ${S.theme === v ? 'selected' : ''} value="${v}">${v[0].toUpperCase() + v.slice(1)}</option>`).join('')}</select></label>
     </div>
     <div style="margin-top:8px">${chk('swipeNav', L('Phones: swipe left / right to move between sections (Today → Timeline → … → Data) and between Settings pages', 'Téléphones : glisser à gauche / à droite pour passer d’une section à l’autre (Aujourd’hui → Chronologie → … → Données) et d’une page de Réglages à l’autre'))}</div>
+    <h4>🔒 ${L('Private notes', 'Notes privées')}</h4>
+    ${viewOnly() ? '' : `<div>${privReady() ? chk('privateNotes', L('Add a “Private notes” field to Quick Log', 'Ajouter un champ « Notes privées » à l’Entrée rapide')) : `<label class="switch"><input type="checkbox" disabled> ${L('Add a “Private notes” field to Quick Log', 'Ajouter un champ « Notes privées » à l’Entrée rapide')}</label>`}</div>
+    <p class="hint">${L('For things only the two of you should read. They go in their own <b>Private Notes</b> column in the Sheet and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key (e.g. a caseworker) receives: the Apps Script removes the column before anything leaves Google. They show with a 🔒 in the day details. Anyone with edit access to the Sheet itself can still see the column.', 'Pour ce que vous seuls devez lire. Elles vont dans leur propre colonne <b>Private Notes</b> de la feuille et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur (p. ex. une TS) : l’Apps Script retire la colonne avant que quoi que ce soit quitte Google. Elles s’affichent avec un 🔒 dans le détail des journées. Toute personne qui peut modifier la feuille elle-même voit quand même la colonne.')}${privReady() ? '' : ` <b>${L('Update the Apps Script to v1.8 first (Data source), so viewer keys can’t receive them.', 'Mettez d’abord l’Apps Script à jour en v1.8 (Source de données), pour que les clés lecteur ne puissent pas les recevoir.')}</b>`}</p>`}
     <h4>Day logic</h4>
     <div class="fgrid">
       <label class="field">Day boundary<select data-set="dayBoundary" data-num><option value="360" ${+S.dayBoundary === 360 ? 'selected' : ''}>06:00 — night belongs to the evening before</option><option value="0" ${+S.dayBoundary === 0 ? 'selected' : ''}>00:00 — calendar date</option></select></label>

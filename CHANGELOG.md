@@ -8,6 +8,15 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.38.0 — 2026-11-27 · **Apps Script v1.8** (needed for private notes)
+
+- **🔒 Private notes** (*Settings → General → Private notes*, off by default, shared between your devices). Quick Log gets a second, dashed notes box: **Private notes · only for the family, never in reports or shared**.
+  - Saved in their own **Private Notes** column (added to the Sheet the first time one is saved). Shown with a 🔒, in grey italics, under the entry in Today's entries and the day panel.
+  - **Never reshared:** not in reports (printed, PDF or saved copies), the CSV export, *Copy for AI*, or anything a viewer key receives. The Apps Script removes every column whose name starts with *Private* / *Privé* before sending rows to a viewer key, so a caseworker's dashboard never gets them.
+  - Merging an entry logged twice keeps both private notes too (with who wrote each).
+  - Anyone with edit access to the Google Sheet itself can still see the column.
+- **Apps Script v1.8:** the private-column filter for viewer keys. Until a connected script is v1.8, the switch is greyed out with a note, so private notes can't be written where a viewer might get them. **To update:** *Settings → Setup guide → Copy script* → paste over everything in `Code.gs` → *Deploy → Manage deployments → ✏️ → New version* (or *Update script* in *Data source* if one-tap updates are on).
+
 ## v1.37.2 — 2026-11-27 · Apps Script v1.7 (no script change)
 
 - **Quick Log keeps unsaved typing.** Closing a form with something typed and not saved (phone Back, ✕, swipe down, or ← Back to the list) keeps it as a draft, with a short "Not saved: reopen Quick Log to restore it" note. Reopening Quick Log shows it at the top (category, time and the start of the notes) with **↩ Restore** (back in the form, exactly as left, including edits of an existing entry) or **Discard**. Saving clears it. Kept on this device for 6 hours; a form you only opened and closed leaves nothing behind.

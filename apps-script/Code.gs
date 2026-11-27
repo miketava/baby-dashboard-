@@ -9,8 +9,9 @@ const SECRET_MIN = 16;
 // Optional read-only viewer keys (e.g. for a caseworker), created in the dashboard (Settings → Sharing) and stored here.
 // Rows in an excluded category are removed HERE, before anything leaves Google, and the viewer's dashboard and reports
 // show a "Not included: …" line naming those categories. Each key: { label, exclude: [...], from, child, childName, blank }.
+const PRIVATE_COL = /^\s*priv(ate|é|e)/i;   // private columns, never sent to viewer keys (v1.8)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.7';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.8';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -165,14 +166,16 @@ function doGet(e) {
     }
     scope = { label: viewer.label || 'Viewer', excluded: viewer.exclude || [], from: viewer.from || '', child: viewer.childName || '' };
   }
-  const rows = data.map(r => Object.assign(Object.fromEntries(headers.map((h, i) => [h, r[i]])), viewer ? {} : { _row: r._row }));
+  // v1.8: “Private Notes” (and any column whose name starts with Private / Privé) is for the family only: never sent to a viewer key
+  const shown = headers.map((h, i) => viewer && PRIVATE_COL.test(h) ? -1 : i).filter(i => i >= 0);
+  const rows = data.map(r => Object.assign(Object.fromEntries(shown.map(i => [headers[i], r[i]])), viewer ? {} : { _row: r._row }));
   let planned = [], calError = '';
   if (!viewer) try { planned = plannedVisits_(); } catch (err) { calError = String(err.message || err); }
   let appts = [];
   if (!viewer) try { appts = appointments_(); } catch (err) { calError = calError || String(err.message || err); }
   const shared = viewer ? {} : { config: readConfig_(), meds: readMeds_(), appts: appts };
   if (!viewer) shared.selfUpdate = props_().getProperty('ALLOW_SELF_UPDATE') === 'true';
-  return out_(Object.assign({ ok: true, headers: headers, rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
+  return out_(Object.assign({ ok: true, headers: shown.map(i => headers[i]), rows: rows, viewer: scope, planned: planned, calError: calError, scriptVersion: SCRIPT_VERSION, generated: new Date().toISOString() }, shared), p.callback);
 }
 
 // WRITE (Quick Log) — POST {token, action: 'append' | 'end', row: {Header: value}}

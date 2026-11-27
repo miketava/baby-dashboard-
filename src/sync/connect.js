@@ -5,6 +5,10 @@
    One-tap updates: if the family switched them on in the Apps Script editor, “Update script” sends the code this
    dashboard carries (APPS_SCRIPT, REMINDERS_GS) and the script replaces itself and redeploys the same URL. */
 let SCRIPT_CAN_UPDATE = false;
+/** Private notes (v1.38): a second notes field for the family only. Off by default; needs script v1.8 when a Sheet is
+    connected, because older scripts would send the column to viewer keys. */
+const privReady = () => DATA.source !== 'live' || scriptAtLeast('1.8');
+const privOn = () => !!S.privateNotes && !viewOnly() && privReady();
 const SECRET_MIN_LEN = 16;
 const newSecret = () => [...crypto.getRandomValues(new Uint8Array(24))].map(x => x.toString(36).padStart(2, '0')).join('').slice(0, 32);
 const scriptAtLeast = v => DATA.source === 'live' && !!SCRIPT_SEEN && cmpVer(SCRIPT_SEEN, v) >= 0;

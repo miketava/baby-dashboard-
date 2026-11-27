@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.37.2** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.38.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -112,6 +112,7 @@ One row per event. Only **Date** and **Category** are required.
 | Category | `Sleep - Nap` | See below |
 | Milk (oz) | `4.5` | Milk, Bottle and Pump rows |
 | Notes | `Fell asleep fast` | Anything |
+| Private Notes | `Worried after the call` | *Optional (Settings → General → Private notes).* For the family only: never in reports or exports, and never sent to viewer keys (removed by the Apps Script, v1.8+) |
 | Water (ml) | `90` | Optional |
 | Tags | `eggs, toast` | Comma-separated: foods, moods, breastfeeding side, contact details… |
 | Outcome / Rating | `Ate Well` | Meals: Ate Well / Partial / Refused · Sleep: Easy / Fussy / Rough · Health: Monitor / Resolved / Follow-up Needed · and more |
@@ -183,7 +184,7 @@ The files share one global scope and run top to bottom in `BUILD_ORDER`, so a ne
 - Your log lives in **your** Google Sheet, read through **your** Apps Script and protected by your secret.
 - Settings and a cached copy of the data stay in **your browser** (*Settings → Backup → Reset* clears them).
 - The page loads two open-source libraries (Chart.js, PapaParse) from a public CDN; no data is sent with those requests.
-- Viewer keys only ever receive the rows you allow, filtered on Google's side.
+- Viewer keys only ever receive the rows you allow, filtered on Google's side, and never the *Private Notes* column.
 
 ---
 

@@ -8,6 +8,7 @@ const FIELD_RULES = [
   ['dur',     k => k.startsWith('dur') || k === 'minutes' || k === 'mins'],
   ['cat',     k => k.startsWith('categ') || k === 'type' || k === 'event' || k === 'activity'],
   ['milk',    k => k.startsWith('milk') || k === 'oz' || k === 'ounces'],
+  ['priv',    k => k.startsWith('private') || k.startsWith('privé') || k.startsWith('prive')],
   ['notes',   k => k.startsWith('note') || k.startsWith('comment')],
   ['water',   k => k.startsWith('water') || k.startsWith('hydration') || k === 'ml'],
   ['tags',    k => k === 'tags' || k === 'tag' || k === 'labels'],
@@ -22,7 +23,7 @@ const FIELD_RULES = [
   ['asleep',  k => k === 'asleepat' || k === 'asleep' || k === 'fellasleep' || k === 'fellasleepat' || k.startsWith('endormi')],
   ['kid',     k => k === 'child' || k === 'kid' || k === 'baby' || k === 'enfant' || k === 'childname' || k === 'children'],
 ];
-const FIELD_CANON = { date:'Date', start:'Start Time', end:'End Time', dur:'Duration (min)', cat:'Category', milk:'Milk (oz)', notes:'Notes', water:'Water (ml)', tags:'Tags', outcome:'Outcome / Rating', logged:'Logged At', noted:'Noted At', value:'Value', asleep:'Asleep At', kid:'Child', edited:'Edited At', mood:'Mood', qtype:'Question Type', by:'Logged By' };
+const FIELD_CANON = { date:'Date', start:'Start Time', end:'End Time', dur:'Duration (min)', cat:'Category', milk:'Milk (oz)', notes:'Notes', priv:'Private Notes', water:'Water (ml)', tags:'Tags', outcome:'Outcome / Rating', logged:'Logged At', noted:'Noted At', value:'Value', asleep:'Asleep At', kid:'Child', edited:'Edited At', mood:'Mood', qtype:'Question Type', by:'Logged By' };
 function mapHeaders(headers){
   const map = {}, extras = [];
   headers.forEach(h => {
@@ -88,7 +89,7 @@ function parseRecords(records, headers){
     const reactPos = !reactNeg && (tags.some(t => REACT_POS.includes(t)) || ['Positive','Calm'].includes(oc.v) && info.kind === 'behaviour');
     const ev = { id:0, row, d, st, en, s, t, dur, cat: catName, k: info.kind, g: info.group, milk, water, outcome: oc.v,
       tags, reactNeg, reactPos, valueRaw: raw.value, loggedAt: parseDateTime(raw.logged), preTracking: /before tracking/i.test(raw.logged), notedAt: parseDateTime(raw.noted),
-      notes: raw.notes, extra, cross: t != null && t > (d+1)*DAY, allDay,
+      notes: raw.notes, priv: String(raw.priv || '').trim(), extra, cross: t != null && t > (d+1)*DAY, allDay,
       open: t == null && !allDay && !raw.end && DURATIONAL.has(info.kind) && !(isFinite(durN) && durN > 0), local: !!rec._local, localId: rec._localId };
     // v4b: measurements in the Value column (standardised to kg / cm / °C / oz)
     ev.kidNames = splitKids(raw.kid); ev.raw = raw; ev.sheetRow = rec._row; ev.editedAt = parseDateTime(raw.edited);
