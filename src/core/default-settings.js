@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS = {
   score: { weights: { naps:20, budget:15, cutoff:10, bedtime:15, night:20, milk:10, meals:10 }, good:80, ok:60 },
   /** Report builder: 14-day periods counted from `anchor` (ISO date; blank = first day of data). */
   share: { exclude: [], viewers: [] },
+  badges: { earned: {}, hidden: {} },   // v1.35: first earned time per tier (per child id, 'H' = household) and hidden badges per child
   seenVersion: '',
   checkinAt: '19:30',             // end-of-day check-in reminder
   contactRules: { perWeek: 0, photos: true },   // birth-family communication agreement (0 = no limit set)               // last version whose “what's new” was shown

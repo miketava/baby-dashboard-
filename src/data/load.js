@@ -79,7 +79,9 @@ function ingest(base, source, label, { synced, viewer } = {}){
   analyze();
   if (S.cacheData && source !== 'demo') lsSet(LS_CACHE, { headers: base.headers, records: base.records, planned: base.planned || null, appts: base.appts || null, source, label, synced: DATA.synced, viewer: DATA.viewer });
   ensureCustomRange();
+  if (typeof computeAchievements === 'function') ACH = null;
   renderAll();
+  if (typeof achAfterIngest === 'function') achAfterIngest();
 }
 /** Re-parse the current base data (e.g. after a quick-log entry or queue change). */
 const reingest = () => ingest(DATA.base || demoRecords(), DATA.source, DATA.label, { synced: DATA.synced, viewer: DATA.viewer });

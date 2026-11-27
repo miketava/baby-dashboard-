@@ -24,11 +24,12 @@ const MODULES = [
   ['cocooning',    'Cocooning',                'Outings and guests per week during a quiet settling-in period, and how the child did on those days'],
   ['reminders',    'Reminders',                'Browser and phone reminders before naps, meals and feeds'],
   ['quicklog',     'Quick Log',                'One-tap logging that writes to the Sheet'],
+  ['badges',       'Badges & achievements',                   'Tiered badges for logging, diapers, sleep, foods and more, with a little celebration when one unlocks'],
 ];
 const ALL_ON = Object.fromEntries(MODULES.map(([k]) => [k, true]));
 /** How the setup wizard groups the features. */
 const MOD_GROUPS = [
-  ['Sleep & routine', 'Sommeil et routine', ['schedule', 'reminders', 'quicklog']],
+  ['Sleep & routine', 'Sommeil et routine', ['schedule', 'reminders', 'quicklog', 'badges']],
   ['Feeding & health', 'Alimentation et santé', ['newborn', 'food', 'hydration', 'diapers', 'growth', 'teeth', 'health', 'milestones']],
   ['Placement & caseworker', 'Placement et intervenant', ['visits', 'workerReports', 'checkins', 'familyContact', 'cocooning']],
 ];

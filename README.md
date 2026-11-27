@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.34.0** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.35.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -49,6 +49,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 | 📝 Check-ins | The **end-of-day check-in** (see below): which days are done and a running summary per area. |
 | 💬 Birth Family | Texts, calls and emails with the birth family: per day, time of day, topics, basic / in-depth / follow-up, reply times, tone, how it compares with the communication agreement, and questions asked again or photo / update requests on visit days. |
 | 🗂️ Data | One row per day and the full event log, sortable, with CSV export. |
+| 🏆 Badges | 22 tiered badges from what you already log (diapers, sleep, foods, streaks…), each with a ring to the next tier and its dates. Earlier achievements are counted back through the whole log. Press and hold to hide one. Never shared with viewer keys or reports. |
 
 **End-of-day check-in** (placement path; can be turned on for anyone): a short evening form covering language, emotional development, hunger and feeding, play, sleep, and communication with the birth parents. Each area has quick-tap answers for what can be counted, a good / mixed / hard rating, and your own words. The form shows what the day's log already says, and a reminder appears until it's done. It builds a reliable day-by-day record, and reports turn it into an **Observations** section.
 
@@ -174,6 +175,7 @@ The files share one global scope and run top to bottom in `BUILD_ORDER`, so a ne
 **Tests:**
 - `node tests/apps_script.test.js`: runs `Code.gs` against an in-memory Sheet (append, end, edit, delete, Config and Medications tabs, calendar appointments, claiming, viewer keys, one-tap updates against a fake Apps Script API).
 - `node tests/reminders.test.js`: runs `Reminders.gs` with `Code.gs` (which day template, routines on their nights, quiet while asleep, calendar visits and appointments, medication doses and nudges).
+- `python tests/badges.py`: badge rules, retroactive dates, catch-up toasts, the unlock pop-up, hiding, and that viewer keys get none.
 - `python tests/smoke.py`: opens the built page in Chromium (Playwright): every section in three family setups, English and French, phone and computer, without errors; Quick Log, score sliders, filter buttons, the whole tour, the day panel and phone swipes. Setup: `pip install playwright` then `python -m playwright install chromium`.
 
 ## Privacy

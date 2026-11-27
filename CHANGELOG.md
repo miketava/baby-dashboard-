@@ -8,6 +8,15 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.35.0 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **🏆 Badges** (*More → Badges*, new *Badges & achievements* feature, on by default). 22 tiered badges computed from the log: Scribe, Tag Team, On the Dot, Daily Habit, Night Owl, Changing of the Guard, Code Brown, Double Duty (another diaper within 60 min; wet + poop at the same moment is one change), Sandman, Long Haul, Nap Collector, Road Trip, Milk Run, Hydration Station, Left Right Repeat, Adventurous Eater (different foods ever), Rainbow Plate (most different foods in one Monday–Sunday week), Allergen Ace (allergen groups offered: 3 / 6 / 9), Tooth Fairy, Firsts, Out and About, Tummy Time Titan. Spec: `V5 spec — achievements & badges`.
+- **Grid:** a ring to the next tier around each icon, `x / y`, and tier pips (Bronze → Silver → Gold → Platinum → Legendary → Mythic). Tap for every tier with its date and a progress chart. **Press and hold** (right-click on a computer) to hide a badge; hidden ones fold under *Hidden (n)*. Two charts show when tiers were earned and the running total; with two caregivers signing entries, a third shows who logged what.
+- **Retroactive and dated by the log.** A tier's date is when the event that crossed the threshold happened (*Logged At* for On the Dot and Night Owl), not when the badge appeared. First earned dates are saved in the Config tab (`badges`), so deleting old rows never takes a badge away. Demo data and viewer keys never save anything.
+- **Celebrations, per phone.** The first time a phone sees a child's badges they come as a string of toasts, oldest first, one per badge at its highest tier, ~1.2 s apart, with *Skip all* and a summary at the end. After that a new tier gets confetti, a short Web Audio sound (no files) and a pop-up where the ring fills and the next tier's pip lights up. They wait while Quick Log or a dialog is open. No sound 19:00–07:00 or while the child is logged as asleep; 🔊 toggles sound on this phone; *Replay* shows them again. `prefers-reduced-motion` skips confetti and animation.
+- **Follows your setup:** no breastfeeding badge on the adoption path, Tummy Time only under 9 months (or once some is logged), diaper / food / water / teeth / milestone badges only with those features on. Household badges (Scribe, Tag Team, On the Dot, Daily Habit, Night Owl) count every child.
+- Tests: `tests/badges.py` (30 checks). `tests/smoke.py` can now be imported.
+
 ## v1.34.0 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **Vaccine schedule: Québec or Ontario.** *Settings → Reminders → Vaccine schedule* has Québec (PIQ), **Ontario** (routine publicly funded schedule: 2, 4, 6, 12 and 18 months, then 4–6 years) or Off. The setup wizard asks on the Units step ("Elsewhere / don't track vaccines" turns it off). The Health card, the banner reminders, the booking hint and the tour name the schedule in use. Existing setups stay on Québec.

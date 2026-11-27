@@ -49,7 +49,7 @@ if (STORED_SETTINGS && !STORED_SETTINGS.profile) S.profile = { ...S.profile, onb
 /** Is a feature module switched on? (Everything is on until the setup wizard says otherwise.) */
 /** Features added after a family set up the dashboard default to their path (adoption / placement only). */
 const PATH_ONLY = { familyContact:['placement'], cocooning:['placement'], checkins:['placement'] };
-const mod = k => { if (k === 'quicklog' && viewOnly()) return false; const v = S.profile?.modules?.[k]; if (v === undefined && PATH_ONLY[k]) return PATH_ONLY[k].includes(S.profile?.path || 'placement'); return v !== false; };
+const mod = k => { if ((k === 'quicklog' || k === 'badges') && viewOnly()) return false; const v = S.profile?.modules?.[k]; if (v === undefined && PATH_ONLY[k]) return PATH_ONLY[k].includes(S.profile?.path || 'placement'); return v !== false; };
 /** Connected with a read-only viewer key (the server says so) — no Quick Log, scope shown everywhere. */
 const viewOnly = () => !!DATA?.viewer;
 /** Who is using this device (first name). Kept per device, never in the exported config, so each caregiver sets their own. */

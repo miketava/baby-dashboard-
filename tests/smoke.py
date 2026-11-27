@@ -232,4 +232,4 @@ async def main():
   print(f'\n{len(results) - len(bad)} / {len(results)} checks passed' + (f' · FAILED: {", ".join(r[0] for r in bad)}' if bad else ''))
   sys.exit(1 if bad else 0)
 
-asyncio.run(main())
+if __name__ == '__main__': asyncio.run(main())

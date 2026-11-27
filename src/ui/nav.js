@@ -12,7 +12,7 @@ function applyModules(){
   document.body.classList.toggle('viewonly', viewOnly());
 }
 /* ── Navigation: one list of sections, drawn as a sidebar (wide screens), icon tabs (medium) or a bottom bar + More sheet (phones) ── */
-const TAB_GROUPS = { daily:['Daily', 'Au quotidien'], analysis:['Analysis', 'Analyses'], placement:['Placement', 'Placement'], data:['Data', 'Données'] };
+const TAB_GROUPS = { daily:['Daily', 'Au quotidien'], analysis:['Analysis', 'Analyses'], placement:['Placement', 'Placement'], data:['Data', 'Données'], fun:['Just for fun', 'Pour le plaisir'] };
 const NAV = () => [
   { v:'today',     ic:'📅', g:'daily',     n:L('Today', 'Aujourd’hui') },
   { v:'timeline',  ic:'🗓️', g:'daily',     n:L('Timeline', 'Chronologie') },
@@ -23,6 +23,7 @@ const NAV = () => [
   { v:'health',    ic:'🩺', g:'analysis',  n:L('Health & Growth', 'Santé et croissance') },
   { v:'contact',   ic:'💬', g:'placement', n:L('Birth Family', 'Famille biologique'), mod:'familyContact' },
   { v:'data',      ic:'🗂️', g:'data',      n:L('Data', 'Données') },
+  { v:'awards',    ic:'🏆', g:'fun',       n:L('Badges', 'Badges'), mod:'badges' },
 ].filter(t => !t.mod || mod(t.mod));
 /** Phone bar: Today · Timeline · ＋ · (Check-ins, or Routine) · More */
 const BBAR_4 = () => NAV().some(t => t.v === 'checkins') ? 'checkins' : 'patterns';

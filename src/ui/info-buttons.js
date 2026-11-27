@@ -1,7 +1,7 @@
 /* ── Section descriptions behind ⓘ ──
    Subtitles that are instructions or legends (how to read a chart, what a column means) fold into an ⓘ button at the top right.
    Subtitles that carry numbers (counts, coverage, the current week) or live controls are marked data-keep and stay visible. */
-const NO_FILTER_CARDS = ['#chGrowth', '#teethBox', '#medCard', '#vaxCard', '#allergyBox', '#trendCard', '#cocoonBox'];
+const NO_FILTER_CARDS = ['.achgrid', '#chAchTimeline', '#chGrowth', '#teethBox', '#medCard', '#vaxCard', '#allergyBox', '#trendCard', '#cocoonBox'];
 (function infoButtons(){
   const FUNNEL = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></svg>';
   const fix = root => root.querySelectorAll?.('main .card-head').forEach(h => {

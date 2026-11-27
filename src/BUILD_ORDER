@@ -55,6 +55,8 @@ quicklog/edit-entry.js
 features/smart.js
 features/meds.js
 features/appointments.js
+features/achievements.js
+views/awards.js
 sync/config-sync.js
 sync/connect.js
 ui/nav.js
