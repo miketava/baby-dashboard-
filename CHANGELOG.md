@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.36.0 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **🦣 Fiddle Faddler** (a nod to the Mammoth Club): counts refreshes forced on this phone, from the header's ↻ button or a page reload (pulling down in Chrome, F5 on a computer; detected with the Navigation Timing `reload` type). Auto-refresh timers, the sync on opening and syncs after saving don't count. Tiers 5 / 25 / 100 / 250 / 500. Starts at 0 (nothing to count backwards) and is **device-only**: kept in this browser (`bld.fiddle.v1`), never written to the Config tab, so each phone has its own.
+
 ## v1.35.1 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **Badges in ounces:** Milk Run and Hydration Station tiers are round numbers for imperial units: 350 / 1,700 / 8,500 / 34,000 oz for milk and 35 / 350 / 1,700 oz for water (nearest 50 under 1,000, 100 under 10,000, then 1,000). Metric stays 10 / 50 / 250 / 1,000 L.

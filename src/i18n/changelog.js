@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.36.0', date:'2026-11-26',
+    en:['🦣 New badge, Fiddle Faddler: counts the refreshes you force on this phone (the ↻ button, or pulling down to reload the page). Timed syncs and the one when the app opens don’t count. It starts at 0 and each phone keeps its own count. Tiers: 5 / 25 / 100 / 250 / 500.'],
+    fr:['🦣 Nouveau badge, Fiddle Faddler : compte les actualisations que vous forcez sur ce téléphone (le bouton ↻, ou tirer vers le bas pour recharger la page). Les synchros automatiques et celle à l’ouverture ne comptent pas. Il part de 0 et chaque téléphone a son propre compte. Paliers : 5 / 25 / 100 / 250 / 500.'] },
   { v:'1.35.1', date:'2026-11-26',
     en:['Badges: milk and water tiers in ounces are round numbers now (350 oz, 1,700 oz… instead of 338 oz, 1,691 oz).', 'Fix: the “badges earned” summary notification was see-through.'],
     fr:['Badges : les paliers de lait et d’eau en onces sont des nombres ronds (350 oz, 1 700 oz… au lieu de 338 oz, 1 691 oz).', 'Correction : la notification récapitulative « badges obtenus » était transparente.'] },

@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.35.1** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.36.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -49,7 +49,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 | 📝 Check-ins | The **end-of-day check-in** (see below): which days are done and a running summary per area. |
 | 💬 Birth Family | Texts, calls and emails with the birth family: per day, time of day, topics, basic / in-depth / follow-up, reply times, tone, how it compares with the communication agreement, and questions asked again or photo / update requests on visit days. |
 | 🗂️ Data | One row per day and the full event log, sortable, with CSV export. |
-| 🏆 Badges | 22 tiered badges from what you already log (diapers, sleep, foods, streaks…), each with a ring to the next tier and its dates. Earlier achievements are counted back through the whole log. Press and hold to hide one. Never shared with viewer keys or reports. |
+| 🏆 Badges | 23 tiered badges from what you already log (diapers, sleep, foods, streaks…), each with a ring to the next tier and its dates. Earlier achievements are counted back through the whole log. Press and hold to hide one. Never shared with viewer keys or reports. |
 
 **End-of-day check-in** (placement path; can be turned on for anyone): a short evening form covering language, emotional development, hunger and feeding, play, sleep, and communication with the birth parents. Each area has quick-tap answers for what can be counted, a good / mixed / hard rating, and your own words. The form shows what the day's log already says, and a reminder appears until it's done. It builds a reliable day-by-day record, and reports turn it into an **Observations** section.
 

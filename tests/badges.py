@@ -51,6 +51,14 @@ async def engine(b):
   # Catch-up toasts were queued on first sight
   await pg.wait_for_timeout(1500)
   check('catch-up toasts appear one after another', await pg.locator('.achtoast').count() >= 1)
+  await pg.evaluate("for (let i = 0; i < 5; i++) achFiddle(); reingest()"); await pg.wait_for_timeout(200)
+  f = await pg.evaluate("(r => ({ v: r.value, n: r.earned }))(ACH.list.find(r => r.a.id === 'fiddle'))")
+  check('Fiddle Faddler: 5 forced refreshes → Bronze', f == {'v': 5, 'n': 1}, f)
+  check('Fiddle Faddler stays on this phone (not in Config)', not await pg.evaluate("!!S.badges.earned.H?.fiddle?.length"))
+  n0 = await pg.evaluate("FIDDLE.n"); await pg.reload(); await pg.wait_for_timeout(900)
+  check('a page reload (pull down) counts as a forced refresh', await pg.evaluate("FIDDLE.n") == n0 + 1)
+  await pg.click('#btnRefresh'); await pg.wait_for_timeout(200)
+  check('the ↻ button counts too', await pg.evaluate("FIDDLE.n") == n0 + 2)
   check('no page errors', not errs, errs[:3])
   await ctx.close()
 

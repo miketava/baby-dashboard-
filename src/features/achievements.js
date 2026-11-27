@@ -30,6 +30,13 @@ function achProg(items, mode = 'sum'){
 }
 const achCount = (evs, f, at = achAt) => achProg(evs.filter(f).map(e => ({ at: at(e), x: 1 })));
 
+/* ── Fiddle Faddler: refreshes forced on this phone (↻, or pulling down / reloading the page). Device-only, never in Config. ── */
+const LS_FIDDLE = 'bld.fiddle.v1';
+let FIDDLE = lsGet(LS_FIDDLE, null) || { n: 0, at: [] };
+const achNowAbs = () => todayIdx() * DAY + nowMin();
+function achFiddle(){ FIDDLE.n++; if (FIDDLE.at.length < 600) FIDDLE.at.push(achNowAbs()); lsSet(LS_FIDDLE, FIDDLE); }
+try { if (performance.getEntriesByType('navigation')[0]?.type === 'reload') achFiddle(); } catch {}
+
 /* ── The catalogue ── */
 const ACHIEVEMENTS = [
   { id:'scribe', ic:'✍️', h:true, n:['Scribe', 'Scribe'], d:['Every entry in the log, by anyone.', 'Chaque entrée du journal, par n’importe qui.'],
@@ -96,6 +103,8 @@ const ACHIEVEMENTS = [
     tiers:[1, 5, 15, 30], show: () => mod('milestones'), calc: evs => achCount(evs, e => e.k === 'milestone') },
   { id:'outings', ic:'🌳', n:['Out and About', 'En vadrouille'], d:['Outings and excursions.', 'Sorties et excursions.'],
     tiers:[10, 50, 200], calc: evs => achCount(evs, e => e.k === 'outing') },
+  { id:'fiddle', ic:'🦣', h:true, device:true, n:['Fiddle Faddler', 'Fiddle Faddler'], d:['Refreshes you forced on this phone: the ↻ button, or pulling down to reload. Timed syncs and the one when the app opens don’t count. Each phone keeps its own count.', 'Actualisations forcées sur ce téléphone : le bouton ↻, ou tirer vers le bas pour recharger. Les synchros automatiques et celle à l’ouverture ne comptent pas. Chaque téléphone a son propre compte.'],
+    tiers:[5, 25, 100, 250, 500], calc: () => { const s = FIDDLE.at.map((t, i) => [t, i + 1]); if (FIDDLE.n > s.length) s.push([s.length ? s[s.length - 1][0] : achNowAbs(), FIDDLE.n]); return s; } },
   { id:'tummy', ic:'🧸', n:['Tummy Time Titan', 'Champion du ventre'], d:['Minutes of tummy time.', 'Minutes sur le ventre.'],
     tiers:[60, 300, 1000], unit:'min', show: c => c.age == null || c.age < 274 || c.hasTummy,
     calc: evs => achProg(evs.filter(e => e.k === 'tummy' && e.t != null).map(e => ({ at: e.t, x: e.dur }))) },
@@ -135,11 +144,11 @@ function computeAchievements(){
     const evs = a.h ? (DATA.allEvents || DATA.events) : DATA.events;
     let steps = []; try { steps = a.calc(evs || []); } catch (err) { console.warn('badge', a.id, err); }
     const value = steps.length ? steps[steps.length - 1][1] : 0, scope = achScopeId(a);
-    const kept = persist ? ((store.earned[scope] = store.earned[scope] || {})[a.id] = store.earned[scope][a.id] || []) : [];
+    const kept = persist && !a.device ? ((store.earned[scope] = store.earned[scope] || {})[a.id] = store.earned[scope][a.id] || []) : [];
     const tiers = achTiersOf(a).map((th, i) => {
       const hit = steps.find(s => s[1] >= th - 1e-9), at = hit ? hit[0] : null, old = kept[i] ?? null;
       const best = old != null && at != null ? Math.min(old, at) : old ?? at;
-      if (persist && best != null && best !== old) { kept[i] = best; changed = true; }
+      if (persist && !a.device && best != null && best !== old) { kept[i] = best; changed = true; }
       return { th, at: best };
     });
     return { a, scope, value, tiers, earned: tiers.filter(t => t.at != null).length, steps };

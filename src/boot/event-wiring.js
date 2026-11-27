@@ -3,7 +3,7 @@
    ════════════════════════════════════════════════════════════════════════════ */
 function wire(){
   // Header
-  $('#btnRefresh').onclick = () => syncLive();
+  $('#btnRefresh').onclick = () => { if (typeof achFiddle === 'function') achFiddle(); syncLive(); };
   $('#btnCsv').onclick = () => $('#csvInput').click();
   $('#csvInput').onchange = e => { loadCSVFile(e.target.files[0]); e.target.value = ''; };
   $('#btnTheme').onclick = () => { S.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; saveSettings(); applyTheme(); renderAll(); };
