@@ -17,6 +17,10 @@ function wire(){
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); });
+  document.addEventListener('click', e => {   // v1.33: entries logged twice
+    const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;
+    if (g.dataset.dblmerge != null) mergeDouble(+g.dataset.dblmerge); else if (g.dataset.dblkeep != null) keepBothDouble(+g.dataset.dblkeep); else { renderHealthModal(); openModal('mHealth'); }
+  });
   // Today banner
   $('#todayCollapse').onclick = () => { UI.todayCollapsed = !UI.todayCollapsed; saveUI(); renderToday(); };
   $('#todayTpl').onchange = e => { S.todayTpl = { date: isoOf(todayIdx()), id: e.target.value }; saveSettings(); analyze(); renderAll(); };

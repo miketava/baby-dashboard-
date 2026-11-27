@@ -57,6 +57,11 @@ async function saveQuickOp(op, row, meta = {}){
       // an edit the Sheet can't apply (the row moved or changed) would never succeed on retry: drop it and show the current Sheet
       QUEUE = QUEUE.filter(x => x.id !== q.id); saveQueue(); renderQueuePill();
       toast(L('Not saved: ', 'Non enregistré : ') + err.message, true); await syncLive({ quiet:true, skipFlush:true });
+      // v1.33: never lose what was typed: an edit that couldn't be applied reopens as a new entry, ready to save (then merge)
+      if (op === 'update' && !meta.batch && Object.values(row).some(v => String(v ?? '').trim())) {
+        openQuickLogWith(Object.fromEntries(Object.entries(row).filter(([k]) => !['Edited At', 'Logged At'].includes(k))));
+        toast(L('Your changes are below as a new entry: save it, then merge the two from the 🔀 note.', 'Vos changements sont ci-dessous comme nouvelle entrée : enregistrez-la, puis fusionnez les deux depuis la note 🔀.'), true);
+      }
     } else toast(err.code === 'offline' ? 'Offline — saved on this device, will send on next sync' : 'Sheet error: ' + err.message, true);
   }
   renderQueuePill();

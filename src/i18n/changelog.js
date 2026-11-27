@@ -1,4 +1,11 @@
 const CHANGELOG = [
+  { v:'1.33.0', date:'2026-11-26',
+    en:['Nothing you write is hidden any more. When two of you log the same thing a few minutes apart (say, dinner) and each entry has its own notes, tags or rating, both are kept and shown. A 🔀 note in Today says it was logged twice, and Compare & merge shows them side by side: Merge keeps one entry with both notes (with who wrote each), the tags combined and empty fields filled in; Keep both leaves them as two.',
+        'Only a copy that adds nothing (same notes or none, same tags) is still counted once, as before.',
+        'If an edit can’t be saved because the row changed in the Sheet, what you typed reopens in Quick Log as a new entry instead of being dropped.'],
+    fr:['Plus rien de ce que vous écrivez n’est masqué. Quand vous notez tous les deux la même chose à quelques minutes d’écart (p. ex. le souper) et que chaque entrée a ses propres notes, étiquettes ou évaluation, les deux sont gardées et affichées. Une note 🔀 dans Aujourd’hui le signale, et Comparer et fusionner les montre côte à côte : Fusionner garde une entrée avec les deux notes (et qui a écrit chacune), les étiquettes réunies et les champs vides remplis; Garder les deux les laisse séparées.',
+        'Seule une copie qui n’ajoute rien (mêmes notes ou aucune, mêmes étiquettes) compte encore une seule fois, comme avant.',
+        'Si une modification ne peut pas être enregistrée parce que la ligne a changé dans la feuille, ce que vous avez tapé se rouvre dans l’Entrée rapide comme nouvelle entrée au lieu d’être perdu.'] },
   { v:'1.32.0', date:'2026-11-26',
     en:['Setting up a Google Sheet starts from a ready-made template: Settings → Setup guide → Copy the template Sheet makes your own copy with the Daily Log tab and its headers, so there’s nothing to type. The setup wizard points to it too.'],
     fr:['Pour configurer une feuille Google, on part d’un modèle prêt à l’emploi : Réglages → Guide → Copier la feuille modèle crée votre propre copie avec l’onglet Daily Log et ses en-têtes, sans rien à taper. L’assistant de départ y mène aussi.'] },

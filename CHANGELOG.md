@@ -8,6 +8,15 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.33.0 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **No entry with something new in it is hidden.** The duplicate check used to keep the "richer" of two near-identical rows (same category, starts within 10 minutes) and count the other once, so a second caregiver's detailed note could disappear from the dashboard (it stayed in the Sheet). Now:
+  - A copy is hidden only if it **adds nothing**: its notes are empty or already in the other's, its tags are a subset, and its rating, amounts, value and end time add nothing.
+  - Otherwise both are kept and shown, flagged as **logged twice**. Two instant entries with different notes (e.g. two dinners, no end time) are flagged too; they used to be ignored. Two different medications at the same time are not.
+- **Merge them:** a 🔀 note in the Today banner (entries from today and yesterday) → **Compare & merge**, also in the ⚠ data check under *Logged twice*. **Merge into one** updates the first entry: both notes, each prefixed with who wrote it when the *Logged By* names differ, tags combined, an empty rating / end time / amounts / value / asleep time filled from the other (a different rating is added to the notes), *Logged By* listing both; then the second row is deleted. **Keep both** stops flagging that pair (shared with the other caregiver).
+- **An edit that can't be saved** (the row changed in the Sheet meanwhile) now reopens what you typed in Quick Log as a new entry, ready to save and merge, instead of being dropped.
+- Fix: a *Logged By* column is never mistaken for *Logged At* in a Sheet that doesn't have *Logged At* yet.
+
 ## v1.32.0 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **Template Sheet.** *Settings → Setup guide* starts with **📄 Copy the template Sheet**, Google's "Make a copy" page for a blank Sheet with the *Daily Log* tab and headers ready. The copy lands in the person's own Drive, private to them. Step 2 then pastes the latest script over whatever `Code.gs` holds.

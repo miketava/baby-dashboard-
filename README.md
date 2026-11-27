@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.32.0** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.33.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -200,4 +200,4 @@ The files share one global scope and run top to bottom in `BUILD_ORDER`, so a ne
 - **"That row has changed in the Sheet":** someone edited the same entry since your last sync. Refresh and try again.
 - **No notifications:** they need the page served over `https://` (GitHub Pages works). On iPhone, add it to the Home Screen first.
 - **Times off by a few hours:** set the time zone in Apps Script *Project Settings* and in the Sheet (*File → Settings*).
-- **A ⚠ badge in the header:** click it to see rows that couldn't be read cleanly (missing date, typos, unknown child names). **Duplicates** are listed side by side, with a button to delete the extra copy (or all suggested extras) from the Sheet.
+- **A ⚠ badge in the header:** click it to see rows that couldn't be read cleanly (missing date, typos, unknown child names). **Duplicates** (a copy that adds nothing) are listed side by side, with a button to delete the extra copy (or all suggested extras) from the Sheet. Entries **logged twice** with different details (e.g. both of you noting dinner) are both kept and can be merged into one, keeping both notes.

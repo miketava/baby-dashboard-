@@ -1153,7 +1153,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.32.0';
+const APP_VERSION = '1.33.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1161,6 +1161,13 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.7';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.33.0', date:'2026-11-26',
+    en:['Nothing you write is hidden any more. When two of you log the same thing a few minutes apart (say, dinner) and each entry has its own notes, tags or rating, both are kept and shown. A 🔀 note in Today says it was logged twice, and Compare & merge shows them side by side: Merge keeps one entry with both notes (with who wrote each), the tags combined and empty fields filled in; Keep both leaves them as two.',
+        'Only a copy that adds nothing (same notes or none, same tags) is still counted once, as before.',
+        'If an edit can’t be saved because the row changed in the Sheet, what you typed reopens in Quick Log as a new entry instead of being dropped.'],
+    fr:['Plus rien de ce que vous écrivez n’est masqué. Quand vous notez tous les deux la même chose à quelques minutes d’écart (p. ex. le souper) et que chaque entrée a ses propres notes, étiquettes ou évaluation, les deux sont gardées et affichées. Une note 🔀 dans Aujourd’hui le signale, et Comparer et fusionner les montre côte à côte : Fusionner garde une entrée avec les deux notes (et qui a écrit chacune), les étiquettes réunies et les champs vides remplis; Garder les deux les laisse séparées.',
+        'Seule une copie qui n’ajoute rien (mêmes notes ou aucune, mêmes étiquettes) compte encore une seule fois, comme avant.',
+        'Si une modification ne peut pas être enregistrée parce que la ligne a changé dans la feuille, ce que vous avez tapé se rouvre dans l’Entrée rapide comme nouvelle entrée au lieu d’être perdu.'] },
   { v:'1.32.0', date:'2026-11-26',
     en:['Setting up a Google Sheet starts from a ready-made template: Settings → Setup guide → Copy the template Sheet makes your own copy with the Daily Log tab and its headers, so there’s nothing to type. The setup wizard points to it too.'],
     fr:['Pour configurer une feuille Google, on part d’un modèle prêt à l’emploi : Réglages → Guide → Copier la feuille modèle crée votre propre copie avec l’onglet Daily Log et ses en-têtes, sans rien à taper. L’assistant de départ y mène aussi.'] },
@@ -1677,6 +1684,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },
+  dupKeep: [],                            // entries logged twice that were kept apart on purpose (v1.33)
   trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only
   apptFor: {}, apptIgnoreCals: [], libSeen: [],   // v1.26: calendar appointments (id → child id or 'no'), ignored calendars, library templates already added
   reminders: { enabled:false, chime:true, lead:15, naps:true, meals:true, cutoff:true, dynamic:true, feedEvery:0 },
@@ -3086,7 +3094,7 @@ const FIELD_RULES = [
   ['water',   k => k.startsWith('water') || k.startsWith('hydration') || k === 'ml'],
   ['tags',    k => k === 'tags' || k === 'tag' || k === 'labels'],
   ['outcome', k => k.startsWith('outcome') || k.startsWith('rating') || k === 'status' || k === 'result'],
-  ['logged',  k => k.startsWith('logged') || k === 'timestamp' || k === 'enteredat' || k === 'createdat'],
+  ['logged',  k => (k.startsWith('logged') && k !== 'loggedby') || k === 'timestamp' || k === 'enteredat' || k === 'createdat'],
   ['value',   k => k === 'value' || k === 'measurement' || k === 'reading' || k === 'amount'],
   ['noted',   k => k.startsWith('noted') || k === 'notetime' || k === 'writtenat' || k === 'notetimestamp'],
   ['edited',  k => k.startsWith('edited') || k === 'modifiedat' || k === 'correctedat'],
@@ -3174,8 +3182,8 @@ function parseRecords(records, headers){
   for (const [name, { ty, rows }] of typos) warnings.push({ row: rows.length > 3 ? rows.slice(0,3).join(', ') + '…' : rows.join(', '), msg:`Category “${name}” looks like a typo of “${ty}” (${rows.length} row${rows.length>1?'s':''}) — kept as its own category; fix it in the Sheet to merge` });
   events.sort((a,b) => a.s - b.s || (b.t ?? b.s) - (a.t ?? a.s));
   const dups = dedupe(events);
-  dups.forEach(([drop, keep]) => warnings.push({ row: drop.row, dup:true, msg:`Looks like a duplicate of row ${keep.row} (${drop.cat}${drop.st != null ? ' ' + fmtTime(drop.st) : ''}, ${isoOf(drop.d)}) — counted once` }));
-  const dropped = new Set(dups.map(([x]) => x));
+  dups.forEach(([drop, keep, kind]) => warnings.push({ row: drop.row, dup:true, double: kind === 'double', msg: kind === 'double' ? `Logged twice: rows ${keep.row} and ${drop.row} (${drop.cat}${drop.st != null ? ' ' + fmtTime(drop.st) : ''}, ${isoOf(drop.d)}) with different details — both kept, merge them in Data check` : `Looks like a duplicate of row ${keep.row} (${drop.cat}${drop.st != null ? ' ' + fmtTime(drop.st) : ''}, ${isoOf(drop.d)}) — counted once` }));
+  const dropped = new Set(dups.filter(p => p[2] !== 'double').map(([x]) => x));
   for (let i = events.length - 1; i >= 0; i--) if (dropped.has(events[i])) events.splice(i, 1);
   events.forEach((e, i) => e.id = i);
   const newCats = [...CATS.values()].filter(c => !c.known && events.some(e => e.cat === c.name)).map(c => c.name);
@@ -3186,21 +3194,31 @@ function parseRecords(records, headers){
  * Duplicate detection — the same event logged twice (e.g. Quick Log + transcribed from notes):
  * same category and date, starts within 10 min, compatible end / milk / notes. Keeps the richer row.
  */
+/** Does `x` hold nothing that `y` lacks (notes, tags, rating, amounts, value, end)? */
+function addsNothing(x, y){
+  const nx = norm(x.notes), ny = norm(y.notes);
+  return (!nx || ny.includes(nx)) && x.tags.every(t => y.tags.includes(t)) && (!x.outcome || x.outcome === y.outcome)
+    && (x.milk == null || x.milk === y.milk) && (x.water == null || x.water === y.water) && (!x.valueRaw || norm(x.valueRaw) === norm(y.valueRaw))
+    && (x.t == null || y.t != null);
+}
 function dedupe(events){
   const out = [], richness = e => (e.t != null ? 4 : 0) + (e.notes ? 2 : 0) + e.tags.length + (e.outcome ? 1 : 0) + (e.local ? -1 : 0);
   const byCat = new Map(); events.forEach(e => { const k = e.cat + '|' + e.d; if (!byCat.has(k)) byCat.set(k, []); byCat.get(k).push(e); });
   for (const list of byCat.values()) {
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
-      const a = list[i], b = list[j]; if (a._dup || b._dup) continue;
+      const a = list[i], b = list[j]; if (a._dup || b._dup || (a._dbl && b._dbl)) continue;
       let same;
       if (a.allDay || b.allDay) same = a.allDay && b.allDay && !!norm(a.notes) && !!norm(b.notes) && (norm(a.notes) === norm(b.notes) || norm(a.notes).includes(norm(b.notes)) || norm(b.notes).includes(norm(a.notes)));
       else same = Math.abs(a.s - b.s) <= 10 && (a.t == null || b.t == null || Math.abs(a.t - b.t) <= 15) && (a.milk == null || b.milk == null || a.milk === b.milk)
-                 && !(a.t == null && b.t == null && a.milk == null && b.milk == null && a.k !== 'diaper' && a.notes && b.notes && norm(a.notes) !== norm(b.notes));
-      if (same && a.tags.length && b.tags.length && a.tags.join() !== b.tags.join()) same = false;   // e.g. left vs right side
+                 && !(/^meds?$/i.test(a.cat) && a.notes && b.notes && norm(a.notes) !== norm(b.notes));   // two different medications at once
+      if (same && a.cat === 'Breastfeed' && a.tags.length && b.tags.length && a.tags.join() !== b.tags.join()) same = false;   // left vs right side
       if (same && a.valueRaw && b.valueRaw && norm(a.valueRaw) !== norm(b.valueRaw)) same = false;  // two different measurements
       if (same && (a.kidNames || []).join() !== (b.kidNames || []).join()) same = false;               // twins napping at the same time
       if (!same) continue;
       const [drop, keep] = richness(a) >= richness(b) ? [b, a] : [a, b];
+      // v1.33: only a copy that adds nothing is hidden. Two caregivers logging the same dinner with their own notes,
+      // tags or rating are both kept, flagged as a “double entry” to merge (never silently dropped).
+      if (!addsNothing(drop, keep)) { a._dbl = b._dbl = true; const [first, second] = (a.sheetRow ?? 1e9) <= (b.sheetRow ?? 1e9) ? [a, b] : [b, a]; out.push([second, first, 'double']); continue; }
       drop._dup = true; out.push([drop, keep]);
     }
   }
@@ -3430,6 +3448,11 @@ async function saveQuickOp(op, row, meta = {}){
       // an edit the Sheet can't apply (the row moved or changed) would never succeed on retry: drop it and show the current Sheet
       QUEUE = QUEUE.filter(x => x.id !== q.id); saveQueue(); renderQueuePill();
       toast(L('Not saved: ', 'Non enregistré : ') + err.message, true); await syncLive({ quiet:true, skipFlush:true });
+      // v1.33: never lose what was typed: an edit that couldn't be applied reopens as a new entry, ready to save (then merge)
+      if (op === 'update' && !meta.batch && Object.values(row).some(v => String(v ?? '').trim())) {
+        openQuickLogWith(Object.fromEntries(Object.entries(row).filter(([k]) => !['Edited At', 'Logged At'].includes(k))));
+        toast(L('Your changes are below as a new entry: save it, then merge the two from the 🔀 note.', 'Vos changements sont ci-dessous comme nouvelle entrée : enregistrez-la, puis fusionnez les deux depuis la note 🔀.'), true);
+      }
     } else toast(err.code === 'offline' ? 'Offline — saved on this device, will send on next sync' : 'Sheet error: ' + err.message, true);
   }
   renderQueuePill();
@@ -3927,6 +3950,7 @@ function todayState(){
   if (m.ribbon?.some(e => e.k === 'incident' && e.outcome === 'Follow-up Needed')) S0.callouts.push({ cls:'bad', html:L('✚ A health note today is marked <b>Follow-up Needed</b>.', '✚ Une note de santé d’aujourd’hui est marquée <b>Suivi requis</b>.') });
   medCallouts(D).forEach(c => S0.callouts.push(c));
   apptCallouts().forEach(c => S0.callouts.push(c));
+  if (D === todayIdx()) doubleCallouts().forEach(c => S0.callouts.push(c));
   nudgeCallouts(m, D).forEach(c => S0.callouts.push(c));
   vaxCallouts().forEach(c => S0.callouts.push(c));
   { const tr = D === todayIdx() && !viewOnly() ? trendAlerts().filter(x => !x.acked) : []; if (tr.length) S0.callouts.push({ cls:'info', html:`📈 ${L(`${tr.length} trend${tr.length > 1 ? 's' : ''} to watch`, `${plural(tr.length, '', '', 'tendance à surveiller', 'tendances à surveiller')}`)}: ${esc(tr[0].text)} <button class="btn sm" data-act="trendAck" data-k="${tr[0].key}" style="margin-left:6px">✓ ${L('Got it', 'Compris')}</button><button class="btn sm" data-goview="patterns" style="margin-left:6px">${L('See', 'Voir')}</button>` }); }
@@ -5103,6 +5127,61 @@ function cocoonReportHTML(a, b){
   return `<h2>${L(`Cocooning (week ${wkR} of ${P.weeks}, from ${fmtDay(P.a, { month:'long', day:'numeric' })})`, `Cocooning (semaine ${wkR} sur ${P.weeks}, depuis le ${fmtDay(P.a, { month:'long', day:'numeric' })})`)}</h2>
     <ul class="find">${cocoonFindings(C).map(f => `<li>${esc(f)}</li>`).join('')}</ul>${cocoonWeeksHTML(C)}${C.cDays.length ? '<div style="height:8px"></div>' + cocoonCmpHTML(C) : ''}
     ${[...C.outs, ...C.guests].length ? `<p class="sub" style="margin-top:8px">${[...C.outs, ...C.guests].sort((x, y) => x.s - y.s).map(e => `${fmtDay(e.d, { month:'short', day:'numeric' })}${e.st != null ? ' ' + fmtTime(e.st) : ''}${e.dur ? ' (' + fmtDur(e.dur) + ')' : ''} — ${esc(catL(e.cat))}${S.report.includeNotes && e.notes ? ' : ' + esc(e.notes) : ''}`).join(' · ')}</p>` : ''}`;
+}
+/* ── Double entries (v1.33) ──
+   Two caregivers logging the same thing a few minutes apart (“Dinner 17:45”, each with their own notes) used to be
+   treated as a duplicate and one copy was hidden. Now a copy is hidden only when it adds nothing; otherwise both are
+   kept and offered here to merge (notes joined with who wrote them, tags combined, empty fields filled) or keep apart. */
+const dblSig = e => [isoOf(e.d), e.cat, e.st ?? '', norm(e.notes).slice(0, 40)].join('|');
+const dblKey = ([x, y]) => [dblSig(x), dblSig(y)].sort().join(' + ');
+/** [[later, first, 'double', index in DATA.dups]] still to decide. */
+const doubles = () => (DATA.dups || []).map((p, i) => [...p, i]).filter(p => p[2] === 'double' && !(S.dupKeep || []).includes(dblKey(p)));
+const byOf = e => String(e.raw?.by || '').trim();
+const colOf = f => (DATA.source === 'live' && DATA.map?.[f]) || FIELD_CANON[f];
+function mergedRow(first, later){
+  const row = {}, a = first, b = later, ba = byOf(a), bb = byOf(b), named = ba && bb && ba !== bb;
+  const na = String(a.notes || '').trim(), nb = String(b.notes || '').trim();
+  if (nb && !norm(na).includes(norm(nb))) row[colOf('notes')] = named ? (na ? `${ba}: ${na}\n${bb}: ${nb}` : `${bb}: ${nb}`) : (na ? `${na}\n${nb}` : nb);
+  const tags = [...a.tags, ...b.tags.filter(t => !a.tags.includes(t))];
+  if (tags.length > a.tags.length) row[colOf('tags')] = tags.join(', ');
+  if (b.outcome && !a.outcome) row[colOf('outcome')] = b.outcome;
+  else if (b.outcome && b.outcome !== a.outcome) row[colOf('notes')] = (row[colOf('notes')] ?? na) + `\n(${bb || L('other entry', 'autre entrée')}: ${b.outcome})`;
+  for (const f of ['end', 'milk', 'water', 'value', 'asleep']) { const va = String(a.raw?.[f] ?? '').trim(), vb = String(b.raw?.[f] ?? '').trim(); if (!va && vb) row[colOf(f)] = vb; }
+  if (row[colOf('end')] && a.st != null && b.t != null) row[colOf('dur')] = b.t - a.s;
+  if (named) row[colOf('by')] = `${ba}, ${bb}`;
+  return row;
+}
+async function mergeDouble(i){
+  const p = (DATA.dups || [])[i]; if (!p || p[2] !== 'double') return;
+  const [later, first] = p, why = editBlock(first) || editBlock(later); if (why) return toast(why, true);
+  const row = mergedRow(first, later);
+  if (!confirm(L(`Merge the two ${catL(first.cat)} entries into one? The first one keeps everything from both${Object.keys(row).length ? '' : ' (the second adds nothing new)'} and the second is deleted from the Sheet.`,
+    `Fusionner les deux entrées ${catL(first.cat)} ? La première garde tout le contenu des deux${Object.keys(row).length ? '' : ' (la seconde n’ajoute rien)'} et la seconde est supprimée de la feuille.`))) return;
+  closeModals();
+  if (Object.keys(row).length) await saveQuickOp('update', row, { rowNum: first.sheetRow, match: first.match, localId: first.local ? first.localId : null, batch: true });
+  await saveQuickOp('delete', {}, { rowNum: later.sheetRow, match: later.match, localId: later.local ? later.localId : null, batch: true });
+  if (S.endpoint) await syncLive({ quiet: true, skipFlush: true }); else reingest();
+  toast(L('Merged into one entry ✓', 'Fusionnées en une entrée ✓'));
+}
+function keepBothDouble(i){
+  const p = (DATA.dups || [])[i]; if (!p) return;
+  S.dupKeep = [...(S.dupKeep || []), dblKey(p)].slice(-200); saveSettings(); renderAll();
+  if ($('#mHealth')?.classList.contains('on')) renderHealthModal();
+  toast(L('Kept as two entries', 'Gardées comme deux entrées'));
+}
+const dblSide = e => `<div class="dupside"><b>${e.st != null ? fmtTime(e.st) : ''}${e.t != null ? '–' + fmtTime(e.t % DAY) : ''}</b>${byOf(e) ? ` · ${esc(byOf(e))}` : ''}${e.local ? ` <span class="pill">${L('this device', 'cet appareil')}</span>` : ''}
+  <div>${e.notes ? esc(e.notes) : `<span class="faint">${L('no notes', 'sans notes')}</span>`}</div>${e.tags.length ? `<div class="faint">${e.tags.map(esc).join(', ')}</div>` : ''}${e.outcome ? `<div class="faint">${esc(e.outcome)}</div>` : ''}</div>`;
+function doublePairHTML(p, i){
+  const ro = viewOnly();
+  return `<div class="duppair">${dblSide(p[1])}${dblSide(p[0])}${ro ? '' : `<div class="row wrap"><button class="btn sm primary" data-dblmerge="${i}">🔀 ${L('Merge into one', 'Fusionner')}</button><button class="btn sm ghost" data-dblkeep="${i}">${L('Keep both', 'Garder les deux')}</button></div>`}</div>`;
+}
+/** Today banner: entries of the last 2 days logged twice. */
+function doubleCallouts(){
+  if (viewOnly()) return [];
+  return doubles().filter(p => p[0].d >= todayIdx() - 1).slice(0, 2).map(p => ({ cls: 'info', html:
+    `🔀 ${L(`<b>${esc(catL(p[1].cat))}</b> was logged twice${byOf(p[0]) && byOf(p[1]) && byOf(p[0]) !== byOf(p[1]) ? ` (${esc(byOf(p[1]))} and ${esc(byOf(p[0]))})` : ''}, ${relDay(p[1].d)} ${p[1].st != null ? fmtTime(p[1].st) : ''}: both are kept.`,
+      `<b>${esc(catL(p[1].cat))}</b> a été noté deux fois${byOf(p[0]) && byOf(p[1]) && byOf(p[0]) !== byOf(p[1]) ? ` (${esc(byOf(p[1]))} et ${esc(byOf(p[0]))})` : ''}, ${relDay(p[1].d)} ${p[1].st != null ? fmtTime(p[1].st) : ''} : les deux sont gardées.`)}
+     <button class="btn sm" data-dblsee="${p[3]}" style="margin-left:6px">${L('Compare & merge', 'Comparer et fusionner')}</button>` }));
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -6920,7 +6999,7 @@ document.addEventListener('click', e => {
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck'];   // share: viewer keys, so “Copy script” has them on every device
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep'];   // share: viewer keys, so “Copy script” has them on every device
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
@@ -7765,21 +7844,24 @@ function wireEditGestures(){
 /* ── Data health: warnings, and cleaning up duplicates ── */
 const dupSide = (e, tag) => `<div class="dupside"><b>${e.local ? L('This device', 'Cet appareil') : L(`Row ${e.sheetRow ?? e.row}`, `Ligne ${e.sheetRow ?? e.row}`)}</b>${tag ? ` <span class="pill">${tag}</span>` : ''}<div class="faint">${esc(catL(e.cat))} · ${fmtDayShort(e.d)}${e.st != null ? ' ' + fmtTime(e.st) : ''}${e.t != null ? '–' + fmtTime(e.t % DAY) : ''}${e.milk != null ? ' · ' + fmtOz(e.milk) : ''}</div>${e.notes ? `<div>${esc(e.notes)}</div>` : ''}${e.tags.length ? `<div class="faint">${esc(e.tags.join(', '))}</div>` : ''}${e.outcome ? `<div class="faint">${esc(ocL(e.outcome))}</div>` : ''}${e.loggedAt ? `<div class="faint">${L('logged', 'saisie')} ${fmtDayShort(Math.floor(e.loggedAt / DAY))} ${fmtTime(e.loggedAt % DAY)}</div>` : ''}</div>`;
 function renderHealthModal(){
-  const w = DATA.warnings, dups = DATA.dups || [], other = w.filter(x => !x.dup);
+  const w = DATA.warnings, all = (DATA.dups || []).map((p, i) => [...p, i]), dups = all.filter(p => p[2] !== 'double'), dbl = doubles(), other = w.filter(x => !x.dup);
   const can = dups.length && !editBlock(dups[0][0]), why = dups.length ? editBlock(dups[0][0]) : '';
   $('#healthBody').innerHTML = `${DATA.newCats.length ? `<p><b>New categories discovered:</b> ${DATA.newCats.map(c => `<span class="pill" style="background:${catColor(c)}22;color:${catColor(c)}">${esc(c)}</span>`).join(' ')} — added to filters, legend and charts automatically.</p>` : ''}
     ${DATA.extras.length ? `<p><b>Extra columns found:</b> ${DATA.extras.map(esc).join(', ')} — shown in the Event Log and tooltips.</p>` : ''}
+    ${dbl.length ? `<h4 style="margin:10px 0 4px">${L(`Logged twice (${dbl.length})`, `Notées deux fois (${dbl.length})`)}</h4>
+      <p class="muted" style="margin-top:0">${L('The same entry logged a few minutes apart with different details (e.g. both of you noting dinner). Both are kept until you choose: <b>Merge</b> keeps one entry with both sets of notes (with who wrote them), the tags combined and any blank fields filled in.', 'La même entrée notée à quelques minutes d’écart avec des détails différents (p. ex. vous deux notez le souper). Les deux sont gardées jusqu’à votre choix : <b>Fusionner</b> garde une entrée avec les deux notes (et qui les a écrites), les étiquettes réunies et les champs vides remplis.')}</p>
+      <div class="duplist">${dbl.map(p => doublePairHTML(p, p[3])).join('')}</div>` : ''}
     ${dups.length ? `<h4 style="margin:10px 0 4px">${L(`Duplicates (${dups.length})`, `Doublons (${dups.length})`)}</h4>
       <p class="muted" style="margin-top:0">${L('Each pair is counted once in every chart and report. Delete the extra copy to clean up the Sheet — the less complete one is suggested.', 'Chaque paire n’est comptée qu’une fois dans les graphiques et les rapports. Supprimez la copie en trop pour nettoyer la feuille — la moins complète est suggérée.')}</p>
       ${can ? `<div class="row wrap" style="margin-bottom:8px"><button class="btn primary sm" data-dupdel="all">🧹 ${L(`Delete all ${dups.length} suggested`, `Supprimer les ${dups.length} suggérés`)}</button></div>` : `<p class="scopenote">${esc(why)}</p>`}
-      <div class="duplist">${dups.map(([drop, keep], i) => `<div class="duppair">${dupSide(drop, L('suggested', 'suggéré'))}${dupSide(keep, '')}
+      <div class="duplist">${dups.map(([drop, keep, , i]) => `<div class="duppair">${dupSide(drop, L('suggested', 'suggéré'))}${dupSide(keep, '')}
         ${can ? `<div class="row wrap"><button class="btn sm danger" data-dupdel="${i}:drop">${L('Delete', 'Supprimer')} ${drop.local ? L('this device’s copy', 'la copie de l’appareil') : L(`row ${drop.sheetRow}`, `la ligne ${drop.sheetRow}`)}</button><button class="btn sm ghost" data-dupdel="${i}:keep">${L('Delete', 'Supprimer')} ${keep.local ? L('this device’s copy', 'la copie de l’appareil') : L(`row ${keep.sheetRow}`, `la ligne ${keep.sheetRow}`)}</button></div>` : ''}</div>`).join('')}</div>` : ''}
     ${other.length ? `<h4 style="margin:12px 0 4px">${L('Other warnings', 'Autres avertissements')}</h4><p class="muted" style="margin-top:0">${other.filter(x => !x.info).length} warning(s), ${other.filter(x => x.info).length} note(s). Only rows with a missing date are skipped; everything else is kept.</p><div class="warnlist">${other.slice(0,300).map(x => `<div><b>Row ${x.row}</b>${x.info ? '<span class="faint">note · </span>' : ''}${esc(x.msg)}</div>`).join('')}</div>` : !dups.length ? '<p>All rows parsed cleanly.</p>' : ''}`;
 }
 /** Delete duplicate copies from the Sheet: one pair (“i:drop” / “i:keep”) or every suggested copy (“all”). Bottom rows first, so row numbers above don't move. */
 async function cleanDuplicates(which){
   const dups = DATA.dups || [];
-  let targets = which === 'all' ? dups.map(([d]) => d) : (() => { const [i, side] = which.split(':'); const p = dups[+i]; return p ? [side === 'keep' ? p[1] : p[0]] : []; })();
+  let targets = which === 'all' ? dups.filter(p => p[2] !== 'double').map(([d]) => d) : (() => { const [i, side] = which.split(':'); const p = dups[+i]; return p ? [side === 'keep' ? p[1] : p[0]] : []; })();
   if (!targets.length) return;
   if (!confirm(which === 'all' ? L(`Delete ${targets.length} duplicate row${targets.length > 1 ? 's' : ''} from the Sheet? The copy that is kept stays as it is.`, `Supprimer ${targets.length} ligne${targets.length > 1 ? 's' : ''} en double de la feuille? La copie conservée reste telle quelle.`)
     : L('Delete this copy from the Sheet?', 'Supprimer cette copie de la feuille?'))) return;
@@ -8076,6 +8158,10 @@ function wire(){
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); });
+  document.addEventListener('click', e => {   // v1.33: entries logged twice
+    const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;
+    if (g.dataset.dblmerge != null) mergeDouble(+g.dataset.dblmerge); else if (g.dataset.dblkeep != null) keepBothDouble(+g.dataset.dblkeep); else { renderHealthModal(); openModal('mHealth'); }
+  });
   // Today banner
   $('#todayCollapse').onclick = () => { UI.todayCollapsed = !UI.todayCollapsed; saveUI(); renderToday(); };
   $('#todayTpl').onchange = e => { S.todayTpl = { date: isoOf(todayIdx()), id: e.target.value }; saveSettings(); analyze(); renderAll(); };

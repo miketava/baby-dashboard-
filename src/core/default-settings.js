@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },
+  dupKeep: [],                            // entries logged twice that were kept apart on purpose (v1.33)
   trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only
   apptFor: {}, apptIgnoreCals: [], libSeen: [],   // v1.26: calendar appointments (id → child id or 'no'), ignored calendars, library templates already added
   reminders: { enabled:false, chime:true, lead:15, naps:true, meals:true, cutoff:true, dynamic:true, feedEvery:0 },

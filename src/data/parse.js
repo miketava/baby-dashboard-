@@ -12,7 +12,7 @@ const FIELD_RULES = [
   ['water',   k => k.startsWith('water') || k.startsWith('hydration') || k === 'ml'],
   ['tags',    k => k === 'tags' || k === 'tag' || k === 'labels'],
   ['outcome', k => k.startsWith('outcome') || k.startsWith('rating') || k === 'status' || k === 'result'],
-  ['logged',  k => k.startsWith('logged') || k === 'timestamp' || k === 'enteredat' || k === 'createdat'],
+  ['logged',  k => (k.startsWith('logged') && k !== 'loggedby') || k === 'timestamp' || k === 'enteredat' || k === 'createdat'],
   ['value',   k => k === 'value' || k === 'measurement' || k === 'reading' || k === 'amount'],
   ['noted',   k => k.startsWith('noted') || k === 'notetime' || k === 'writtenat' || k === 'notetimestamp'],
   ['edited',  k => k.startsWith('edited') || k === 'modifiedat' || k === 'correctedat'],
@@ -100,8 +100,8 @@ function parseRecords(records, headers){
   for (const [name, { ty, rows }] of typos) warnings.push({ row: rows.length > 3 ? rows.slice(0,3).join(', ') + '…' : rows.join(', '), msg:`Category “${name}” looks like a typo of “${ty}” (${rows.length} row${rows.length>1?'s':''}) — kept as its own category; fix it in the Sheet to merge` });
   events.sort((a,b) => a.s - b.s || (b.t ?? b.s) - (a.t ?? a.s));
   const dups = dedupe(events);
-  dups.forEach(([drop, keep]) => warnings.push({ row: drop.row, dup:true, msg:`Looks like a duplicate of row ${keep.row} (${drop.cat}${drop.st != null ? ' ' + fmtTime(drop.st) : ''}, ${isoOf(drop.d)}) — counted once` }));
-  const dropped = new Set(dups.map(([x]) => x));
+  dups.forEach(([drop, keep, kind]) => warnings.push({ row: drop.row, dup:true, double: kind === 'double', msg: kind === 'double' ? `Logged twice: rows ${keep.row} and ${drop.row} (${drop.cat}${drop.st != null ? ' ' + fmtTime(drop.st) : ''}, ${isoOf(drop.d)}) with different details — both kept, merge them in Data check` : `Looks like a duplicate of row ${keep.row} (${drop.cat}${drop.st != null ? ' ' + fmtTime(drop.st) : ''}, ${isoOf(drop.d)}) — counted once` }));
+  const dropped = new Set(dups.filter(p => p[2] !== 'double').map(([x]) => x));
   for (let i = events.length - 1; i >= 0; i--) if (dropped.has(events[i])) events.splice(i, 1);
   events.forEach((e, i) => e.id = i);
   const newCats = [...CATS.values()].filter(c => !c.known && events.some(e => e.cat === c.name)).map(c => c.name);
@@ -112,21 +112,31 @@ function parseRecords(records, headers){
  * Duplicate detection — the same event logged twice (e.g. Quick Log + transcribed from notes):
  * same category and date, starts within 10 min, compatible end / milk / notes. Keeps the richer row.
  */
+/** Does `x` hold nothing that `y` lacks (notes, tags, rating, amounts, value, end)? */
+function addsNothing(x, y){
+  const nx = norm(x.notes), ny = norm(y.notes);
+  return (!nx || ny.includes(nx)) && x.tags.every(t => y.tags.includes(t)) && (!x.outcome || x.outcome === y.outcome)
+    && (x.milk == null || x.milk === y.milk) && (x.water == null || x.water === y.water) && (!x.valueRaw || norm(x.valueRaw) === norm(y.valueRaw))
+    && (x.t == null || y.t != null);
+}
 function dedupe(events){
   const out = [], richness = e => (e.t != null ? 4 : 0) + (e.notes ? 2 : 0) + e.tags.length + (e.outcome ? 1 : 0) + (e.local ? -1 : 0);
   const byCat = new Map(); events.forEach(e => { const k = e.cat + '|' + e.d; if (!byCat.has(k)) byCat.set(k, []); byCat.get(k).push(e); });
   for (const list of byCat.values()) {
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
-      const a = list[i], b = list[j]; if (a._dup || b._dup) continue;
+      const a = list[i], b = list[j]; if (a._dup || b._dup || (a._dbl && b._dbl)) continue;
       let same;
       if (a.allDay || b.allDay) same = a.allDay && b.allDay && !!norm(a.notes) && !!norm(b.notes) && (norm(a.notes) === norm(b.notes) || norm(a.notes).includes(norm(b.notes)) || norm(b.notes).includes(norm(a.notes)));
       else same = Math.abs(a.s - b.s) <= 10 && (a.t == null || b.t == null || Math.abs(a.t - b.t) <= 15) && (a.milk == null || b.milk == null || a.milk === b.milk)
-                 && !(a.t == null && b.t == null && a.milk == null && b.milk == null && a.k !== 'diaper' && a.notes && b.notes && norm(a.notes) !== norm(b.notes));
-      if (same && a.tags.length && b.tags.length && a.tags.join() !== b.tags.join()) same = false;   // e.g. left vs right side
+                 && !(/^meds?$/i.test(a.cat) && a.notes && b.notes && norm(a.notes) !== norm(b.notes));   // two different medications at once
+      if (same && a.cat === 'Breastfeed' && a.tags.length && b.tags.length && a.tags.join() !== b.tags.join()) same = false;   // left vs right side
       if (same && a.valueRaw && b.valueRaw && norm(a.valueRaw) !== norm(b.valueRaw)) same = false;  // two different measurements
       if (same && (a.kidNames || []).join() !== (b.kidNames || []).join()) same = false;               // twins napping at the same time
       if (!same) continue;
       const [drop, keep] = richness(a) >= richness(b) ? [b, a] : [a, b];
+      // v1.33: only a copy that adds nothing is hidden. Two caregivers logging the same dinner with their own notes,
+      // tags or rating are both kept, flagged as a “double entry” to merge (never silently dropped).
+      if (!addsNothing(drop, keep)) { a._dbl = b._dbl = true; const [first, second] = (a.sheetRow ?? 1e9) <= (b.sheetRow ?? 1e9) ? [a, b] : [b, a]; out.push([second, first, 'double']); continue; }
       drop._dup = true; out.push([drop, keep]);
     }
   }
