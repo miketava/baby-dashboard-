@@ -19,7 +19,7 @@
         if (dy > 10) { drag = true; sh.style.transition = 'none'; } else return;
       }
       e.preventDefault();
-      sh.style.transform = `translate(-50%, ${Math.max(0, dy - 10)}px)`;
+      sh.style.transform = `translate(${getComputedStyle(sh).getPropertyValue('--sx').trim() || '-50%'}, ${Math.max(0, dy - 10)}px)`;   // full-screen Quick Log on phones isn't centred with -50%
     }, { passive: false });
     const end = () => {
       if (!drag) return; drag = false; ok = false;

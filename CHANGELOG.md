@@ -8,6 +8,16 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.39.0 — 2026-11-27 · Apps Script v1.8 (no script change)
+
+- **Phones: full-screen Quick Log with thumb-sized controls.**
+  - Quick Log fills the screen (no gap at the top); the title bar has a 44 px ✕.
+  - Pills and chips (tags, meal, amounts, soothing, play…) 42 px tall instead of 23; the −10 … +10 time row spreads across the width as six equal buttons; **Now** buttons 48 px.
+  - Text boxes, times, dates and drop-downs 48 px tall with **16 px text**, which also stops iPhone Safari zooming in when you tap a field. Notes boxes are taller.
+  - **← Back / Save** are pinned to the bottom of the screen (Save takes the rest of the width), so saving never needs a scroll.
+  - Main-screen buttons slightly taller with bigger icons; same three-across groups.
+  - Swipe down from the top bar or ✕ still closes it (anything typed is kept as a draft, v1.37.2). Computers and tablets are unchanged.
+
 ## v1.38.0 — 2026-11-27 · **Apps Script v1.8** (needed for private notes)
 
 - **🔒 Private notes** (*Settings → General → Private notes*, off by default, shared between your devices). Quick Log gets a second, dashed notes box: **Private notes · only for the family, never in reports or shared**.

@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.39.0', date:'2026-11-27',
+    en:['Phones: Quick Log now fills the whole screen with thumb-sized controls. Pills, time nudges, amount chips and Now buttons are about twice as tall, boxes are taller with larger text (no more zooming in on iPhone), and Back / Save stay pinned at the bottom. Swipe down or ✕ still closes it, and anything typed is kept as a draft.'],
+    fr:['Téléphones : l’Entrée rapide occupe maintenant tout l’écran avec des commandes à la taille du pouce. Pastilles, ajustements d’heure, quantités et boutons Maint. sont environ deux fois plus hauts, les champs sont plus grands avec un texte plus gros (fini le zoom sur iPhone), et Retour / Enregistrer restent fixés en bas. Glisser vers le bas ou ✕ la ferme toujours, et ce qui est tapé est gardé en brouillon.'] },
   { v:'1.38.0', date:'2026-11-27',
     en:['🔒 Private notes (off by default; Settings → General): a second notes box in Quick Log for things only the family should read. They go in their own Private Notes column, show with a 🔒 in the day’s entries, and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key receives.',
         'Needs Apps Script v1.8, which removes that column before anything is sent to a viewer key: Copy script, paste over Code.gs, deploy a new version (or Update script if one-tap updates are on). The switch stays greyed out until then.'],

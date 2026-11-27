@@ -371,6 +371,34 @@ body.viewonly .fab{display:none!important}
 .preset:hover{border-color:var(--accent)}
 .preset.live{border-color:var(--good);background:var(--good-soft)}
 .qform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+/* v1.39 — phones: Quick Log takes the whole screen, with thumb-sized controls (44–48px) and 16px text (no iPhone zoom on focus) */
+@media (max-width:720px){
+  #qlog{--sx:0;left:0;right:0;top:0;bottom:0;width:100%;max-height:none;height:100dvh;border-radius:0;transform:translate(0,105%);display:flex;flex-direction:column}
+  #qlog.on{transform:translate(0,0)}
+  #qlog .grab{margin-top:calc(6px + env(safe-area-inset-top))}
+  #qlog header{padding:4px 8px 8px 16px;border-bottom:1px solid var(--border)}
+  #qlog header h3{font-size:19px}
+  #qlog #qlClose{width:44px;height:44px;font-size:20px;justify-content:center}
+  #qlog .body{flex:1;min-height:0;padding:12px 16px calc(20px + env(safe-area-inset-bottom))}
+  #qlog .preset{padding:14px 8px;font-size:14px;min-height:88px;justify-content:center}
+  #qlog .preset .e{font-size:26px}
+  #qlog .qform{gap:16px}
+  #qlog label.field{font-size:14.5px;gap:6px}
+  #qlog .qform input:not([type=checkbox]):not([type=radio]),#qlog .qform select{min-height:48px;font-size:16px;padding:10px 12px;border-radius:10px}
+  #qlog .qform textarea{font-size:16px;min-height:96px;padding:10px 12px;border-radius:10px}
+  #qlog .chip{min-height:42px;padding:8px 15px;font-size:15px;gap:6px}
+  #qlog .tchips{gap:8px;margin-top:0}
+  #qlog .tchips > .faint{width:100%;font-size:13px}
+  #qlog .tchips .chip.nudge{flex:1 1 0;min-width:0;justify-content:center;padding:8px 4px;font-variant-numeric:tabular-nums}
+  #qlog .chips{gap:8px}
+  #qlog .btn{min-height:44px;font-size:15px;padding:8px 14px;border-radius:10px}
+  #qlog .btn.sm{min-height:42px;font-size:14.5px}
+  #qlog .nowbtn{min-width:70px;justify-content:center;font-weight:600}
+  #qlog .seg button{min-height:46px;font-size:15px;padding:8px 14px}
+  #qlog .qlactions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));z-index:2;background:var(--panel);margin:4px -16px calc(-20px - env(safe-area-inset-bottom));padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -6px 16px rgba(0,0,0,.06)}
+  #qlog .qlactions .btn{min-height:52px;font-size:16px}
+  #qlog .qlactions .btn.primary{flex:1;justify-content:center;margin-left:10px}
+}
 .qform .full{grid-column:1/-1}
 @media (max-width:560px){.qform .field{grid-column:1/-1}}   /* phones: one field per line (date, start, end each with their quick-time chips under them) */
 .qform input,.qform select,.qform textarea{width:100%}
@@ -1202,7 +1230,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.38.0';
+const APP_VERSION = '1.39.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1210,6 +1238,9 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.7';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.39.0', date:'2026-11-27',
+    en:['Phones: Quick Log now fills the whole screen with thumb-sized controls. Pills, time nudges, amount chips and Now buttons are about twice as tall, boxes are taller with larger text (no more zooming in on iPhone), and Back / Save stay pinned at the bottom. Swipe down or ✕ still closes it, and anything typed is kept as a draft.'],
+    fr:['Téléphones : l’Entrée rapide occupe maintenant tout l’écran avec des commandes à la taille du pouce. Pastilles, ajustements d’heure, quantités et boutons Maint. sont environ deux fois plus hauts, les champs sont plus grands avec un texte plus gros (fini le zoom sur iPhone), et Retour / Enregistrer restent fixés en bas. Glisser vers le bas ou ✕ la ferme toujours, et ce qui est tapé est gardé en brouillon.'] },
   { v:'1.38.0', date:'2026-11-27',
     en:['🔒 Private notes (off by default; Settings → General): a second notes box in Quick Log for things only the family should read. They go in their own Private Notes column, show with a 🔒 in the day’s entries, and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key receives.',
         'Needs Apps Script v1.8, which removes that column before anything is sent to a viewer key: Copy script, paste over Code.gs, deploy a new version (or Update script if one-tap updates are on). The switch stays greyed out until then.'],
@@ -6461,7 +6492,7 @@ function renderQuickLog(){
     ${privOn() || f.row['Private Notes'] ? `<label class="field full privfield">🔒 ${L('Private notes', 'Notes privées')} <span class="faint">${L('· only for the family, never in reports or shared', '· pour la famille seulement, jamais dans les rapports ni partagées')}</span><textarea name="Private Notes" rows="2">${v('Private Notes')}</textarea></label>` : ''}
     <label class="field full">Notes<textarea name="Notes" rows="2" placeholder="${catKindNow === 'milestone' ? 'e.g. First steps!' : catKindNow === 'incident' ? 'What happened?' : ''}">${v('Notes')}</textarea></label>
     ${f.op === 'update' ? `<div class="full faint" style="font-size:12px">${L(`Sheet row ${f.ev.sheetRow ?? '—'} · first logged ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. Saving stamps “Edited At”; the original entry time is kept.`, `Ligne ${f.ev.sheetRow ?? '—'} de la feuille · saisie le ${f.ev.loggedAt ? fmtDayShort(Math.floor(f.ev.loggedAt / DAY)) + ' ' + fmtTime(f.ev.loggedAt % DAY) : '—'}. L’enregistrement ajoute « Edited At »; l’heure de saisie originale est conservée.`)}</div>` : ''}
-    <div class="full row sp">${f.op === 'update' ? `<button type="button" class="btn danger" id="qlDelete">🗑 ${L('Delete', 'Supprimer')}</button>` : `<button type="button" class="btn" id="qlBack">← Back</button>`}<button type="submit" class="btn primary">${f.op === 'update' ? L('Save changes', 'Enregistrer') : `Save ${S.endpoint ? 'to Sheet' : 'on device'}`}</button></div>
+    <div class="full row sp qlactions">${f.op === 'update' ? `<button type="button" class="btn danger" id="qlDelete">🗑 ${L('Delete', 'Supprimer')}</button>` : `<button type="button" class="btn" id="qlBack">← Back</button>`}<button type="submit" class="btn primary">${f.op === 'update' ? L('Save changes', 'Enregistrer') : `Save ${S.endpoint ? 'to Sheet' : 'on device'}`}</button></div>
   </form>`;
   // a small “Now” button right beside every time field (start and end, new entries and edits)
   $$('#qlForm input[type=time], #qlForm input.tin').forEach(i => { if (i.parentElement.classList.contains('tw')) return;
@@ -8308,7 +8339,7 @@ function syncFilterBtns(){
         if (dy > 10) { drag = true; sh.style.transition = 'none'; } else return;
       }
       e.preventDefault();
-      sh.style.transform = `translate(-50%, ${Math.max(0, dy - 10)}px)`;
+      sh.style.transform = `translate(${getComputedStyle(sh).getPropertyValue('--sx').trim() || '-50%'}, ${Math.max(0, dy - 10)}px)`;   // full-screen Quick Log on phones isn't centred with -50%
     }, { passive: false });
     const end = () => {
       if (!drag) return; drag = false; ok = false;

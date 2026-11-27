@@ -89,6 +89,34 @@ body.viewonly .fab{display:none!important}
 .preset:hover{border-color:var(--accent)}
 .preset.live{border-color:var(--good);background:var(--good-soft)}
 .qform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+/* v1.39 — phones: Quick Log takes the whole screen, with thumb-sized controls (44–48px) and 16px text (no iPhone zoom on focus) */
+@media (max-width:720px){
+  #qlog{--sx:0;left:0;right:0;top:0;bottom:0;width:100%;max-height:none;height:100dvh;border-radius:0;transform:translate(0,105%);display:flex;flex-direction:column}
+  #qlog.on{transform:translate(0,0)}
+  #qlog .grab{margin-top:calc(6px + env(safe-area-inset-top))}
+  #qlog header{padding:4px 8px 8px 16px;border-bottom:1px solid var(--border)}
+  #qlog header h3{font-size:19px}
+  #qlog #qlClose{width:44px;height:44px;font-size:20px;justify-content:center}
+  #qlog .body{flex:1;min-height:0;padding:12px 16px calc(20px + env(safe-area-inset-bottom))}
+  #qlog .preset{padding:14px 8px;font-size:14px;min-height:88px;justify-content:center}
+  #qlog .preset .e{font-size:26px}
+  #qlog .qform{gap:16px}
+  #qlog label.field{font-size:14.5px;gap:6px}
+  #qlog .qform input:not([type=checkbox]):not([type=radio]),#qlog .qform select{min-height:48px;font-size:16px;padding:10px 12px;border-radius:10px}
+  #qlog .qform textarea{font-size:16px;min-height:96px;padding:10px 12px;border-radius:10px}
+  #qlog .chip{min-height:42px;padding:8px 15px;font-size:15px;gap:6px}
+  #qlog .tchips{gap:8px;margin-top:0}
+  #qlog .tchips > .faint{width:100%;font-size:13px}
+  #qlog .tchips .chip.nudge{flex:1 1 0;min-width:0;justify-content:center;padding:8px 4px;font-variant-numeric:tabular-nums}
+  #qlog .chips{gap:8px}
+  #qlog .btn{min-height:44px;font-size:15px;padding:8px 14px;border-radius:10px}
+  #qlog .btn.sm{min-height:42px;font-size:14.5px}
+  #qlog .nowbtn{min-width:70px;justify-content:center;font-weight:600}
+  #qlog .seg button{min-height:46px;font-size:15px;padding:8px 14px}
+  #qlog .qlactions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));z-index:2;background:var(--panel);margin:4px -16px calc(-20px - env(safe-area-inset-bottom));padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -6px 16px rgba(0,0,0,.06)}
+  #qlog .qlactions .btn{min-height:52px;font-size:16px}
+  #qlog .qlactions .btn.primary{flex:1;justify-content:center;margin-left:10px}
+}
 .qform .full{grid-column:1/-1}
 @media (max-width:560px){.qform .field{grid-column:1/-1}}   /* phones: one field per line (date, start, end each with their quick-time chips under them) */
 .qform input,.qform select,.qform textarea{width:100%}
