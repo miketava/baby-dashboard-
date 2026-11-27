@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.32.0', date:'2026-11-26',
+    en:['Setting up a Google Sheet starts from a ready-made template: Settings → Setup guide → Copy the template Sheet makes your own copy with the Daily Log tab and its headers, so there’s nothing to type. The setup wizard points to it too.'],
+    fr:['Pour configurer une feuille Google, on part d’un modèle prêt à l’emploi : Réglages → Guide → Copier la feuille modèle crée votre propre copie avec l’onglet Daily Log et ses en-têtes, sans rien à taper. L’assistant de départ y mène aussi.'] },
   { v:'1.31.0', date:'2026-11-26',
     en:['Trends to watch: ✓ Got it, in the Today banner and on the Routine tab, for a trend you’ve seen and expect (e.g. less day sleep because of a new routine). It leaves the banner and folds under “Acknowledged” for 14 days, by which time the two-week comparison has caught up with the new normal. It comes back sooner if it gets clearly worse. Shared with the other caregiver; Undo brings it back.'],
     fr:['Tendances à surveiller : ✓ Compris, dans le bandeau d’aujourd’hui et dans l’onglet Routine, pour une tendance vue et attendue (p. ex. moins de sommeil de jour à cause d’une nouvelle routine). Elle quitte le bandeau et se range sous « Pris en compte » pendant 14 jours, le temps que la comparaison sur deux semaines rattrape la nouvelle normale. Elle revient plus tôt si elle s’aggrave nettement. Partagé avec l’autre parent; Annuler la fait revenir.'] },

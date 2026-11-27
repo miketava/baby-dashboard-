@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.32.0 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **Template Sheet.** *Settings → Setup guide* starts with **📄 Copy the template Sheet**, Google's "Make a copy" page for a blank Sheet with the *Daily Log* tab and headers ready. The copy lands in the person's own Drive, private to them. Step 2 then pastes the latest script over whatever `Code.gs` holds.
+- The setup wizard's *Connect a Google Sheet* option mentions the template (and still opens the guide on Finish).
+
 ## v1.31.0 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **Acknowledge a trend.** *Trends to watch* (Today banner and Routine tab) gets **✓ Got it** for a trend you've seen and expect, e.g. less day sleep because of a new routine.

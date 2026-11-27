@@ -36,7 +36,7 @@ function renderWizard(){
     h = `<h3>Your data</h3><div class="modlist">
       ${hasData ? opt('keep', 'Keep my current data', `${DATA.events.length} events from ${esc(DATA.label)}`) : ''}
       ${opt('demo', 'Explore with example data first', PATHS[W.path]?.demo === 'newborn' ? 'A fictional newborn’s first four weeks' : PATHS[W.path]?.demo === 'placement' ? 'Three fictional weeks with visits and handovers' : 'Three fictional weeks of naps, meals and outings')}
-      ${opt('sheet', 'Connect a Google Sheet', 'Live sync for all caregivers + Quick Log writes to the Sheet (setup guide included)')}
+      ${opt('sheet', 'Connect a Google Sheet', 'Copy our ready-made template Sheet, then about 5 minutes with the setup guide. Live sync for all caregivers; Quick Log writes to the Sheet')}
       ${opt('csv', 'Import a CSV file', 'One-off import of a Daily Log export')}
       ${opt('empty', 'Start empty', 'Log with Quick Log on this device; connect a Sheet any time')}
     </div><label class="switch" style="margin-top:12px"><input type="checkbox" id="wTour" ${W.tour ? 'checked' : ''}> Show me a guided tour when I finish</label>`;

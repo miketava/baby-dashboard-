@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.31.0** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.32.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -70,10 +70,10 @@ Open `index.html` in Chrome, Edge, Firefox or Safari and pick "Explore with exam
 Make a spreadsheet with the columns below, export it as CSV and drag it onto the dashboard.
 
 ### 3. Live Google Sheet (recommended, about 10 minutes)
-1. **Create the Sheet.** A Google Sheet with a tab named exactly **`Daily Log`** and these headers in row 1:
+1. **Create the Sheet.** Easiest: **[make a copy of the template Sheet](https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy)** (also in *Settings → Setup guide*); it has everything below ready. Or make your own: a Google Sheet with a tab named exactly **`Daily Log`** and these headers in row 1:
    `Date | Start Time | End Time | Duration (min) | Category | Milk (oz) | Notes | Water (ml) | Tags | Outcome / Rating | Value`
    (Metric users can name the milk column `Milk (ml)`. Missing columns like `Child`, `Logged At` or `Edited At` are added automatically when needed.)
-2. **Add the script.** In the Sheet: *Extensions → Apps Script*. Delete the starter code, paste [`apps-script/Code.gs`](apps-script/Code.gs) (or *Copy script* in *Settings → Setup guide*). There's nothing to edit in it. Set the time zone under ⚙️ *Project Settings*. Save.
+2. **Add the script.** In the Sheet: *Extensions → Apps Script*. Delete whatever is in `Code.gs`, paste [`apps-script/Code.gs`](apps-script/Code.gs) (or *Copy script* in *Settings → Setup guide*). There's nothing to edit in it. Set the time zone under ⚙️ *Project Settings*. Save.
 3. **Deploy it.** *Deploy → New deployment →* ⚙️ *Web app*. Execute as **Me**; Who has access: **Anyone** (the script rejects anything without your secret). Approve the permissions; on "Google hasn't verified this app", choose *Advanced → Go to … (unsafe)*, which is expected for your own script. Copy the **Web app URL** (ends in `/exec`).
 4. **Optional: visits and appointments from your calendar.** Appointments (doctor, dentist, CLSC, vaccine… in the title) are offered once in the Today banner ("Is this for her?"); the ones you accept pick a morning, midday or afternoon appointment day. Their title and calendar name are sent to your own dashboard for that question, never to viewer keys; set `APPOINTMENTS = false` in the script to turn it off.
    **Naming tip:** what an event is depends on the part before a dash, so you can add who's coming after it. *"Visite parents et Ava - Julie"* is an off-site family visit; *"Home visit - Marie (TS)"* or *"… à domicile"* is a visit at home (your usual day, no car naps); *"Pédiatre - vaccins 18 mois"* is an appointment.
