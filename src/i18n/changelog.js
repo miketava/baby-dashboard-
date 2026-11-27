@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.35.1', date:'2026-11-26',
+    en:['Badges: milk and water tiers in ounces are round numbers now (350 oz, 1,700 oz… instead of 338 oz, 1,691 oz).', 'Fix: the “badges earned” summary notification was see-through.'],
+    fr:['Badges : les paliers de lait et d’eau en onces sont des nombres ronds (350 oz, 1 700 oz… au lieu de 338 oz, 1 691 oz).', 'Correction : la notification récapitulative « badges obtenus » était transparente.'] },
   { v:'1.35.0', date:'2026-11-26',
     en:['🏆 Badges: 22 tiered badges from what you already log: diapers (Code Brown, Double Duty), sleep hours, the longest night, milk and water totals, foods tried, the most foods in a week, allergen groups, teeth, firsts, outings, logging streaks, night-time logging and more. Find them under More → Badges, each with a ring to the next tier, x / y and tier pips. Tap one for its tiers, dates and progress; press and hold (right-click on a computer) to hide one that doesn’t apply.',
         'Badges you’ve already earned are counted back through your whole log and dated when they actually happened. The first time you open this version, they arrive as a string of toasts (Skip all is on the first one). After that, a new tier gets confetti, a short sound and a pop-up.',

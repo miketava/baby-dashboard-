@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.35.1 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **Badges in ounces:** Milk Run and Hydration Station tiers are round numbers for imperial units: 350 / 1,700 / 8,500 / 34,000 oz for milk and 35 / 350 / 1,700 oz for water (nearest 50 under 1,000, 100 under 10,000, then 1,000). Metric stays 10 / 50 / 250 / 1,000 L.
+- Fix: the summary toast at the end of the badge catch-up had a see-through background (its gradient used the semi-transparent accent colour on its own).
+
 ## v1.35.0 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **🏆 Badges** (*More → Badges*, new *Badges & achievements* feature, on by default). 22 tiered badges computed from the log: Scribe, Tag Team, On the Dot, Daily Habit, Night Owl, Changing of the Guard, Code Brown, Double Duty (another diaper within 60 min; wet + poop at the same moment is one change), Sandman, Long Haul, Nap Collector, Road Trip, Milk Run, Hydration Station, Left Right Repeat, Adventurous Eater (different foods ever), Rainbow Plate (most different foods in one Monday–Sunday week), Allergen Ace (allergen groups offered: 3 / 6 / 9), Tooth Fairy, Firsts, Out and About, Tummy Time Titan. Spec: `V5 spec — achievements & badges`.

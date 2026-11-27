@@ -101,6 +101,10 @@ const ACHIEVEMENTS = [
     calc: evs => achProg(evs.filter(e => e.k === 'tummy' && e.t != null).map(e => ({ at: e.t, x: e.dur }))) },
 ];
 const achById = id => ACHIEVEMENTS.find(a => a.id === id);
+/** Round to a number that reads well: nearest 50 under 1,000, 100 under 10,000, then 1,000. */
+const achNice = x => { const st = x < 1000 ? 50 : x < 10000 ? 100 : 1000; return Math.max(st, Math.round(x / st) * st); };
+/** Tier thresholds as used: milk and water tiers become round ounces (350 oz, not 338) for imperial units. */
+const achTiersOf = a => a.unit === 'L' && S.profile?.units !== 'metric' ? a.tiers.map(l => achNice(l * 1000 / OZ_ML) * OZ_ML / 1000) : a.tiers;
 
 /** Display a value in the badge's unit (milk and water follow the child's units). */
 function achFmt(a, v){
@@ -132,7 +136,7 @@ function computeAchievements(){
     let steps = []; try { steps = a.calc(evs || []); } catch (err) { console.warn('badge', a.id, err); }
     const value = steps.length ? steps[steps.length - 1][1] : 0, scope = achScopeId(a);
     const kept = persist ? ((store.earned[scope] = store.earned[scope] || {})[a.id] = store.earned[scope][a.id] || []) : [];
-    const tiers = a.tiers.map((th, i) => {
+    const tiers = achTiersOf(a).map((th, i) => {
       const hit = steps.find(s => s[1] >= th - 1e-9), at = hit ? hit[0] : null, old = kept[i] ?? null;
       const best = old != null && at != null ? Math.min(old, at) : old ?? at;
       if (persist && best != null && best !== old) { kept[i] = best; changed = true; }

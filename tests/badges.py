@@ -38,6 +38,8 @@ async def engine(b):
   check('Daily Habit: 4 days in a row', got['habit']['v'] == 4 and got['habit']['n'] == 1, got['habit'])
   check('Allergens: egg + wheat', got['allergens']['v'] == 2, got['allergens'])
   check('Milk shows in oz (imperial)', await pg.evaluate("achFmt(achById('milk'), ACH.list.find(r=>r.a.id==='milk').value)") == '5 oz')
+  ths = await pg.evaluate("ACH.list.find(r=>r.a.id==='milk').tiers.map(t=>achFmt(achById('milk'), t.th))")
+  check('milk tiers in round ounces', ths == ['350 oz', '1,700 oz', '8,500 oz', '34,000 oz'], ths)
   ids = [x for x in got]
   check('Routine path: no breastfeeding badge', 'nurse' not in ids)
   stored = await pg.evaluate("S.badges.earned")
@@ -86,6 +88,11 @@ async def placement_and_ui(b):
   await pg.evaluate("achQueueCatchUp(ACH.list.filter(r=>r.earned).slice(0,3))"); await pg.wait_for_timeout(700)
   if SHOTS: await pg.screenshot(path=f'{SHOTS}/toast-phone.png')
   check('catch-up toast with Skip all', await pg.locator('.achtoast .skip').count() == 1)
+  await pg.wait_for_selector('.achtoast.sum', timeout=8000)
+  bg = await pg.evaluate("getComputedStyle(document.querySelector('.achtoast.sum')).backgroundColor")
+  check('summary toast is opaque', bg in ('rgb(255, 255, 255)',), bg)
+  await pg.wait_for_timeout(600)
+  if SHOTS: await pg.screenshot(path=f'{SHOTS}/summary-phone.png')
   check('no page errors', not errs, errs[:3])
   await ctx.close()
   for lang in ('fr',):
