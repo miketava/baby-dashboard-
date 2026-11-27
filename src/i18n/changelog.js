@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.39.1', date:'2026-11-27',
+    en:['Fix: the dashboard now asks for Apps Script v1.8 (it still said 1.7 was current), so the 🔧 update notice and the Update script button appear, and the Private notes switch can be turned on once it’s updated.'],
+    fr:['Correctif : le tableau de bord demande maintenant l’Apps Script v1.8 (il indiquait encore 1.7 comme à jour) : l’avis de mise à jour 🔧 et le bouton Mettre le script à jour apparaissent, et l’interrupteur Notes privées s’active une fois la mise à jour faite.'] },
   { v:'1.39.0', date:'2026-11-27',
     en:['Phones: Quick Log now fills the whole screen with thumb-sized controls. Pills, time nudges, amount chips and Now buttons are about twice as tall, boxes are taller with larger text (no more zooming in on iPhone), and Back / Save stay pinned at the bottom. Swipe down or ✕ still closes it, and anything typed is kept as a draft.'],
     fr:['Téléphones : l’Entrée rapide occupe maintenant tout l’écran avec des commandes à la taille du pouce. Pastilles, ajustements d’heure, quantités et boutons Maint. sont environ deux fois plus hauts, les champs sont plus grands avec un texte plus gros (fini le zoom sur iPhone), et Retour / Enregistrer restent fixés en bas. Glisser vers le bas ou ✕ la ferme toujours, et ce qui est tapé est gardé en brouillon.'] },

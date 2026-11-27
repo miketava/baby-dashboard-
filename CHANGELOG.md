@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.39.1 — 2026-11-27 · **Apps Script v1.8** (update it)
+
+- **Fix:** v1.38 shipped Apps Script v1.8 but the dashboard still asked for v1.7, so *Data source* said the script was up to date, no 🔧 notice or *Update script* button appeared, and the *Private notes* switch stayed greyed out with no way forward. It now asks for v1.8. The build refuses to run if the two numbers ever disagree again.
+- The greyed-out *Private notes* note links to *Data source → Apps Script*.
+
 ## v1.39.0 — 2026-11-27 · Apps Script v1.8 (no script change)
 
 - **Phones: full-screen Quick Log with thumb-sized controls.**

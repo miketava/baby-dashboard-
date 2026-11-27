@@ -9,6 +9,8 @@ const manifest = fs.readFileSync(path.join(root, 'apps-script', 'appsscript.json
 const fail = msg => { console.error('BUILD FAILED: ' + msg); process.exit(1); };
 if (/const SECRET\s*=\s*'/.test(gs) || !/getProperty\('SECRET'\)/.test(gs)) fail('apps-script/Code.gs must read the secret from Script Properties, never hold one');
 try { new vm.Script(gs, { filename: 'apps-script/Code.gs' }); new vm.Script(rem, { filename: 'apps-script/Reminders.gs' }); } catch (e) { fail(e.stack); }
+{ const sv = (gs.match(/const SCRIPT_VERSION = '([\d.]+)'/) || [])[1], src = fs.readFileSync(path.join(root, 'src', 'core', 'version.js'), 'utf8'), rv = (src.match(/const REQUIRED_SCRIPT = '([\d.]+)'/) || [])[1];
+  if (sv !== rv) fail(`REQUIRED_SCRIPT (${rv}) in src/core/version.js must match SCRIPT_VERSION (${sv}) in apps-script/Code.gs, or the dashboard won't offer the update`); }
 try { JSON.parse(manifest); } catch (e) { fail('apps-script/appsscript.json: ' + e.message); }
 if (!/const NTFY_TOPIC = 'baby-routine-CHANGE-ME'/.test(rem)) fail('apps-script/Reminders.gs must keep the placeholder NTFY_TOPIC');
 // Code.gs as a JS template literal: escape \ ` and ${ so the string is exactly the file

@@ -183,9 +183,9 @@ async def connect(b):
     else:
       tok = re.search(r'[?&]token=([^&]*)', req.url); tok = tok.group(1) if tok else ''
       cb = re.search(r'[?&]callback=([^&]*)', req.url)
-      if not st['secret']: r = {'ok': False, 'unclaimed': True, 'scriptVersion': '1.7'}
+      if not st['secret']: r = {'ok': False, 'unclaimed': True, 'scriptVersion': '1.8'}
       elif tok != st['secret']: r = {'ok': False, 'error': 'Unauthorized: token mismatch'}
-      else: r = {'ok': True, 'headers': ['Date', 'Start Time', 'End Time', 'Duration (min)', 'Category', 'Milk (oz)', 'Notes'], 'rows': [], 'scriptVersion': '1.7', 'selfUpdate': True, 'config': {}, 'meds': None}
+      else: r = {'ok': True, 'headers': ['Date', 'Start Time', 'End Time', 'Duration (min)', 'Category', 'Milk (oz)', 'Notes'], 'rows': [], 'scriptVersion': '1.8', 'selfUpdate': True, 'config': {}, 'meds': None}
       if cb: return await route.fulfill(body=f'{cb.group(1)}({json.dumps(r)})', content_type='application/javascript')
     await route.fulfill(body=json.dumps(r), content_type='application/json', headers={'Access-Control-Allow-Origin': '*'})
   ctx, pg, errs = await open_page(b, 'placement', 'en', PHONE)

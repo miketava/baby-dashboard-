@@ -1230,14 +1230,17 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.39.0';
+const APP_VERSION = '1.39.1';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
-const REQUIRED_SCRIPT = '1.7';
+const REQUIRED_SCRIPT = '1.8';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.39.1', date:'2026-11-27',
+    en:['Fix: the dashboard now asks for Apps Script v1.8 (it still said 1.7 was current), so the 🔧 update notice and the Update script button appear, and the Private notes switch can be turned on once it’s updated.'],
+    fr:['Correctif : le tableau de bord demande maintenant l’Apps Script v1.8 (il indiquait encore 1.7 comme à jour) : l’avis de mise à jour 🔧 et le bouton Mettre le script à jour apparaissent, et l’interrupteur Notes privées s’active une fois la mise à jour faite.'] },
   { v:'1.39.0', date:'2026-11-27',
     en:['Phones: Quick Log now fills the whole screen with thumb-sized controls. Pills, time nudges, amount chips and Now buttons are about twice as tall, boxes are taller with larger text (no more zooming in on iPhone), and Back / Save stay pinned at the bottom. Swipe down or ✕ still closes it, and anything typed is kept as a draft.'],
     fr:['Téléphones : l’Entrée rapide occupe maintenant tout l’écran avec des commandes à la taille du pouce. Pastilles, ajustements d’heure, quantités et boutons Maint. sont environ deux fois plus hauts, les champs sont plus grands avec un texte plus gros (fini le zoom sur iPhone), et Retour / Enregistrer restent fixés en bas. Glisser vers le bas ou ✕ la ferme toujours, et ce qui est tapé est gardé en brouillon.'] },
@@ -8687,7 +8690,7 @@ function renderSettings(){
     <div style="margin-top:8px">${chk('swipeNav', L('Phones: swipe left / right to move between sections (Today → Timeline → … → Data) and between Settings pages', 'Téléphones : glisser à gauche / à droite pour passer d’une section à l’autre (Aujourd’hui → Chronologie → … → Données) et d’une page de Réglages à l’autre'))}</div>
     <h4>🔒 ${L('Private notes', 'Notes privées')}</h4>
     ${viewOnly() ? '' : `<div>${privReady() ? chk('privateNotes', L('Add a “Private notes” field to Quick Log', 'Ajouter un champ « Notes privées » à l’Entrée rapide')) : `<label class="switch"><input type="checkbox" disabled> ${L('Add a “Private notes” field to Quick Log', 'Ajouter un champ « Notes privées » à l’Entrée rapide')}</label>`}</div>
-    <p class="hint">${L('For things only the two of you should read. They go in their own <b>Private Notes</b> column in the Sheet and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key (e.g. a caseworker) receives: the Apps Script removes the column before anything leaves Google. They show with a 🔒 in the day details. Anyone with edit access to the Sheet itself can still see the column.', 'Pour ce que vous seuls devez lire. Elles vont dans leur propre colonne <b>Private Notes</b> de la feuille et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur (p. ex. une TS) : l’Apps Script retire la colonne avant que quoi que ce soit quitte Google. Elles s’affichent avec un 🔒 dans le détail des journées. Toute personne qui peut modifier la feuille elle-même voit quand même la colonne.')}${privReady() ? '' : ` <b>${L('Update the Apps Script to v1.8 first (Data source), so viewer keys can’t receive them.', 'Mettez d’abord l’Apps Script à jour en v1.8 (Source de données), pour que les clés lecteur ne puissent pas les recevoir.')}</b>`}</p>`}
+    <p class="hint">${L('For things only the two of you should read. They go in their own <b>Private Notes</b> column in the Sheet and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key (e.g. a caseworker) receives: the Apps Script removes the column before anything leaves Google. They show with a 🔒 in the day details. Anyone with edit access to the Sheet itself can still see the column.', 'Pour ce que vous seuls devez lire. Elles vont dans leur propre colonne <b>Private Notes</b> de la feuille et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur (p. ex. une TS) : l’Apps Script retire la colonne avant que quoi que ce soit quitte Google. Elles s’affichent avec un 🔒 dans le détail des journées. Toute personne qui peut modifier la feuille elle-même voit quand même la colonne.')}${privReady() ? '' : ` <b>${L('Update the Apps Script to v1.8 first, so viewer keys can’t receive them:', 'Mettez d’abord l’Apps Script à jour en v1.8, pour que les clés lecteur ne puissent pas les recevoir :')}</b> <a href="#" data-pane="source">${L('Data source → Apps Script', 'Source de données → Apps Script')}</a>`}</p>`}
     <h4>Day logic</h4>
     <div class="fgrid">
       <label class="field">Day boundary<select data-set="dayBoundary" data-num><option value="360" ${+S.dayBoundary === 360 ? 'selected' : ''}>06:00 — night belongs to the evening before</option><option value="0" ${+S.dayBoundary === 0 ? 'selected' : ''}>00:00 — calendar date</option></select></label>
