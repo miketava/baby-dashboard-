@@ -79,7 +79,14 @@ async function updateScript(){
     if (!j.ok) throw new Error(j.error || 'Update failed');
     toast(L(`Script updated to v${j.version}`, `Script mis à jour : v${j.version}`));
     setTimeout(() => syncLive({ quiet: true }), 1500);
-  } catch (err) { toast(L('Script update failed: ', 'Échec de la mise à jour : ') + err.message, true); }
+  } catch (err) {
+    // the running deployment was made before the manifest (appsscript.json) gave it permission to edit itself
+    if (/insufficient authentication scopes|PERMISSION_DENIED.*scope/i.test(err.message)) {
+      toast(L('Not yet: the version your script is running was deployed before the manifest. Do this update by hand once (Setup guide → Copy script, paste over Code.gs, Deploy → Manage deployments → ✏️ → New version). After that, Update script works.',
+        'Pas encore : la version que votre script exécute a été déployée avant le manifeste. Faites cette mise à jour à la main une fois (Guide → Copier le script, coller sur Code.gs, Déployer → Gérer les déploiements → ✏️ → Nouvelle version). Ensuite, Mettre le script à jour fonctionnera.'), true);
+      if ($('#mSettings')?.classList.contains('on')) { setPane = 'guide'; renderSettings(); }
+    } else toast(L('Script update failed: ', 'Échec de la mise à jour : ') + err.message, true);
+  }
 }
 /** Data source pane: connection status, “connect another phone”, script version and update. */
 function connectPasteHTML(){

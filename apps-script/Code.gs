@@ -339,6 +339,7 @@ function selfUpdate_(files) {
       UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: 'The dashboard script was updated to v' + ver + '.', headers: { Title: 'Baby dashboard', Tags: 'gear' }, muteHttpExceptions: true });
     return { ok: true, version: ver, versionNumber: v.versionNumber };
   } catch (err) {
-    return { ok: false, error: String(err.message || err) + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' (switch on the Google Apps Script API at script.google.com/home/usersettings)' : '') };
+    return { ok: false, error: String(err.message || err) + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' (switch on the Google Apps Script API at script.google.com/home/usersettings)'
+      : /insufficient authentication scopes/i.test(String(err)) ? ' (the deployed version predates the manifest: deploy a new version by hand once, then one-tap updates work)' : '') };
   }
 }

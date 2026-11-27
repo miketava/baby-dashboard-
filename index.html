@@ -1246,7 +1246,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.40.0';
+const APP_VERSION = '1.40.1';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1254,6 +1254,9 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.40.1', date:'2026-11-27',
+    en:['“Update script” failing with “insufficient authentication scopes” now says what it means: the version your script runs was deployed before the manifest, so do that one update by hand; one-tap updates work from then on. The setup guide says so too.'],
+    fr:['Quand « Mettre le script à jour » échoue avec « insufficient authentication scopes », le message l’explique maintenant : la version que votre script exécute a été déployée avant le manifeste; faites cette mise à jour à la main une fois, ensuite les mises à jour en un geste fonctionnent. Le guide le précise aussi.'] },
   { v:'1.40.0', date:'2026-11-27',
     en:['Today’s plan: upcoming parent visits, home visits and appointments are now a row of little calendar pages each (today, then up to the next 3), with the days between them on the arrows. Tap one for when, how long, the title, where (with a map link) and the description.',
         'Diapers: a wet + poop change is now one entry (Diaper - Wet + Poop) that counts as both, instead of two rows with the notes copied. Pee amount pills (light / medium / heavy) on wet changes, next to poop consistency; Health shows the mix.',
@@ -2366,7 +2369,8 @@ function selfUpdate_(files) {
       UrlFetchApp.fetch('https://ntfy.sh/' + NTFY_TOPIC, { method: 'post', payload: 'The dashboard script was updated to v' + ver + '.', headers: { Title: 'Baby dashboard', Tags: 'gear' }, muteHttpExceptions: true });
     return { ok: true, version: ver, versionNumber: v.versionNumber };
   } catch (err) {
-    return { ok: false, error: String(err.message || err) + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' (switch on the Google Apps Script API at script.google.com/home/usersettings)' : '') };
+    return { ok: false, error: String(err.message || err) + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' (switch on the Google Apps Script API at script.google.com/home/usersettings)'
+      : /insufficient authentication scopes/i.test(String(err)) ? ' (the deployed version predates the manifest: deploy a new version by hand once, then one-tap updates work)' : '') };
   }
 }
 `;
@@ -7894,7 +7898,14 @@ async function updateScript(){
     if (!j.ok) throw new Error(j.error || 'Update failed');
     toast(L(`Script updated to v${j.version}`, `Script mis à jour : v${j.version}`));
     setTimeout(() => syncLive({ quiet: true }), 1500);
-  } catch (err) { toast(L('Script update failed: ', 'Échec de la mise à jour : ') + err.message, true); }
+  } catch (err) {
+    // the running deployment was made before the manifest (appsscript.json) gave it permission to edit itself
+    if (/insufficient authentication scopes|PERMISSION_DENIED.*scope/i.test(err.message)) {
+      toast(L('Not yet: the version your script is running was deployed before the manifest. Do this update by hand once (Setup guide → Copy script, paste over Code.gs, Deploy → Manage deployments → ✏️ → New version). After that, Update script works.',
+        'Pas encore : la version que votre script exécute a été déployée avant le manifeste. Faites cette mise à jour à la main une fois (Guide → Copier le script, coller sur Code.gs, Déployer → Gérer les déploiements → ✏️ → Nouvelle version). Ensuite, Mettre le script à jour fonctionnera.'), true);
+      if ($('#mSettings')?.classList.contains('on')) { setPane = 'guide'; renderSettings(); }
+    } else toast(L('Script update failed: ', 'Échec de la mise à jour : ') + err.message, true);
+  }
 }
 /** Data source pane: connection status, “connect another phone”, script version and update. */
 function connectPasteHTML(){
@@ -8718,7 +8729,7 @@ function renderSettings(){
     <ol class="steps">
       <li>${L('Open <span class="mono">script.google.com/home/usersettings</span> and switch on <b>Google Apps Script API</b>.', 'Ouvrez <span class="mono">script.google.com/home/usersettings</span> et activez <b>Google Apps Script API</b>.')}</li>
       <li>${L('In the editor: ⚙ <b>Project Settings</b> → tick <b>Show “appsscript.json” manifest file</b>. Back in the editor, open <span class="mono">appsscript.json</span>, replace everything with the manifest below (your time zone is filled in), Save.', 'Dans l’éditeur : ⚙ <b>Paramètres du projet</b> → cochez <b>Afficher le fichier manifeste « appsscript.json »</b>. De retour dans l’éditeur, ouvrez <span class="mono">appsscript.json</span>, remplacez tout par le manifeste ci-dessous (votre fuseau horaire y est), Enregistrez.')}</li>
-      <li>${L('Choose <span class="mono">allowOneTapUpdates</span> in the toolbar, ▸ <b>Run</b>, and approve the new permissions (managing this script’s code and deployments). Then deploy a new version once, as for any update.', 'Choisissez <span class="mono">allowOneTapUpdates</span> dans la barre, ▸ <b>Exécuter</b>, et approuvez les nouvelles autorisations (gérer le code et les déploiements de ce script). Puis déployez une nouvelle version une fois, comme pour une mise à jour.')}</li>
+      <li>${L('Choose <span class="mono">allowOneTapUpdates</span> in the toolbar, ▸ <b>Run</b>, and approve the new permissions (managing this script’s code and deployments). <b>Then deploy a new version once by hand</b> (Deploy → Manage deployments → ✏️ → New version): the running version needs the manifest before it can update itself.', 'Choisissez <span class="mono">allowOneTapUpdates</span> dans la barre, ▸ <b>Exécuter</b>, et approuvez les nouvelles autorisations (gérer le code et les déploiements de ce script). Puis déployez une nouvelle version une fois, comme pour une mise à jour.')}</li>
     </ol>
     <p class="hint">${L('Only someone with your secret can trigger an update, it can only install the code this dashboard carries, and every update sends a note to your ntfy phones if reminders are set up. To switch it off: ▸ Run <span class="mono">stopOneTapUpdates</span>.', 'Seule une personne qui a votre secret peut lancer une mise à jour, elle ne peut installer que le code de ce tableau de bord, et chaque mise à jour envoie une note à vos téléphones ntfy si les rappels sont configurés. Pour désactiver : ▸ Exécuter <span class="mono">stopOneTapUpdates</span>.')}</p>
     <div class="row sp"><b>appsscript.json</b><button class="btn sm" data-act="copyManifest">${L('Copy manifest', 'Copier le manifeste')}</button></div>

@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.40.1 — 2026-11-27 · Apps Script v1.9 (no behaviour change)
+
+- **One-tap update "insufficient authentication scopes".** A web app runs the code *and the manifest* of the version it was deployed with. If the `appsscript.json` manifest was pasted after the running version was deployed, that version doesn't have permission to edit itself yet, even though running `allowOneTapUpdates` in the editor (which uses the latest code) approved it. The dashboard now explains this and opens the Setup guide: do that one update by hand (*Copy script* → paste → *Deploy → Manage deployments → ✏️ → New version*), after which *Update script* works. The guide's one-tap section now says the hand-made deployment is required, and the script's own error message (v1.9) says the same.
+
 ## v1.40.0 — 2026-11-27 · **Apps Script v1.9** (update it; includes v1.8)
 
 - **Upcoming visits and appointments as calendar pages.** The three text lines under Today's plan are now one row per kind, 🚗 parent visits, 🏠 home visits, 🩺 appointments: today's date (grey; blue when something is on today), then up to the **next 3**, each a little calendar page (month band + day), with the **gap in days** on the arrow between pages (from the previous one). One line each on a phone. The home-visit row only shows when there is one; the appointment row shows when there are any or when there are no home visits.

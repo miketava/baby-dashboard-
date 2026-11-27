@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.40.1', date:'2026-11-27',
+    en:['“Update script” failing with “insufficient authentication scopes” now says what it means: the version your script runs was deployed before the manifest, so do that one update by hand; one-tap updates work from then on. The setup guide says so too.'],
+    fr:['Quand « Mettre le script à jour » échoue avec « insufficient authentication scopes », le message l’explique maintenant : la version que votre script exécute a été déployée avant le manifeste; faites cette mise à jour à la main une fois, ensuite les mises à jour en un geste fonctionnent. Le guide le précise aussi.'] },
   { v:'1.40.0', date:'2026-11-27',
     en:['Today’s plan: upcoming parent visits, home visits and appointments are now a row of little calendar pages each (today, then up to the next 3), with the days between them on the arrows. Tap one for when, how long, the title, where (with a map link) and the description.',
         'Diapers: a wet + poop change is now one entry (Diaper - Wet + Poop) that counts as both, instead of two rows with the notes copied. Pee amount pills (light / medium / heavy) on wet changes, next to poop consistency; Health shows the mix.',
