@@ -41,6 +41,16 @@ const connectLink = () => location.origin + location.pathname + '#connect=' + b6
 function readConnectLink(){
   const m = location.hash.match(/^#connect=([\w-]+)/); if (!m) return false;
   history.replaceState(null, '', location.pathname + location.search);   // don't leave the secret in the address bar or history
+  return applyConnectCode(m[1]);
+}
+/** A pasted connect link (iPhone Home Screen apps don't share storage with Safari, so the link is pasted in the app). */
+function pasteConnectLink(text){
+  const m = String(text || '').match(/#connect=([\w-]+)/); if (!m) { toast(L('That isn’t a connect link: it should contain “#connect=”', 'Ce n’est pas un lien de connexion : il doit contenir « #connect= »'), true); return false; }
+  if (!applyConnectCode(m[1])) return false;
+  syncLive({ quiet: true }); renderSettings(); return true;
+}
+function applyConnectCode(code){
+  const m = [, code];
   let c; try { c = JSON.parse(unb64u(m[1])); } catch (err) { toast(L('That connect link is damaged', 'Ce lien de connexion est abîmé'), true); return false; }
   if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.u || '') || !c.t) { toast(L('That connect link is damaged', 'Ce lien de connexion est abîmé'), true); return false; }
   if (S.endpoint && (S.endpoint.trim() !== c.u || S.token !== c.t) && !confirm(L('Connect this phone to the Sheet in this link? It replaces the Sheet this phone is connected to now.', 'Relier ce téléphone à la feuille de ce lien ? Elle remplace celle à laquelle il est relié maintenant.'))) return false;
@@ -68,12 +78,18 @@ async function updateScript(){
   } catch (err) { toast(L('Script update failed: ', 'Échec de la mise à jour : ') + err.message, true); }
 }
 /** Data source pane: connection status, “connect another phone”, script version and update. */
+function connectPasteHTML(){
+  return `<details class="connect-paste" style="margin-top:8px" ${S.endpoint ? '' : 'open'}><summary class="faint">${L('Got a connect link? (iPhone: paste it here)', 'Vous avez un lien de connexion ? (iPhone : collez-le ici)')}</summary>
+    <div class="row wrap" style="margin-top:6px"><input type="text" id="connectPaste" placeholder="${esc(L('Paste the link from the other phone', 'Collez le lien reçu'))}" autocomplete="off" style="flex:1;min-width:180px"><button class="btn sm primary" data-act="connectPaste">${L('Connect', 'Relier')}</button></div></details>`;
+}
 function connectPaneHTML(){
-  if (!S.endpoint || viewOnly()) return '';
+  if (viewOnly()) return '';
+  if (!S.endpoint) return `<h4>${L('Joining a family that’s already set up?', 'Vous rejoignez une famille déjà configurée ?')}</h4>${connectPasteHTML()}`;
   const live = DATA.source === 'live', v17 = scriptAtLeast('1.7');
   return `<h4>${L('Other phones', 'Autres téléphones')}</h4>
     <p class="hint" style="margin-top:0">${L('Send this link to the other caregiver; opening it on their phone connects it to the same Sheet. It works like a password, so send it privately (a text, not a group chat).', 'Envoyez ce lien à l’autre parent ; en l’ouvrant sur son téléphone, celui-ci se relie à la même feuille. C’est comme un mot de passe : envoyez-le en privé (un texto, pas un groupe).')}</p>
     <div class="row wrap"><button class="btn" data-act="connectLink" ${S.token ? '' : 'disabled'}>🔗 ${L('Connect another phone', 'Relier un autre téléphone')}</button></div>
+    ${connectPasteHTML()}
     ${live ? `<h4>${L('Apps Script', 'Apps Script')}</h4>
     <p style="margin-top:0">v${esc(SCRIPT_SEEN === '0' ? '<1.0' : SCRIPT_SEEN)}${scriptOutdated() ? ` · <b>${L(`v${REQUIRED_SCRIPT} available`, `v${REQUIRED_SCRIPT} disponible`)}</b>` : ` · ${L('up to date', 'à jour')}`}</p>
     ${scriptOutdated() && SCRIPT_CAN_UPDATE ? `<div class="row wrap"><button class="btn primary" data-act="updateScript">🔧 ${L('Update script', 'Mettre le script à jour')}</button></div>` : ''}

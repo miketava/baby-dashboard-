@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.33.0** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.34.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -45,7 +45,7 @@ Suggested targets come from your child's age and are updated as they grow; the d
 | 📊 Routine & Visits | **Trends to watch** (three-day shifts in sleep or eating, nap-transition hints), daily **routine score** (how closely the day followed *your* routine), plain-language findings, and on the placement path: before / during / after-visit analysis, visit-by-visit table, cocooning. |
 | 😴 Sleep | Sleep per day, wake windows against your targets, which days lead to calmer nights, the last wake window that gives the easiest bedtime, and the effect of outings, visits and car rides. |
 | 🍼 Feeding | Newborn feeds (gaps, longest stretch, left/right balance, cluster feeding), milk by time of day, fluids, foods offered and accepted, **allergen upkeep** (when each allergen group was last offered), allergen groups. |
-| 🩺 Health & Growth | Milestones, appointments and health notes, temperatures, vaccines, diapers and meds, **growth** (WHO percentiles), the **Québec vaccine schedule** with post-vaccine notes, **teething vs sleep** and a **tooth chart**. |
+| 🩺 Health & Growth | Milestones, appointments and health notes, temperatures, vaccines, diapers and meds, **growth** (WHO percentiles), the **Québec or Ontario vaccine schedule** with post-vaccine notes, **teething vs sleep** and a **tooth chart**. |
 | 📝 Check-ins | The **end-of-day check-in** (see below): which days are done and a running summary per area. |
 | 💬 Birth Family | Texts, calls and emails with the birth family: per day, time of day, topics, basic / in-depth / follow-up, reply times, tone, how it compares with the communication agreement, and questions asked again or photo / update requests on visit days. |
 | 🗂️ Data | One row per day and the full event log, sortable, with CSV export. |
@@ -69,7 +69,7 @@ Open `index.html` in Chrome, Edge, Firefox or Safari and pick "Explore with exam
 ### 2. Use a CSV (no Google account)
 Make a spreadsheet with the columns below, export it as CSV and drag it onto the dashboard.
 
-### 3. Live Google Sheet (recommended, about 10 minutes)
+### 3. Live Google Sheet (recommended, about 10 minutes on a computer)
 1. **Create the Sheet.** Easiest: **[make a copy of the template Sheet](https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy)** (also in *Settings → Setup guide*); it has everything below ready. Or make your own: a Google Sheet with a tab named exactly **`Daily Log`** and these headers in row 1:
    `Date | Start Time | End Time | Duration (min) | Category | Milk (oz) | Notes | Water (ml) | Tags | Outcome / Rating | Value`
    (Metric users can name the milk column `Milk (ml)`. Missing columns like `Child`, `Logged At` or `Edited At` are added automatically when needed.)
@@ -92,7 +92,7 @@ Host the dashboard on **GitHub Pages** (free):
 1. Create a **public** repository. That's fine: the page contains no data and no secret.
 2. Upload `index.html`, `manifest.webmanifest`, `sw.js` and the icon files (`icon-192.png`, `icon-512.png`, `icon-maskable.png`, `apple-touch-icon.png`).
 3. *Settings → Pages →* deploy from the `main` branch, `/ (root)`. After a minute you get `https://<you>.github.io/<repo>/`.
-4. **Android:** open the link in Chrome → ⋮ → **Install app**. **iPhone:** Safari → Share → **Add to Home Screen**, then open it from the icon and import your config there (the Home Screen app keeps its own storage).
+4. **Android:** open the link in Chrome → ⋮ → **Install app**. **iPhone:** Safari → Share → **Add to Home Screen**, then open it from the icon and paste the *Connect another phone* link in *Settings → Data source → Got a connect link?* (the Home Screen app keeps its own storage, so tapping the link would only connect Safari).
 
 It installs like an app, opens offline with the last synced data, and picks up new versions automatically. To update, replace `index.html` in the repo.
 

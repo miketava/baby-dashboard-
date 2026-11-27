@@ -5,7 +5,7 @@ const wizSteps = () => W?.addKid ? WIZ_STEPS.slice(0, 4) : WIZ_STEPS;
 function openWizard(opts = {}){
   const P = S.profile;
   W = { addKid: !!opts.addKid, prevKid: opts.prevKid, step:0, name:P.name, dob:P.dob, sex:P.sex, path:P.path || '', units:P.units || 'imperial', feeding:P.feeding || 'mixed', modules:{ ...ALL_ON, ...P.modules },
-        data: DATA.source === 'demo' ? 'demo' : 'keep', tour:true, first: !P.onboarded };
+        data: DATA.source === 'demo' ? 'demo' : 'keep', tour:true, first: !P.onboarded, vax: S.vaxSchedule || (STORED_SETTINGS ? 'qc' : FRL() ? 'qc' : 'on') };
   renderWizard(); openModal('mWizard');
 }
 function renderWizard(){
@@ -27,7 +27,8 @@ function renderWizard(){
     <div class="fgrid" style="grid-template-columns:1fr 1fr">
       <div class="field">Units<div class="seg" id="wUnits"><button data-u="imperial" class="${W.units === 'imperial' ? 'on' : ''}">oz · lb · in · °F</button><button data-u="metric" class="${W.units === 'metric' ? 'on' : ''}">ml · kg · cm · °C</button></div></div>
       <div class="field">Feeding right now<div class="seg wrapseg" id="wFeed">${[['breast','Breast'],['formula','Formula'],['mixed','Mixed'],['solids','Solids too']].map(([k, l]) => `<button data-f="${k}" class="${W.feeding === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
-    </div><p class="hint">Milk amounts are shown in your units everywhere; a Sheet column named <span class="mono">Milk (ml)</span> is read as ml automatically.</p>`;
+    </div><p class="hint">Milk amounts are shown in your units everywhere; a Sheet column named <span class="mono">Milk (ml)</span> is read as ml automatically.</p>
+    ${W.addKid ? '' : `<label class="field" style="margin-top:10px">${L('Vaccine schedule (where you live)', 'Calendrier de vaccination (où vous habitez)')}<select id="wVax">${[['qc', 'Québec'], ['on', 'Ontario'], ['off', L('Elsewhere / don’t track vaccines', 'Ailleurs / ne pas suivre')]].map(([k, l]) => `<option value="${k}" ${W.vax === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span class="faint">${L('Reminds you when the next vaccines are due and what to watch for after. Other places: choose the last option and log Vaccine rows as they happen.', 'Vous rappelle les prochains vaccins et quoi surveiller après. Ailleurs : choisissez la dernière option et notez les vaccins au fur et à mesure.')}</span></label>`}`;
   else if (st === 'features') h = `<h3>Features</h3><p class="muted">Pre-selected for <b>${esc(PATHS[W.path]?.label || '')}</b>. Untick anything you don't need — hidden features keep their data and come back when re-enabled.</p>
     ${MOD_GROUPS.map(([en, fr, keys]) => `<h4 style="margin:12px 0 4px">${L(en, fr)}</h4><div class="modlist">${MODULES.filter(([k]) => keys.includes(k)).map(([k, l, d]) => `<label class="modrow"><input type="checkbox" data-m="${k}" ${W.modules[k] ? 'checked' : ''}><span><b>${l}</b><span class="muted">${d}</span></span></label>`).join('')}</div>`).join('')}`;
   else if (st === 'data') {
@@ -36,7 +37,7 @@ function renderWizard(){
     h = `<h3>Your data</h3><div class="modlist">
       ${hasData ? opt('keep', 'Keep my current data', `${DATA.events.length} events from ${esc(DATA.label)}`) : ''}
       ${opt('demo', 'Explore with example data first', PATHS[W.path]?.demo === 'newborn' ? 'A fictional newborn’s first four weeks' : PATHS[W.path]?.demo === 'placement' ? 'Three fictional weeks with visits and handovers' : 'Three fictional weeks of naps, meals and outings')}
-      ${opt('sheet', 'Connect a Google Sheet', 'Copy our ready-made template Sheet, then about 5 minutes with the setup guide. Live sync for all caregivers; Quick Log writes to the Sheet')}
+      ${opt('sheet', 'Connect a Google Sheet', 'Copy our ready-made template Sheet, then about 10 minutes with the setup guide, <b>on a computer</b> (one step happens in Google’s script editor, which doesn’t work well on a phone). Live sync for all caregivers; Quick Log writes to the Sheet')}
       ${opt('csv', 'Import a CSV file', 'One-off import of a Daily Log export')}
       ${opt('empty', 'Start empty', 'Log with Quick Log on this device; connect a Sheet any time')}
     </div><label class="switch" style="margin-top:12px"><input type="checkbox" id="wTour" ${W.tour ? 'checked' : ''}> Show me a guided tour when I finish</label>`;
@@ -50,6 +51,7 @@ function wizardCollect(){
   const st = WIZ_STEPS[W.step];
   if (st === 'child') { W.name = $('#wName').value.trim(); W.dob = $('#wDob').value; W.sex = $('#wSex').value; }
   if (st === 'features') $$('#wizBody [data-m]').forEach(c => W.modules[c.dataset.m] = c.checked);
+  if (st === 'units' && $('#wVax')) W.vax = $('#wVax').value;
   if (st === 'data') { W.data = $('#wizBody input[name=wData]:checked')?.value || 'demo'; W.tour = $('#wTour').checked; }
 }
 /** End of the wizard when adding another child: keep the data, apply age-based targets, show the new child. */
@@ -65,6 +67,7 @@ function finishAddKid(){
 }
 function finishWizard(){
   if (W.addKid) return finishAddKid();
+  if (W.vax) S.vaxSchedule = W.vax;
   const prevPath = S.profile.path, first = W.first;
   S.profile = { ...S.profile, onboarded:true, whatsNew:'', name:W.name, dob:W.dob, sex:W.sex, path:W.path, units:W.units, feeding:W.feeding, modules:{ ...W.modules } };
   if (W.name && (first || /^Baby Routine Dashboard$/.test(S.title))) S.title = `${W.name}'s Routine`;

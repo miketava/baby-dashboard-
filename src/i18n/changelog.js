@@ -1,4 +1,11 @@
 const CHANGELOG = [
+  { v:'1.34.0', date:'2026-11-26',
+    en:['Vaccines: choose Québec or Ontario (Settings → Reminders → Vaccine schedule, also asked in the setup wizard), or turn it off elsewhere. The card, reminders and tour name the schedule in use.',
+        'Setup guide and wizard: the Google part is marked “do this on a computer”, with ~10 minutes instead of 5.',
+        'iPhone: a Home Screen app keeps its own storage, so Settings → Data source now has “Got a connect link?” to paste the link from the other phone. The guide explains when to use it.'],
+    fr:['Vaccins : choisissez le Québec ou l’Ontario (Réglages → Rappels → Calendrier de vaccination, aussi demandé dans l’assistant de départ), ou désactivez ailleurs. La carte, les rappels et la visite guidée nomment le calendrier utilisé.',
+        'Guide et assistant : la partie Google est marquée « à faire sur un ordinateur », ~10 minutes au lieu de 5.',
+        'iPhone : une app d’écran d’accueil a son propre stockage, donc Réglages → Source de données propose « Vous avez un lien de connexion ? » pour coller le lien reçu de l’autre téléphone. Le guide explique quand l’utiliser.'] },
   { v:'1.33.0', date:'2026-11-26',
     en:['Nothing you write is hidden any more. When two of you log the same thing a few minutes apart (say, dinner) and each entry has its own notes, tags or rating, both are kept and shown. A 🔀 note in Today says it was logged twice, and Compare & merge shows them side by side: Merge keeps one entry with both notes (with who wrote each), the tags combined and empty fields filled in; Keep both leaves them as two.',
         'Only a copy that adds nothing (same notes or none, same tags) is still counted once, as before.',

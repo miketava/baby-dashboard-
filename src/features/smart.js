@@ -156,7 +156,7 @@ function renderTrends(){
     : `<p class="muted" style="margin:2px 0">${L('Nothing unusual in the last three days compared with the two weeks before.', 'Rien d’inhabituel dans les trois derniers jours par rapport aux deux semaines précédentes.')}</p>`;
 }
 
-/* ── Québec immunization schedule (PIQ), from the date of birth + the Vaccine rows ── */
+/* ── Immunization schedule (Québec PIQ or Ontario's routine schedule), from the date of birth + the Vaccine rows ── */
 const VAX_QC = () => [
   { mo:2,  v:L('Diphtheria-pertussis-tetanus-hepatitis B-polio-Hib · pneumococcal · rotavirus', 'Diphtérie-coqueluche-tétanos-hépatite B-polio-Hib · pneumocoque · rotavirus') },
   { mo:4,  v:L('Diphtheria-pertussis-tetanus-hepatitis B-polio-Hib · pneumococcal · rotavirus', 'Diphtérie-coqueluche-tétanos-hépatite B-polio-Hib · pneumocoque · rotavirus') },
@@ -164,11 +164,23 @@ const VAX_QC = () => [
   { mo:18, v:L('Meningococcal · measles-mumps-rubella-varicella · hepatitis A-hepatitis B', 'Méningocoque · rougeole-rubéole-oreillons-varicelle · hépatite A-hépatite B'), late:true },
   { mo:48, to:72, v:L('Diphtheria-pertussis-tetanus-polio (between 4 and 6 years)', 'Diphtérie-coqueluche-tétanos-polio (entre 4 et 6 ans)') },
 ];
+// Ontario's routine publicly funded schedule, birth to 6 (ontario.ca, checked Nov 2026)
+const VAX_ON = () => [
+  { mo:2,  v:L('Diphtheria-pertussis-tetanus-polio-Hib · pneumococcal · rotavirus', 'Diphtérie-coqueluche-tétanos-polio-Hib · pneumocoque · rotavirus') },
+  { mo:4,  v:L('Diphtheria-pertussis-tetanus-polio-Hib · pneumococcal · rotavirus', 'Diphtérie-coqueluche-tétanos-polio-Hib · pneumocoque · rotavirus') },
+  { mo:6,  v:L('Diphtheria-pertussis-tetanus-polio-Hib', 'Diphtérie-coqueluche-tétanos-polio-Hib') },
+  { mo:12, v:L('Pneumococcal · meningococcal C · measles-mumps-rubella', 'Pneumocoque · méningocoque C · rougeole-oreillons-rubéole'), late:true },
+  { mo:18, v:L('Diphtheria-pertussis-tetanus-polio-Hib', 'Diphtérie-coqueluche-tétanos-polio-Hib') },
+  { mo:48, to:72, v:L('Tetanus-diphtheria-pertussis-polio · measles-mumps-rubella-varicella (between 4 and 6 years)', 'Tétanos-diphtérie-coqueluche-polio · rougeole-oreillons-rubéole-varicelle (entre 4 et 6 ans)'), late:true },
+];
+const VAX_SCHEDULES = { qc: { table: VAX_QC, name: () => L('Québec schedule', 'calendrier du Québec'), src: () => L('From the Québec immunization program (PIQ)', 'Selon le Programme d’immunisation du Québec (PIQ)') },
+                        on: { table: VAX_ON, name: () => L('Ontario schedule', 'calendrier de l’Ontario'), src: () => L('From Ontario’s routine immunization schedule', 'Selon le calendrier de vaccination systématique de l’Ontario') } };
+const vaxSched = () => VAX_SCHEDULES[S.vaxSchedule || 'qc'] || null;
 const addMonths = (D, mo) => { const d = idxDate(D); d.setUTCMonth(d.getUTCMonth() + mo); return parseDate(d.toISOString().slice(0, 10)); };
 function vaxStatus(){
-  const dob = dobIdx(); if (dob == null || (S.vaxSchedule || 'qc') !== 'qc') return null;
+  const dob = dobIdx(), sc = vaxSched(); if (dob == null || !sc) return null;
   const shots = DATA.events.filter(e => e.k === 'vaccine').sort((a, b) => a.d - b.d), used = new Set();
-  return VAX_QC().map((s, i, all) => {
+  return sc.table().map((s, i, all) => {
     const due = addMonths(dob, s.mo), nextDue = all[i + 1] ? addMonths(dob, all[i + 1].mo) : Infinity;
     const got = shots.find(e => !used.has(e) && e.d >= due - 30 && e.d < nextDue - 30); if (got) used.add(got);
     return { ...s, due, got };
@@ -187,19 +199,22 @@ function renderVaccines(){
   const st = vaxStatus(); card.classList.toggle('hidden', !st);
   if (!st) return;
   const T0 = todayIdx();
+  const sc = vaxSched(), h2 = card.querySelector('h2'), sub = card.querySelector('.card-head .sub');
+  if (h2) h2.textContent = `${L('Vaccines', 'Vaccins')} · ${sc.name().replace(/^./, c => c.toUpperCase())}`;
+  if (sub) sub.textContent = `${sc.src()} ${L('and the Vaccine rows you log · change or turn off in Settings → Reminders', 'et les lignes Vaccine que vous notez · à changer ou désactiver dans Réglages → Rappels')}`;
   box.innerHTML = `<div class="tbl-wrap"><table class="dt"><thead><tr>${(FRL() ? ['Âge', 'Vaccins', 'État', 'Après'] : ['Age', 'Vaccines', 'Status', 'After']).map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${st.map(s => {
     const age = s.to ? L('4–6 y', '4–6 ans') : L(`${s.mo} mo`, `${s.mo} mois`);
     const state = s.got ? `<span class="pl-did">✓ ${esc(fmtDayShort(s.got.d))}</span>` : s.due > T0 ? `<span class="faint">${L('due', 'prévu')} ${esc(fmtDayShort(s.due))}</span>` : `<b style="color:var(--warn)">${L('due since', 'prévu depuis le')} ${esc(fmtDayShort(s.due))}</b>`;
     const after = s.got ? (postVaxNotes(s).join(' · ') || `<span class="faint">${L('nothing logged', 'rien de noté')}</span>`) : '';
     const btn = !s.got && !viewOnly() ? ` <button class="btn sm" data-vaxlog="${s.mo}">✓ ${L('Log date', 'Noter la date')}</button>` : '';
     return `<tr><td>${age}</td><td>${esc(s.v)}</td><td>${state}${btn}</td><td>${after}</td></tr>`; }).join('')}</tbody></table></div>
-    <p class="hint">${L('A Vaccine row on or after the due date (or up to 30 days before) counts for that visit. “After” lists fevers, health notes and difficult days logged in the 3 days after (14 days for the 12- and 18-month doses, whose measles-varicella reactions can come later). Vaccines given before you started logging (from the vaccination booklet) can be added as Vaccine rows with their real date. Book through your CLSC or Québec.ca/vaccination; Info-Santé 811 for questions.', 'Une ligne Vaccine à la date prévue ou après (ou jusqu’à 30 jours avant) compte pour cette visite. « Après » liste les fièvres, notes de santé et journées difficiles notées dans les 3 jours suivants (14 jours pour les doses de 12 et 18 mois, dont les réactions rougeole-varicelle peuvent venir plus tard). Les vaccins reçus avant le début du journal (voir le carnet de vaccination) peuvent être ajoutés comme lignes Vaccine à leur vraie date. Rendez-vous au CLSC ou sur Québec.ca/vaccination; Info-Santé 811 pour les questions.')}</p>`;
+    <p class="hint">${L(`A Vaccine row on or after the due date (or up to 30 days before) counts for that visit. “After” lists fevers, health notes and difficult days logged in the 3 days after (14 days for doses with measles or varicella vaccine, whose reactions can come later). Vaccines given before you started logging (from the vaccination booklet) can be added as Vaccine rows with their real date. ${S.vaxSchedule === 'on' ? 'Book with your family doctor, nurse practitioner or local public health unit; Health811 for questions.' : 'Book through your CLSC or Québec.ca/vaccination; Info-Santé 811 for questions.'}`, `Une ligne Vaccine à la date prévue ou après (ou jusqu’à 30 jours avant) compte pour cette visite. « Après » liste les fièvres, notes de santé et journées difficiles notées dans les 3 jours suivants (14 jours pour les doses contenant le vaccin rougeole ou varicelle, dont les réactions peuvent venir plus tard). Les vaccins reçus avant le début du journal (voir le carnet de vaccination) peuvent être ajoutés comme lignes Vaccine à leur vraie date. ${S.vaxSchedule === 'on' ? 'Rendez-vous chez votre médecin de famille, une infirmière praticienne ou le bureau de santé publique local; Santé811 pour les questions.' : 'Rendez-vous au CLSC ou sur Québec.ca/vaccination; Info-Santé 811 pour les questions.'}`)}</p>`;
 }
 function vaxCallouts(){
   const st = vaxStatus(); if (!st || viewOnly()) return [];
   const T0 = todayIdx(), out = [];
   const next = st.filter(s => !s.got && s.due - T0 <= 14).pop(); if (next && next.due - T0 >= -60)
-    out.push({ cls:'info', html: next.due >= T0 ? L(`💉 ${next.to ? '4–6 year' : next.mo + '-month'} vaccines due <b>${relDay(next.due)}</b> (${esc(fmtDay(next.due))}, Québec schedule).`, `💉 Vaccins de ${next.to ? '4–6 ans' : next.mo + ' mois'} prévus <b>${relDay(next.due)}</b> (${esc(fmtDay(next.due))}, calendrier du Québec).`)
+    out.push({ cls:'info', html: next.due >= T0 ? L(`💉 ${next.to ? '4–6 year' : next.mo + '-month'} vaccines due <b>${relDay(next.due)}</b> (${esc(fmtDay(next.due))}, ${vaxSched().name()}).`, `💉 Vaccins de ${next.to ? '4–6 ans' : next.mo + ' mois'} prévus <b>${relDay(next.due)}</b> (${esc(fmtDay(next.due))}, ${vaxSched().name()}).`)
       : L(`💉 ${next.mo}-month vaccines were due ${esc(fmtDay(next.due))}. Log a Vaccine row once they’re done.`, `💉 Les vaccins de ${next.mo} mois étaient prévus le ${esc(fmtDay(next.due))}. Ajoutez une ligne Vaccine une fois faits.`) });
   const recent = st.filter(s => s.got && T0 - s.got.d <= (s.late ? 14 : 2));
   recent.forEach(s => { const dn = T0 - s.got.d;

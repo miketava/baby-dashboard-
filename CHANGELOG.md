@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.34.0 — 2026-11-26 · Apps Script v1.7 (no script change)
+
+- **Vaccine schedule: Québec or Ontario.** *Settings → Reminders → Vaccine schedule* has Québec (PIQ), **Ontario** (routine publicly funded schedule: 2, 4, 6, 12 and 18 months, then 4–6 years) or Off. The setup wizard asks on the Units step ("Elsewhere / don't track vaccines" turns it off). The Health card, the banner reminders, the booking hint and the tour name the schedule in use. Existing setups stay on Québec.
+- **"Do this on a computer"** in the Setup guide (steps 1–4) and the wizard's *Connect a Google Sheet* option: the Apps Script editor is close to unusable on a phone. Estimate now ~10 minutes.
+- **iPhone connecting.** A Home Screen app on iPhone doesn't share storage with Safari, so tapping a *Connect another phone* link only connected Safari. *Settings → Data source* now has **Got a connect link?**: paste the link there (shown open on a phone that isn't connected yet). The guide's phone step explains Android vs iPhone.
+
 ## v1.33.0 — 2026-11-26 · Apps Script v1.7 (no script change)
 
 - **No entry with something new in it is hidden.** The duplicate check used to keep the "richer" of two near-identical rows (same category, starts within 10 minutes) and count the other once, so a second caregiver's detailed note could disappear from the dashboard (it stayed in the Sheet). Now:
