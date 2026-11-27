@@ -57,7 +57,7 @@ async def quick_log(b):
   await pg.evaluate("openQuickLog()"); await pg.wait_for_timeout(200)
   groups = await pg.evaluate("[...document.querySelectorAll('.qlgrp h5')].map(h=>h.innerText.toLowerCase())")
   check('buttons are grouped', {'sleep', 'feeding', 'diapers'} <= set(groups), groups)
-  await pg.locator('.preset', has_text=re.compile('^🍼\\s*Milk$')).click(); await pg.wait_for_timeout(150)
+  await pg.locator('.preset', has_text=re.compile('^🍼\\s*Milk$')).last.click(); await pg.wait_for_timeout(150)
   await pg.locator('[data-for="Milk (oz)"] .chip').nth(2).click()
   fields = await pg.evaluate("[...document.querySelectorAll('#qlForm [name]')].map(e=>e.name)")
   check('Milk form has no Water field', 'Water (ml)' not in fields and 'Milk (oz)' in fields, fields)
