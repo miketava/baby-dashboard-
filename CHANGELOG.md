@@ -8,6 +8,15 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.37.2 — 2026-11-27 · Apps Script v1.7 (no script change)
+
+- **Quick Log keeps unsaved typing.** Closing a form with something typed and not saved (phone Back, ✕, swipe down, or ← Back to the list) keeps it as a draft, with a short "Not saved: reopen Quick Log to restore it" note. Reopening Quick Log shows it at the top (category, time and the start of the notes) with **↩ Restore** (back in the form, exactly as left, including edits of an existing entry) or **Discard**. Saving clears it. Kept on this device for 6 hours; a form you only opened and closed leaves nothing behind.
+- **Quick Log:** the *−10 · −5 · −1 · +1 · +5 · +10* row under each time no longer has its own *now* chip, which did the same as the **Now** button right beside the field.
+
+## v1.37.1 — 2026-11-27 · Apps Script v1.7 (no script change)
+
+- **Phones: toasts out of the way.** Short messages ("Saved to Google Sheet ✓", "Merged into one entry ✓"…) now sit above the bottom bar instead of over the ＋ Log button, and they no longer catch taps: a tap on one goes to whatever is underneath. Their text can't be selected either, so a quick tap no longer starts Chrome's tap-to-search / Google Lens on "Google Sheet".
+
 ## v1.37.0 — 2026-11-27 · Apps Script v1.7 (no script change)
 
 - **Early wake-ups move the morning.** When the night ends 20+ minutes before the template's *Wake* time, the morning's meals and routine steps and **Nap 1** move earlier by the same amount, capped at **30 minutes** (*Settings → Targets → Wake windows → Early wake-up: move Nap 1 by up to*; 0 keeps template times).

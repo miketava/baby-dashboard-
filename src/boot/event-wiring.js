@@ -138,7 +138,8 @@ function wire(){
         i.dispatchEvent(new Event('change', { bubbles:true }));   // re-render for the new category (title, outcome choices)
       }
       return; }
-    const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { QL = null; renderQuickLog(); } if (e.target.closest('#qlDelete')) deleteEdited(); });
+    const p = e.target.closest('[data-p]'); if (p) return pickPreset(+p.dataset.p); if (e.target.id === 'qlBack') { qlStash(); QL = null; renderQuickLog(); }
+    { const dr = e.target.closest('[data-qldraft]'); if (dr) return qlDraftAct(dr.dataset.qldraft); } if (e.target.closest('#qlDelete')) deleteEdited(); });
   $('#qlBody').addEventListener('click', e => { const k = e.target.closest('[data-qlkid]'); if (k) onQlKid(+k.dataset.qlkid);
     const w = e.target.closest('[data-qlwho]'); if (!w) return;
     if (w.dataset.qlwho === 'edit') { QL_WHO_EDIT = true; renderQuickLog(); }
@@ -160,6 +161,8 @@ function wire(){
   // “All” timeline: clicking a child's row shows that child's day
   $('#timeline').addEventListener('click', e => { const r = e.target.closest('[data-kidrow]'); if (r && +r.dataset.kidrow !== kidIdx()) { useKid(+r.dataset.kidrow, { render:false }); filterKidEvents(); analyze(); renderKidSeg(); } }, true);
   $('#qlBody').addEventListener('submit', e => { e.preventDefault(); submitQuickLog(e.target); });
+  $('#qlBody').addEventListener('input', e => { if (QL && e.target.closest('#qlForm')) QL.dirty = true; });
+  $('#qlBody').addEventListener('click', e => { if (QL && e.target.closest('#qlForm .chip, #qlForm [data-nudge], #qlForm [data-now]')) QL.dirty = true; }, true);
   $('#qlBody').addEventListener('change', e => { if (e.target.name === 'Category' && QL) { const fd = Object.fromEntries(new FormData($('#qlForm')).entries()); if (fd['Milk (oz)'] !== '' && fd['Milk (oz)'] != null) fd['Milk (oz)'] = fromDisp(+fd['Milk (oz)']); QL.row = { ...QL.row, ...fd }; renderQuickLog(); } });
   // Report
   $('#repSeg').onclick = e => { const b = e.target.closest('button'); if (b) { repMode = b.dataset.n; repSnap = null; renderReport(); } };

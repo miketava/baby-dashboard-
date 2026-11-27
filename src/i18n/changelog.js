@@ -1,4 +1,12 @@
 const CHANGELOG = [
+  { v:'1.37.2', date:'2026-11-27',
+    en:['Quick Log keeps what you typed: closing it by mistake (Back, ✕, swipe down) with something not saved keeps a draft, and reopening Quick Log offers ↩ Restore or Discard at the top (on this device, for 6 hours).',
+        'Quick Log: the −10 … +10 min row under a time no longer repeats “now”; use the Now button beside the field.'],
+    fr:['L’Entrée rapide garde ce que vous avez tapé : la fermer par erreur (Retour, ✕, glisser vers le bas) avec quelque chose de non enregistré garde un brouillon, et la rouvrir propose ↩ Reprendre ou Jeter en haut (sur cet appareil, pendant 6 heures).',
+        'Entrée rapide : la rangée −10 … +10 min sous une heure ne répète plus « maintenant »; utilisez le bouton Maint. à côté du champ.'] },
+  { v:'1.37.1', date:'2026-11-27',
+    en:['Phones: messages like “Saved to Google Sheet ✓” now appear above the bottom bar instead of on top of the ＋ button, and taps go straight through them, so a quick tap never opens a search or Google Lens on their text.'],
+    fr:['Téléphones : les messages comme « Enregistré dans la feuille Google ✓ » s’affichent au-dessus de la barre du bas au lieu de couvrir le bouton ＋, et les touchers passent à travers : un toucher rapide n’ouvre plus de recherche ni Google Lens sur leur texte.'] },
   { v:'1.37.0', date:'2026-11-27',
     en:['Early wake-ups: when she wakes 20+ minutes before the template’s wake time, Today’s plan moves the morning and Nap 1 earlier by the same amount, up to 30 minutes, and the routine score judges Nap 1 against the moved time. Nap 2, the cutoff and bedtime stay put, so the day eases back to the template. The plan says so (“woke at 6:15: morning and Nap 1 moved 30m earlier”). Change the limit in Settings → Targets → Wake windows (0 keeps template times).'],
     fr:['Réveils hâtifs : quand le réveil a lieu 20 minutes ou plus avant celui du modèle, le plan du jour avance la matinée et la sieste 1 d’autant, jusqu’à 30 minutes, et le score de routine juge la sieste 1 selon l’heure avancée. La sieste 2, l’heure limite et le coucher ne bougent pas : la journée revient au modèle. Le plan l’indique (« réveil à 6 h 15 : matinée et sieste 1 avancées de 30 min »). Limite à changer dans Réglages → Cibles → Fenêtres d’éveil (0 garde l’horaire du modèle).'] },

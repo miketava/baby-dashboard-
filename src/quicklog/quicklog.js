@@ -19,7 +19,32 @@ function scopeNoteHTML(){
     : `<p class="scopenote"><b>Not included:</b> ${ex.length ? 'entries in the categories ' + ex.map(c => '“' + esc(c) + '”').join(', ') : ''}${v?.from ? `${ex.length ? '; ' : ''}entries before ${fd}` : ''}. All other entries are included as logged.</p>`;
 }
 function openQuickLog(){ if (viewOnly()) return toast(L('This is a view-only connection — logging is done by the family', 'Accès en lecture seulement — la famille fait les entrées')); QL = null; renderQuickLog(); $('#qlog').classList.add('on'); $('#scrim').classList.add('on'); }
-function closeQuickLog(){ $('#qlog').classList.remove('on'); if (!$('.modal.on') && drawerDay == null) $('#scrim').classList.remove('on'); }
+/* ── Unsaved drafts (v1.37.2): closing Quick Log (✕, Back, swipe down, ← Back to the list) with something typed and not
+   saved keeps it as a draft, on this device for 6 hours. Reopening Quick Log offers Restore / Discard at the top. */
+let QL_DRAFT = lsGet('bld.qlDraft', null);
+const QL_DRAFT_MS = 6 * 3600e3;
+function qlStash(){
+  const form = $('#qlForm'); if (!QL || !QL.dirty || QL.submitting || !form) return false;
+  const row = { ...QL.row, ...Object.fromEntries(new FormData(form).entries()) };
+  const ev = QL.ev && { sheetRow: QL.ev.sheetRow, match: QL.ev.match, local: QL.ev.local, localId: QL.ev.localId, loggedAt: QL.ev.loggedAt };
+  QL_DRAFT = { ...QL, row, ev, target: QL.op === 'end' ? QL.target : undefined, dirty: true, at: Date.now() };
+  lsSet('bld.qlDraft', { ...QL_DRAFT, target: undefined });   // an “end” draft (needs the open entry) only survives in memory
+  return true;
+}
+function qlDropDraft(){ QL_DRAFT = null; try { localStorage.removeItem('bld.qlDraft'); } catch {} }
+function qlDraftHTML(){
+  const d = QL_DRAFT; if (!d || Date.now() - d.at > QL_DRAFT_MS || (d.op === 'end' && !d.target)) return '';
+  const r = d.row || {}, what = r['Category'] || L('entry', 'entrée'), t = r['Start Time'] || r['End Time'] || '', n = String(r['Notes'] || '').trim();
+  return `<div class="callout warn qldraft" style="margin:0 0 10px">✏️ ${L(`Not saved: <b>${esc(d.op === 'update' ? 'edit of ' + catL(what) : catL(what))}</b>`, `Non enregistré : <b>${esc(d.op === 'update' ? 'modification ' + catL(what) : catL(what))}</b>`)}${t ? ' ' + esc(t) : ''}${n ? ` · “${esc(n.length > 60 ? n.slice(0, 60) + '…' : n)}”` : ''}
+    <div class="row wrap" style="margin-top:6px"><button type="button" class="btn sm primary" data-qldraft="restore">↩ ${L('Restore', 'Reprendre')}</button><button type="button" class="btn sm ghost" data-qldraft="discard">${L('Discard', 'Jeter')}</button></div></div>`;
+}
+function qlDraftAct(act){
+  if (act === 'restore' && QL_DRAFT) { QL = { ...QL_DRAFT, dirty: true }; if (QL.ev && !QL.ev.cat) QL.ev = DATA.events.find(e => e.sheetRow === QL.ev.sheetRow && (!e.local || e.localId === QL.ev.localId)) || QL.ev; qlDropDraft(); renderQuickLog(); return; }
+  qlDropDraft(); renderQuickLog();
+}
+function closeQuickLog(){
+  if (qlStash()) toast(L('Not saved: reopen Quick Log to restore it', 'Non enregistré : rouvrez l’Entrée rapide pour le reprendre'));
+  $('#qlog').classList.remove('on'); if (!$('.modal.on') && drawerDay == null) $('#scrim').classList.remove('on'); }
 function qlPresets(){
   const now = nowMin(), open = DATA.events.filter(e => e.ongoing);
   const P = [];
@@ -87,7 +112,7 @@ function renderQuickLog(){
     $('#qlTitle').textContent = 'Quick Log';
     const P = qlPresets(); window.__qlp = P;
     const queued = QUEUE.length ? `<p class="queue-note">${QUEUE.length} entr${QUEUE.length>1?'ies':'y'} not yet in the Sheet${S.endpoint ? ' — they retry on every sync.' : ' (no Sheet connected).'}</p>` : '';
-    $('#qlBody').innerHTML = `${!ME.name || QL_WHO_EDIT ? qlWhoHTML() : ''}${qlKidPickerHTML()}${smartRowHTML(P)}${qlPresetsHTML(P)}${queued}
+    $('#qlBody').innerHTML = `${qlDraftHTML()}${!ME.name || QL_WHO_EDIT ? qlWhoHTML() : ''}${qlKidPickerHTML()}${smartRowHTML(P)}${qlPresetsHTML(P)}${queued}
       ${!S.endpoint ? '<p class="queue-note">Connect your Sheet (Settings → Data source) and redeploy the Apps Script with <b>doPost</b> to save straight into Google Sheets.</p>' : ''}${ME.name && !QL_WHO_EDIT ? qlWhoHTML() : ''}`;
     return;
   }
@@ -135,8 +160,8 @@ function renderQuickLog(){
     const w = document.createElement('span'); w.className = 'tw'; i.replaceWith(w); w.appendChild(i);
     w.insertAdjacentHTML('beforeend', `<button type="button" class="btn sm nowbtn" data-now="${esc(i.name)}" data-noi18n>${L('Now', 'Maint.')}</button>`); });
 }
-/** “now · −10 · −5 · −1 · +1 · +5 · +10 min” buttons: now sets the time; the others nudge whatever is in the field, so taps add up (v1.27). */
-const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span><button type="button" class="chip" data-ago="0">${L('now', 'maintenant')}</button>${[-10, -5, -1, 1, 5, 10].map(d => `<button type="button" class="chip nudge" data-nudge="${d}">${d < 0 ? '−' + -d : '+' + d}</button>`).join('')}</div>`;
+/** “−10 · −5 · −1 · +1 · +5 · +10 min” buttons nudge whatever is in the field, so taps add up (v1.27). “Now” is the button beside the field (v1.37.1). */
+const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span>${[-10, -5, -1, 1, 5, 10].map(d => `<button type="button" class="chip nudge" data-nudge="${d}">${d < 0 ? '−' + -d : '+' + d}</button>`).join('')}</div>`;
 const milkChips = () => metric() ? [60, 90, 120, 150] : [2, 3, 4, 5];
 function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
 function stoolChipsHTML(tagsStr){
@@ -170,6 +195,10 @@ async function pickPreset(i){
 }
 async function submitQuickLog(form){
   const fd = Object.fromEntries(new FormData(form).entries());
+  const _close = closeQuickLog; closeQuickLog = () => { QL.submitting = true; qlDropDraft(); _close(); closeQuickLog = _close; };   // saving isn't abandoning
+  try { return await submitQuickLog0(form, fd); } finally { closeQuickLog = _close; }
+}
+async function submitQuickLog0(form, fd){
   if (QL.op === 'end') {
     const tgt = QL.target, en = parseTime(fd['End Time']); if (en == null) return toast('Pick an end time', true);
     const endAbs = (en < tgt.st ? tgt.d + 1 : tgt.d) * DAY + en;
