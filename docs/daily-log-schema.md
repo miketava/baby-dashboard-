@@ -1,8 +1,10 @@
-# Daily Log schema — instructions for Gemini (v6, matches dashboard v1.27)
+# Daily Log schema — instructions for Gemini (v7, matches dashboard v1.40)
 
 Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions. Write only to the **Daily Log** tab: never add or change rows in the **Config** or **Medications** tabs, which the dashboard manages.
 
 The dashboard reads these rows. It can count feeds, sleep, reactions, handovers, meals, measurements and family contact only when the rows use the exact categories, tags and outcome words below. Otherwise it can only display the notes.
+
+> **Private Notes column:** never write to it. It holds the family's private notes and must stay empty in rows you produce.
 
 ## 1. Output format
 
@@ -73,7 +75,7 @@ One row per event. Columns, in this order (leave a cell empty when it doesn't ap
 | Play | Play during the day: activity and who with in Tags (section 4), Start and End if given |
 | Milestone | New skills or words |
 | Behaviour | Mood or reactions worth noting (clingy, tantrum, happy…) |
-| Diaper - Wet, Diaper - Poop, Meds | Care tracking |
+| Diaper - Wet, Diaper - Poop, Diaper - Wet + Poop, Meds | Care tracking |
 | Check-in - Language, Check-in - Emotional, Check-in - Feeding, Check-in - Play, Check-in - Sleep, Check-in - Parents, Check-in - Other | The end-of-day check-in. Normally filled in from the dashboard's form; only create these when a note is clearly an end-of-day summary (see section 8). |
 
 A checkup with measurements is **several rows**: one Medical / Appointment row plus one Weight / Height / Head Circumference row per measurement, all with the same date and time.
@@ -88,7 +90,10 @@ A checkup with measurements is **several rows**: one Medical / Appointment row p
 - **Handover:** `drop-off` or `pick-up`; who transported only if the note says (`agency`, `parent`, `caregiver`); `on-time` or `late`.
 - **Milestones:** `motor, speech, feeding, social`.
 - **Meds:** Notes = the medication and dose as written (e.g. `Amoxicillin 2 ml`), Tags = the medication name in lowercase with hyphens (e.g. `amoxicillin`), Value = the dose. The dashboard uses the name to check off scheduled doses.
-- **Diaper - Poop:** the consistency if described, one of `hard` (separate hard lumps, lumpy), `formed` (sausage-shaped, soft blobs), `loose` (mushy, ragged), `watery` (no solid pieces). These are the Brussels Infant and Toddler Stool Scale groups. A diaper that was both wet and dirty is **two rows**, `Diaper - Wet` and `Diaper - Poop`, with the same time.
+- **Diapers:** one row per diaper change. A diaper that was both wet and dirty is **one row**, Category `Diaper - Wet + Poop` (it counts as both a wet and a dirty diaper).
+  - How wet, if described (`Diaper - Wet` and `Diaper - Wet + Poop`): one of `light pee`, `medium pee`, `heavy pee`.
+  - The poop's consistency, if described (`Diaper - Poop` and `Diaper - Wet + Poop`): one of `hard` (separate hard lumps, lumpy), `formed` (sausage-shaped, soft blobs), `loose` (mushy, ragged), `watery` (no solid pieces). These are the Brussels Infant and Toddler Stool Scale groups.
+  - Example: `Diaper - Wet + Poop`, Tags `heavy pee, loose`.
 - **Health:** short descriptors, e.g. `head-bump, rash, mild, ear, teething`.
 - **Family Contact:** see section 7.
 - **Soothing** (on naps, Sleep - Night and Awake / Restless rows), only the ones the note mentions: `on-own`, `rocking`, `holding`, `walking`, `lullaby`, `humming`, `shushing`, `white-noise`, `story`, `patting`, `back-rub`, `pacifier`, `milk`, `lovey`, `stroller`, `contact`.

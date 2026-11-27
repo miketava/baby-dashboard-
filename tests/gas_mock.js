@@ -46,7 +46,7 @@ function load({ secret = 'test-secret-0123456789', dailyLog, calendars = [], rem
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     // calendars: [{ name, events: [{ title, start: Date, end: Date, allDay? }] }]
     CalendarApp: { getAllCalendars: () => calendars.map(c => ({ getName: () => c.name, isHidden: () => false, isSelected: () => true,
-      getEvents: (a, b) => c.events.filter(e => e.start >= a && e.start <= b).map((e, i) => ({ getTitle: () => e.title, isAllDayEvent: () => !!e.allDay, getStartTime: () => e.start, getEndTime: () => e.end, getId: () => c.name + '#' + i })) })) },
+      getEvents: (a, b) => c.events.filter(e => e.start >= a && e.start <= b).map((e, i) => ({ getTitle: () => e.title, isAllDayEvent: () => !!e.allDay, getStartTime: () => e.start, getEndTime: () => e.end, getId: () => c.name + '#' + i, getLocation: () => e.where || '', getDescription: () => e.desc || '' })) })) },
     Session: { getScriptTimeZone: () => 'UTC' },
     Utilities: { formatDate: (d, tz, p) => { const iso = d.toISOString(); return p === 'HH:mm' ? iso.slice(11, 16) : iso.slice(0, 10); } }, Logger: { log: x => logs.push(String(x)) },
     CacheService: { getScriptCache: () => ({ get: k => cacheStore[k] || null, put: (k, v) => { cacheStore[k] = v; } }) },

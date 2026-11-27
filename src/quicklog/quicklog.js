@@ -66,7 +66,7 @@ function qlPresets(){
   if (mod('food')) P.push({ e:'🍽', label:L('Meal', 'Repas'), cat: mealByTime(now), meal:true });   // v1.24.2: one button; breakfast / lunch / snack / dinner are picked in the form
   if (mod('visits')) P.push({ e:'👋', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤗', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
   P.push({ e:'🙂', label:'Reaction / mood', cat:'Behaviour' });
-  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Poop', both:true, sub:L('two rows, same time', 'deux lignes, même heure') }, { e:'💊', label:'Meds', cat:'Meds' });
+  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Wet + Poop', sub:L('one change, counts as both', 'un change, compte pour les deux') }, { e:'💊', label:'Meds', cat:'Meds' });
   if (mod('milestones')) P.push({ e:'⭐', label:'Add Milestone', cat:'Milestone', allDay:true });
   if (mod('growth')) P.push({ e:'⚖️', label:'Weight', cat:'Weight', allDay:true, value:true }, { e:'📏', label:'Length', cat:'Height', allDay:true, value:true });
   if (mod('health')) P.push({ e:'🌡️', label:'Temperature', cat:'Temperature', value:true });
@@ -148,7 +148,7 @@ function renderQuickLog(){
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
       ${catKindNow === 'meds' ? medPickHTML(f.row) : ''}
-      ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
+      ${isWetCat(f.row['Category']) && /diaper|couche/i.test(f.row['Category']) ? peeChipsHTML(f.row['Tags']) : ''}${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : (isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '')) || catKindNow === 'awake' ? soothChipsHTML(f.row['Tags'], catKindNow === 'awake' ? 'awake' : 'sleep') : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' && catKindNow !== 'awake' && !isSleep({ k: catKindNow }) ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     ${showOutcome ? `<label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${[...ocOpts, ...(has('Outcome / Rating') && !ocOpts.includes(f.row['Outcome / Rating']) ? [f.row['Outcome / Rating']] : [])].map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>` : ''}
     ${privOn() || f.row['Private Notes'] ? `<label class="field full privfield">🔒 ${L('Private notes', 'Notes privées')} <span class="faint">${L('· only for the family, never in reports or shared', '· pour la famille seulement, jamais dans les rapports ni partagées')}</span><textarea name="Private Notes" rows="2">${v('Private Notes')}</textarea></label>` : ''}
@@ -165,6 +165,10 @@ function renderQuickLog(){
 const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span>${[-10, -5, -1, 1, 5, 10].map(d => `<button type="button" class="chip nudge" data-nudge="${d}">${d < 0 ? '−' + -d : '+' + d}</button>`).join('')}</div>`;
 const milkChips = () => metric() ? [60, 90, 120, 150] : [2, 3, 4, 5];
 function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
+function peeChipsHTML(tagsStr){
+  const cur = new Set(parseTags(tagsStr));
+  return `<div class="full ctchips"><div class="ctg"><span class="faint">${L('How wet', 'Quantité de pipi')}</span><div class="chips">${PEE().map(([v, n], i) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" data-single="pee">${'💧'.repeat(i + 1)} ${esc(n)}</span>`).join('')}</div></div></div>`;
+}
 function stoolChipsHTML(tagsStr){
   const cur = new Set(parseTags(tagsStr));
   return `<div class="full ctchips"><div class="ctg"><span class="faint">${L('Consistency', 'Consistance')} · <a href="https://bitss-stoolscale.com" target="_blank" rel="noopener" class="faint">BITSS</a></span><div class="chips">${STOOL().map(([v, n, d]) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" data-single="stool" title="${esc(d)}">${stoolIcon(v)}<span class="st-n">${esc(n)}<span class="faint">${esc(d.split(' · ')[0])}</span></span></span>`).join('')}</div></div></div>`;
@@ -226,7 +230,5 @@ async function submitQuickLog0(form, fd){
   if (catKind(row['Category']) === 'contact') { const keep = parseTags(row['Tags']).map(contactTag).filter(h => h && ['channel', 'dir', 'who'].includes(h[0])).map(h => h[1]); if (keep.length) { S.lastContactTags = keep.join(', '); saveSettings(); } }
   if (QL.op === 'update') { const ev = QL.ev; closeQuickLog(); return saveQuickOp('update', row, { rowNum: ev.sheetRow, match: ev.match, localId: ev.local ? ev.localId : null }); }
   closeQuickLog();
-  if (both) { const wet = { ...row, 'Category':'Diaper - Wet', 'Tags': parseTags(row['Tags']).filter(t => !STOOL_KEYS.includes(t)).join(', ') };
-    await saveQuickOp('append', wet, { batch:true }); await saveQuickOp('append', row); return toast(L('Logged a wet and a poop diaper', 'Couche pipi et couche caca notées')); }
   saveQuickOp('append', row);
 }

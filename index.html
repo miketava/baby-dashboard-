@@ -371,6 +371,22 @@ body.viewonly .fab{display:none!important}
 .preset:hover{border-color:var(--accent)}
 .preset.live{border-color:var(--good);background:var(--good-soft)}
 .qform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+/* v1.40 — upcoming visits & appointments: little calendar pages with the gap in days between them */
+.chip[data-single=pee]:not(.off){border-color:#38bdf8;background:color-mix(in srgb,#38bdf8 16%,var(--panel));font-weight:650}
+.upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.urow{display:flex;align-items:center;gap:4px;min-width:0}
+.uic{font-size:18px;width:26px;flex:none;text-align:center}
+.ucal{flex:none;width:44px;height:46px;padding:0;border:1px solid var(--border);border-radius:9px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;cursor:pointer;color:var(--text)}
+.ucal .m{background:var(--accent);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:15px}
+.ucal .d{flex:1;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.ucal.today{opacity:.75;cursor:default} .ucal.today .m{background:var(--muted)}
+.ucal.today.has{opacity:1;cursor:pointer} .ucal.today.has .m{background:var(--accent)}
+.ucal.sel{outline:2px solid var(--accent);outline-offset:1px}
+.ugap{flex:1 1 0;min-width:26px;max-width:56px;display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:15px;line-height:1}
+.ugap small{font-size:11px;font-weight:600;margin-bottom:1px}
+.unone{font-size:12px;margin-left:6px}
+.upop{margin-top:2px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);display:flex;flex-direction:column;gap:4px;font-size:14px}
+.upop .uph{font-size:15px}
 /* v1.39 — phones: Quick Log takes the whole screen, with thumb-sized controls (44–48px) and 16px text (no iPhone zoom on focus) */
 @media (max-width:720px){
   #qlog{--sx:0;left:0;right:0;top:0;bottom:0;width:100%;max-height:none;height:100dvh;border-radius:0;transform:translate(0,105%);display:flex;flex-direction:column}
@@ -1230,14 +1246,21 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.39.1';
+const APP_VERSION = '1.40.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
-const REQUIRED_SCRIPT = '1.8';
+const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.40.0', date:'2026-11-27',
+    en:['Today’s plan: upcoming parent visits, home visits and appointments are now a row of little calendar pages each (today, then up to the next 3), with the days between them on the arrows. Tap one for when, how long, the title, where (with a map link) and the description.',
+        'Diapers: a wet + poop change is now one entry (Diaper - Wet + Poop) that counts as both, instead of two rows with the notes copied. Pee amount pills (light / medium / heavy) on wet changes, next to poop consistency; Health shows the mix.',
+        'Apps Script v1.9 (update it; includes v1.8 for private notes): sends an appointment’s place and description so you can see them when you tap it (your phones only, never viewer keys).'],
+    fr:['Plan du jour : les prochaines visites des parents, visites à domicile et rendez-vous forment chacun une rangée de petites pages de calendrier (aujourd’hui, puis jusqu’aux 3 suivants), avec les jours d’écart sur les flèches. Touchez-en une pour l’heure, la durée, le titre, le lieu (avec lien carte) et la description.',
+        'Couches : un change pipi + caca est maintenant une seule entrée (Diaper - Wet + Poop) qui compte pour les deux, au lieu de deux lignes avec les notes en double. Pastilles de quantité de pipi (peu / moyen / beaucoup) sur les couches mouillées, à côté de la consistance des selles; Santé montre la répartition.',
+        'Apps Script v1.9 (à mettre à jour; inclut la v1.8 des notes privées) : envoie le lieu et la description d’un rendez-vous pour les voir en le touchant (vos téléphones seulement, jamais les clés lecteur).'] },
   { v:'1.39.1', date:'2026-11-27',
     en:['Fix: the dashboard now asks for Apps Script v1.8 (it still said 1.7 was current), so the 🔧 update notice and the Update script button appear, and the Private notes switch can be turned on once it’s updated.'],
     fr:['Correctif : le tableau de bord demande maintenant l’Apps Script v1.8 (il indiquait encore 1.7 comme à jour) : l’avis de mise à jour 🔧 et le bouton Mettre le script à jour apparaissent, et l’interrupteur Notes privées s’active une fois la mise à jour faite.'] },
@@ -1662,6 +1685,7 @@ const DEFAULT_CATS = {
   'Milestone':            { color:'#eab308', icon:'⭐' },
   'Diaper - Wet':         { color:'#38bdf8', icon:'💧' },
   'Diaper - Poop':        { color:'#a16207', icon:'💩' },
+  'Diaper - Wet + Poop':  { color:'#0e7490', icon:'💧💩' },   // one change, counted as both (v1.40)
   'Meds':                 { color:'#9333ea', icon:'💊' },
   // v3 additions — structured visit handovers and reactions (so they can be counted, not just read)
   'Handover':             { color:'#db2777', icon:'🤝' },
@@ -1771,6 +1795,10 @@ const STOOL_ICON = {
   watery: '<path d="M3 18.5c2.2-1.6 4.6-1 6.4-1.8 2-.9 4-.4 5.8-.2 2 .3 4-.8 6-.2 1.6.5 2.4 1.6 1 2.4-2 1.2-4.8.6-7 1.1-2.4.5-5 .3-7.4 0-1.8-.2-5.2.2-4.8-1.3z" opacity=".85"/><path d="M8.5 11.5c0 1.3-.9 2.1-1.8 2.1s-1.8-.8-1.8-2.1S6.7 8.6 6.7 8.6s1.8 1.6 1.8 2.9zM17.5 9.5c0 1.1-.8 1.8-1.5 1.8s-1.5-.7-1.5-1.8.9-2.6 1.5-3.4c.6.8 1.5 2.3 1.5 3.4z" opacity=".7"/>',
 };
 const stoolIcon = (k, sz = 26) => `<svg class="stool-ic" viewBox="0 0 28 24" width="${sz}" height="${Math.round(sz * 24 / 28)}" aria-hidden="true" fill="${{ hard:'#7c3f12', formed:'#a0522d', loose:'#b7791f', watery:'#c9a227' }[k]}">${STOOL_ICON[k]}</svg>`;
+/** How wet (v1.40): stored as a tag on Diaper - Wet and Diaper - Wet + Poop rows. */
+const PEE = () => [['light pee', L('Light', 'Peu')], ['medium pee', L('Medium', 'Moyen')], ['heavy pee', L('Heavy', 'Beaucoup')]];
+const PEE_KEYS = ['light pee', 'medium pee', 'heavy pee'];
+const isWetCat = c => /wet|pee|pipi|mouill/i.test(String(c || ''));
 const isPoopCat = c => /poop|dirty|\bbm\b|stool|caca|selle/i.test(String(c || ''));
 const KIND_STYLE = {
   wake:   { color:'#10b981', label:'Wake target' },
@@ -2010,7 +2038,7 @@ const SECRET_MIN = 16;
 // show a "Not included: …" line naming those categories. Each key: { label, exclude: [...], from, child, childName, blank }.
 const PRIVATE_COL = /^\\s*priv(ate|é|e)/i;   // private columns, never sent to viewer keys (v1.8)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.8';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.9';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -2037,7 +2065,7 @@ function eventKind_(t) {
 }
 // Appointments (v1.4): timed events that look like a doctor, dentist, clinic or vaccine appointment, from the same calendars.
 // The dashboard asks once whether each one is for the child; only then does it plan the day around it. For that question it
-// needs the title and calendar name, so those are sent for these events only, to the family's key only (never to viewer keys).
+// needs the title and calendar name (and, to show when you tap it, its place and description), so those are sent for these events only, to the family's key only (never to viewer keys).
 // Set APPOINTMENTS = false to turn this off.
 const APPOINTMENTS = true;
 const APPT_MATCH = /m[ée]decin|m[ée]dical|docteur|doctor|\\bdr\\b|p[ée]diatr|pediatr|dentist|dentiste|orthodont|clsc|clinique|clinic|vaccin|rendez-vous|\\brdv\\b|appointment|\\bappt\\b|optom|ophtalm|audiolog|orthophon|physio|ergoth|h[ôo]pital|hospital|urgence|checkup|check-up|bilan de sant[ée]/i;
@@ -2126,7 +2154,8 @@ function appointments_() {
     const t = ev.getTitle();
     const kind = eventKind_(t), home = kind === 'home';
     if (ev.isAllDayEvent() || !(kind === 'appt' || home)) return;
-    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName(), home: home };
+    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName(), home: home,
+      where: String(ev.getLocation() || '').slice(0, 200), desc: String(ev.getDescription() || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, 400) };   // v1.9: shown when you tap it (family key only)
     const key = a.date + ' ' + a.start + ' ' + t; if (seen[key]) return; seen[key] = 1;   // the same event in two calendars counts once
     a.id = hash_(String(ev.getId()) + '|' + a.date + ' ' + a.start);   // stable per event and time: moving it asks again
     out.push(a);
@@ -4421,11 +4450,7 @@ function renderTodayPlan(){
   $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift || tp.wakeShift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
-    + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
-        // v1.29.1: three lines — family visits away, visits at home, appointments
-        const ua = upcomingAppts(6), line = (ic, lab, list) => list.length ? `<div class="pl-up">${ic} <b>${lab}:</b> ${list.slice(0, 3).map(a => `<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
-        const apl = line('🏠', L('Home visits', 'Visites à domicile'), ua.filter(a => a.home)) + line('🩺', L('Appointments', 'Rendez-vous'), ua.filter(a => !a.home));
-        return `<div class="pl-up">🚗 <b>${L('Parent visits', 'Visites des parents')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>` + apl; })();
+    + upcomingStripHTML(m);   // v1.40: calendar strip per kind (was three text lines)
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */
 function renderTodayEntries(){
@@ -4884,7 +4909,10 @@ function renderHealth(){
       const wk = poops.filter(e => e.d > todayIdx() - 7), hard7 = wk.filter(e => e.tags.includes('hard')).length, wat7 = wk.filter(e => e.tags.includes('watery')).length;
       return `<div class="stool-bar">${STOOL().map(([k, nm, d]) => c[k] ? `<span class="st-${k}" style="flex:${c[k]}" title="${esc(d)}">${stoolIcon(k, 18).replace('fill=', 'data-f=')} ${esc(nm)} ${c[k]}</span>` : '').join('')}</div>
         <p class="hint">${L(`Consistency of ${n} of ${inR.length} poops in range (BITSS groups).`, `Consistance de ${n} des ${inR.length} selles de la période (groupes BITSS).`)}${hard7 >= 2 ? ' ' + L(`${hard7} hard in the last 7 days.`, `${hard7} dures dans les 7 derniers jours.`) : ''}${wat7 >= 2 ? ' ' + L(`${wat7} watery in the last 7 days.`, `${wat7} liquides dans les 7 derniers jours.`) : ''}${hard7 >= 2 || wat7 >= 2 ? ' ' + L('Worth mentioning to your pediatrician if it continues.', 'À mentionner au pédiatre si ça continue.') : ''}</p>`; })()}
-    ${diaperChartHTML(days)}${(() => { const tags = {}; DATA.events.filter(e => e.k === 'diaper' && days.some(d => d.D === e.d)).forEach(e => e.tags.forEach(x => tags[x] = (tags[x] || 0) + 1)); const l = Object.entries(tags).sort((a, b) => b[1] - a[1]); return l.length ? `<p class="hint">Diaper notes in range: ${l.map(([k, c]) => esc(k) + ' × ' + c).join(' · ')}</p>` : ''; })()}
+    ${(() => { const wets = DATA.events.filter(e => e.k === 'diaper' && isWetCat(e.cat) && days.some(d => d.D === e.d)), c = {}; wets.forEach(e => { const k = PEE_KEYS.find(x => e.tags.includes(x)); if (k) c[k] = (c[k] || 0) + 1; });
+      const n = Object.values(c).reduce((a, b) => a + b, 0); if (!n) return '';
+      return `<p class="hint" style="margin-top:8px">💧 ${L('How wet', 'Quantité de pipi')}: ${PEE().map(([k, nm]) => c[k] ? `${esc(nm)} ${c[k]} (${Math.round(c[k] / n * 100)}%)` : '').filter(Boolean).join(' · ')} <span class="faint">${L(`· ${n} of ${wets.length} wet diapers in range rated`, `· ${n} des ${wets.length} couches mouillées de la période`)}</span></p>`; })()}
+    ${diaperChartHTML(days)}${(() => { const tags = {}; DATA.events.filter(e => e.k === 'diaper' && days.some(d => d.D === e.d)).forEach(e => e.tags.filter(x => !STOOL_KEYS.includes(x) && !PEE_KEYS.includes(x)).forEach(x => tags[x] = (tags[x] || 0) + 1)); const l = Object.entries(tags).sort((a, b) => b[1] - a[1]); return l.length ? `<p class="hint">Diaper notes in range: ${l.map(([k, c]) => esc(k) + ' × ' + c).join(' · ')}</p>` : ''; })()}
     <div class="hint">Turn on <b>Diaper &amp; meds</b> in the timeline toolbar to overlay these events on the 24-hour grid.</div>`;
   renderDiaperChart(days);
 }
@@ -5331,6 +5359,46 @@ function doubleCallouts(){
       `<b>${esc(catL(p[1].cat))}</b> a été noté deux fois${byOf(p[0]) && byOf(p[1]) && byOf(p[0]) !== byOf(p[1]) ? ` (${esc(byOf(p[1]))} et ${esc(byOf(p[0]))})` : ''}, ${relDay(p[1].d)} ${p[1].st != null ? fmtTime(p[1].st) : ''} : les deux sont gardées.`)}
      <button class="btn sm" data-dblsee="${p[3]}" style="margin-left:6px">${L('Compare & merge', 'Comparer et fusionner')}</button>` }));
 }
+/* ── Upcoming visits & appointments as a calendar strip (v1.40) ──
+   One line per kind (🚗 parent visits · 🏠 home visits · 🩺 appointments): today's date, then up to the next three, each a
+   small calendar page, with the gap in days between them on the arrows. Tap a page for the details below the strip. */
+let UP_ITEMS = [];
+const calMonth = D => new Date(isoOf(D) + 'T12:00:00').toLocaleDateString(S.lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short' }).replace('.', '');
+const calPage = (D, cls, i) => `<button type="button" class="ucal ${cls}"${i != null ? ` data-up="${i}"` : ' disabled'} aria-label="${esc(fmtDay(D))}"><span class="m">${esc(calMonth(D))}</span><span class="d">${+isoOf(D).slice(8)}</span></button>`;
+function upRowHTML(icon, label, list){
+  const T0 = todayIdx(), ev = list.slice(0, 3); let prev = T0, html = '';
+  const onToday = ev.find(e => e.D === T0);
+  html += calPage(T0, `today${onToday ? ' has' : ''}`, onToday ? UP_ITEMS.push(onToday) - 1 : null);
+  ev.filter(e => e !== onToday).forEach(e => { const d = e.D - prev; prev = e.D;
+    html += `<span class="ugap"><small>${d ? d + L('d', 'j') : L('same', 'même')}</small>→</span>${calPage(e.D, '', UP_ITEMS.push(e) - 1)}`; });
+  return `<div class="urow" title="${esc(label)}"><span class="uic" aria-label="${esc(label)}">${icon}</span>${html}${ev.length ? '' : `<span class="faint unone">${L('none in the next 60 days', 'aucune d’ici 60 jours')}</span>`}</div>`;
+}
+/** The strip for Today's plan; '' when the calendar isn't connected. */
+function upcomingStripHTML(m){
+  if (!Array.isArray(DATA.base?.planned)) return '';
+  UP_ITEMS = [];
+  const visits = upcomingVisits(3).filter(v => v.D !== todayIdx() || m.visit).map(v => ({ ...v, kind: 'visit' }));
+  const ua = upcomingAppts(8), home = ua.filter(a => a.home).map(a => ({ ...a, kind: 'home' })), appt = ua.filter(a => !a.home).map(a => ({ ...a, kind: 'appt' }));
+  const rows = [upRowHTML('🚗', L('Parent visits', 'Visites des parents'), visits)];
+  if (home.length) rows.push(upRowHTML('🏠', L('Home visits', 'Visites à domicile'), home));
+  if (appt.length || !home.length) rows.push(upRowHTML('🩺', L('Appointments', 'Rendez-vous'), appt));
+  return `<div class="upstrip">${rows.join('')}<div class="upop" id="upPop" hidden></div></div>`;
+}
+function showUpcoming(i, btn){
+  const e = UP_ITEMS[i], pop = $('#upPop'); if (!e || !pop) return;
+  if (!pop.hidden && pop.dataset.i === String(i)) { pop.hidden = true; btn.classList.remove('sel'); return; }
+  $$('.ucal.sel').forEach(b => b.classList.remove('sel')); btn.classList.add('sel');
+  const kind = { visit: ['🚗', L('Parent visit', 'Visite des parents')], home: ['🏠', L('Home visit', 'Visite à domicile')], appt: ['🩺', L('Appointment', 'Rendez-vous')] }[e.kind];
+  const dur = e.en != null ? e.en - e.st : null, link = e.where && /^https?:/i.test(e.where) ? e.where : null;
+  const mapq = e.where && !link ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.where)}` : null;
+  pop.dataset.i = i; pop.hidden = false;
+  pop.innerHTML = `<div class="uph">${kind[0]} <b>${esc(e.title || kind[1])}</b></div>
+    <div>📅 <b>${esc(relDay(e.D))}</b> · ${esc(fmtDay(e.D))}</div>
+    <div>🕒 ${fmtTime(e.st)}${e.en != null ? '–' + fmtTime(e.en) : ''}${dur > 0 ? ` <span class="faint">(${fmtDur(dur)})</span>` : ''}</div>
+    ${e.where ? `<div>📍 ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(e.where)}</a>` : `<a href="${mapq}" target="_blank" rel="noopener">${esc(e.where)}</a>`}</div>` : ''}
+    ${e.desc ? `<div class="faint">${esc(e.desc)}</div>` : ''}
+    <div class="faint">${e.kind === 'visit' ? L('From your calendar (only the date and times are read for visits).', 'De votre agenda (seuls la date et les heures sont lus pour les visites).') : `${L('Calendar', 'Agenda')}: ${esc(e.calendar || '—')}`}</div>`;
+}
 
 /* ════════════════════════════════════════════════════════════════════════════
    17c. v4b BABY MODULES — newborn feeding, diapers, growth (WHO), teeth, temperature
@@ -5761,7 +5829,7 @@ function contactChipsHTML(tagsStr){
 function toggleTagChip(tg){
   const inp = $('#qlForm [name=Tags]'), t = tg.dataset.tag, g = tg.dataset.single;
   let cur = inp.value.split(',').map(x => x.trim()).filter(Boolean); const on = cur.includes(t);
-  if (g) { const grp = CONTACT[g]?.items || PLAY_SINGLE[g]?.() || []; cur = cur.filter(x => !grp.includes(x)); $$(`#qlForm [data-single="${g}"]`).forEach(c => c.classList.add('off')); if (!on) { cur.push(t); tg.classList.remove('off'); } }
+  if (g) { const grp = CONTACT[g]?.items || PLAY_SINGLE[g]?.() || ({ stool: STOOL_KEYS, pee: PEE_KEYS })[g] || []; cur = cur.filter(x => !grp.includes(x)); $$(`#qlForm [data-single="${g}"]`).forEach(c => c.classList.add('off')); if (!on) { cur.push(t); tg.classList.remove('off'); } }
   else if (on) { cur = cur.filter(x => x !== t); tg.classList.add('off'); } else { cur.push(t); tg.classList.remove('off'); }
   inp.value = cur.join(', ');
 }
@@ -6407,7 +6475,7 @@ function qlPresets(){
   if (mod('food')) P.push({ e:'🍽', label:L('Meal', 'Repas'), cat: mealByTime(now), meal:true });   // v1.24.2: one button; breakfast / lunch / snack / dinner are picked in the form
   if (mod('visits')) P.push({ e:'👋', label:'Drop-off', cat:'Handover', tags:'drop-off', notes:'Drop-off' }, { e:'🤗', label:'Pick-up', cat:'Handover', tags:'pick-up', notes:'Pick-up' },);
   P.push({ e:'🙂', label:'Reaction / mood', cat:'Behaviour' });
-  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Poop', both:true, sub:L('two rows, same time', 'deux lignes, même heure') }, { e:'💊', label:'Meds', cat:'Meds' });
+  if (mod('diapers')) P.push({ e:'💧', label:'Diaper - Wet', cat:'Diaper - Wet' }, { e:'💩', label:'Diaper - Poop', cat:'Diaper - Poop' }, { e:'💧💩', label:L('Wet + poop', 'Pipi + caca'), cat:'Diaper - Wet + Poop', sub:L('one change, counts as both', 'un change, compte pour les deux') }, { e:'💊', label:'Meds', cat:'Meds' });
   if (mod('milestones')) P.push({ e:'⭐', label:'Add Milestone', cat:'Milestone', allDay:true });
   if (mod('growth')) P.push({ e:'⚖️', label:'Weight', cat:'Weight', allDay:true, value:true }, { e:'📏', label:'Length', cat:'Height', allDay:true, value:true });
   if (mod('health')) P.push({ e:'🌡️', label:'Temperature', cat:'Temperature', value:true });
@@ -6489,7 +6557,7 @@ function renderQuickLog(){
       ${catKindNow === 'water' ? `<div class="full tchips" data-for="Water (ml)">${waterChips().map(a => `<button type="button" class="chip" data-set-v="${a}">${a} ml</button>`).join('')}</div>` : ''}
       <label class="field">Tags <span class="faint">(comma-separated)</span><input type="text" name="Tags" value="${v('Tags')}" placeholder="${catKindNow === 'meal' ? 'eggs, toast, new-food' : catKindNow === 'milestone' ? 'motor, speech, feeding' : 'tags'}"></label>
       ${catKindNow === 'meds' ? medPickHTML(f.row) : ''}
-      ${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
+      ${isWetCat(f.row['Category']) && /diaper|couche/i.test(f.row['Category']) ? peeChipsHTML(f.row['Tags']) : ''}${isPoopCat(f.row['Category']) ? stoolChipsHTML(f.row['Tags']) : ''}
       ${catKindNow === 'contact' ? contactChipsHTML(f.row['Tags']) : catKindNow === 'play' ? playChipsHTML(f.row['Tags']) : (isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '')) || catKindNow === 'awake' ? soothChipsHTML(f.row['Tags'], catKindNow === 'awake' ? 'awake' : 'sleep') : ''}${sugg.length && catKindNow !== 'contact' && catKindNow !== 'play' && catKindNow !== 'awake' && !isSleep({ k: catKindNow }) ? `<div class="full chips" id="qlTagChips">${sugg.map(t => `<span class="chip ${String(f.row['Tags'] || '').split(/\s*,\s*/).includes(t) ? '' : 'off'}" data-tag="${esc(t)}" style="text-decoration:none">${esc(t)}</span>`).join('')}</div>` : ''}`}
     ${showOutcome ? `<label class="field">Outcome / Rating<select name="Outcome / Rating"><option value="">—</option>${[...ocOpts, ...(has('Outcome / Rating') && !ocOpts.includes(f.row['Outcome / Rating']) ? [f.row['Outcome / Rating']] : [])].map(o => `<option value="${esc(o)}" ${f.row['Outcome / Rating'] === o ? 'selected' : ''}>${esc(ocL(o))}</option>`).join('')}</select></label>` : ''}
     ${privOn() || f.row['Private Notes'] ? `<label class="field full privfield">🔒 ${L('Private notes', 'Notes privées')} <span class="faint">${L('· only for the family, never in reports or shared', '· pour la famille seulement, jamais dans les rapports ni partagées')}</span><textarea name="Private Notes" rows="2">${v('Private Notes')}</textarea></label>` : ''}
@@ -6506,6 +6574,10 @@ function renderQuickLog(){
 const agoChips = (field, label) => `<div class="full tchips" data-for="${field}"><span class="faint">${label}</span>${[-10, -5, -1, 1, 5, 10].map(d => `<button type="button" class="chip nudge" data-nudge="${d}">${d < 0 ? '−' + -d : '+' + d}</button>`).join('')}</div>`;
 const milkChips = () => metric() ? [60, 90, 120, 150] : [2, 3, 4, 5];
 function waterChips(){ return String(T().waterChips || '').split(/[\s,;]+/).map(Number).filter(n => n > 0 && n < 2000).slice(0, 8); }
+function peeChipsHTML(tagsStr){
+  const cur = new Set(parseTags(tagsStr));
+  return `<div class="full ctchips"><div class="ctg"><span class="faint">${L('How wet', 'Quantité de pipi')}</span><div class="chips">${PEE().map(([v, n], i) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" data-single="pee">${'💧'.repeat(i + 1)} ${esc(n)}</span>`).join('')}</div></div></div>`;
+}
 function stoolChipsHTML(tagsStr){
   const cur = new Set(parseTags(tagsStr));
   return `<div class="full ctchips"><div class="ctg"><span class="faint">${L('Consistency', 'Consistance')} · <a href="https://bitss-stoolscale.com" target="_blank" rel="noopener" class="faint">BITSS</a></span><div class="chips">${STOOL().map(([v, n, d]) => `<span class="chip ${cur.has(v) ? '' : 'off'}" data-tag="${v}" data-single="stool" title="${esc(d)}">${stoolIcon(v)}<span class="st-n">${esc(n)}<span class="faint">${esc(d.split(' · ')[0])}</span></span></span>`).join('')}</div></div></div>`;
@@ -6567,8 +6639,6 @@ async function submitQuickLog0(form, fd){
   if (catKind(row['Category']) === 'contact') { const keep = parseTags(row['Tags']).map(contactTag).filter(h => h && ['channel', 'dir', 'who'].includes(h[0])).map(h => h[1]); if (keep.length) { S.lastContactTags = keep.join(', '); saveSettings(); } }
   if (QL.op === 'update') { const ev = QL.ev; closeQuickLog(); return saveQuickOp('update', row, { rowNum: ev.sheetRow, match: ev.match, localId: ev.local ? ev.localId : null }); }
   closeQuickLog();
-  if (both) { const wet = { ...row, 'Category':'Diaper - Wet', 'Tags': parseTags(row['Tags']).filter(t => !STOOL_KEYS.includes(t)).join(', ') };
-    await saveQuickOp('append', wet, { batch:true }); await saveQuickOp('append', row); return toast(L('Logged a wet and a poop diaper', 'Couche pipi et couche caca notées')); }
   saveQuickOp('append', row);
 }
 /* ── Edit / delete an existing entry (✏️ in the day view, press-and-hold or right-click anywhere) ── */
@@ -8808,6 +8878,7 @@ function wire(){
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); });
+  document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); });   // v1.40: upcoming strip
   document.addEventListener('click', e => {   // v1.33: entries logged twice
     const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;
     if (g.dataset.dblmerge != null) mergeDouble(+g.dataset.dblmerge); else if (g.dataset.dblkeep != null) keepBothDouble(+g.dataset.dblkeep); else { renderHealthModal(); openModal('mHealth'); }

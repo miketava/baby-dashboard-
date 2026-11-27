@@ -50,7 +50,7 @@ t('appointments: matched, titled, visits kept apart', () => {
   assert.deepStrictEqual(g2.planned.map(v => v.start), ['12:00'], 'only the parents’ visit is a visit (not “Visite médicale”)');
   assert.deepStrictEqual(g2.appts.map(a => a.title), ['Dentiste Ava', 'Doctor appointment', 'Visite médicale CLSC'], 'cancelled and all-day ones are left out');
   assert.ok(g2.appts.every(a => a.id && a.calendar && /^\d\d:\d\d$/.test(a.start)));
-  assert.strictEqual(g2.scriptVersion, '1.8');
+  assert.strictEqual(g2.scriptVersion, '1.9');
 });
 t('the part before a dash decides: home visit, family visit, appointment', () => {
   const day = (h, d) => { const x = new Date(Date.now() + d * 864e5); x.setUTCHours(h, 0, 0, 0); return x; };
@@ -69,7 +69,7 @@ t('viewer keys get no appointments or settings', () => {
 t('a fresh script is unclaimed until a dashboard claims it', () => {
   const g = load({ claim: false });
   const r = JSON.parse(g.api.doGet({ parameter: { token: '' } }));
-  assert.strictEqual(r.ok, false); assert.strictEqual(r.unclaimed, true); assert.strictEqual(r.scriptVersion, '1.8');
+  assert.strictEqual(r.ok, false); assert.strictEqual(r.unclaimed, true); assert.strictEqual(r.scriptVersion, '1.9');
   assert.strictEqual(g.raw({ action: 'append', token: 'x', row: { Category: 'Meds' } }).unclaimed, true, 'no writes before claim');
   assert.strictEqual(g.raw({ action: 'claim', secret: 'too-short' }).ok, false);
   assert.ok(g.raw({ action: 'claim', secret: 'a-long-enough-secret-123', viewers: { 'view-abc': { label: 'TS', exclude: ['Guest'] } } }).ok);

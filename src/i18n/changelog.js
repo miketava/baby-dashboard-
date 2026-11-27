@@ -1,4 +1,11 @@
 const CHANGELOG = [
+  { v:'1.40.0', date:'2026-11-27',
+    en:['Today’s plan: upcoming parent visits, home visits and appointments are now a row of little calendar pages each (today, then up to the next 3), with the days between them on the arrows. Tap one for when, how long, the title, where (with a map link) and the description.',
+        'Diapers: a wet + poop change is now one entry (Diaper - Wet + Poop) that counts as both, instead of two rows with the notes copied. Pee amount pills (light / medium / heavy) on wet changes, next to poop consistency; Health shows the mix.',
+        'Apps Script v1.9 (update it; includes v1.8 for private notes): sends an appointment’s place and description so you can see them when you tap it (your phones only, never viewer keys).'],
+    fr:['Plan du jour : les prochaines visites des parents, visites à domicile et rendez-vous forment chacun une rangée de petites pages de calendrier (aujourd’hui, puis jusqu’aux 3 suivants), avec les jours d’écart sur les flèches. Touchez-en une pour l’heure, la durée, le titre, le lieu (avec lien carte) et la description.',
+        'Couches : un change pipi + caca est maintenant une seule entrée (Diaper - Wet + Poop) qui compte pour les deux, au lieu de deux lignes avec les notes en double. Pastilles de quantité de pipi (peu / moyen / beaucoup) sur les couches mouillées, à côté de la consistance des selles; Santé montre la répartition.',
+        'Apps Script v1.9 (à mettre à jour; inclut la v1.8 des notes privées) : envoie le lieu et la description d’un rendez-vous pour les voir en le touchant (vos téléphones seulement, jamais les clés lecteur).'] },
   { v:'1.39.1', date:'2026-11-27',
     en:['Fix: the dashboard now asks for Apps Script v1.8 (it still said 1.7 was current), so the 🔧 update notice and the Update script button appear, and the Private notes switch can be turned on once it’s updated.'],
     fr:['Correctif : le tableau de bord demande maintenant l’Apps Script v1.8 (il indiquait encore 1.7 comme à jour) : l’avis de mise à jour 🔧 et le bouton Mettre le script à jour apparaissent, et l’interrupteur Notes privées s’active une fois la mise à jour faite.'] },

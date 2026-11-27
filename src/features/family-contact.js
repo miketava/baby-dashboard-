@@ -50,7 +50,7 @@ function contactChipsHTML(tagsStr){
 function toggleTagChip(tg){
   const inp = $('#qlForm [name=Tags]'), t = tg.dataset.tag, g = tg.dataset.single;
   let cur = inp.value.split(',').map(x => x.trim()).filter(Boolean); const on = cur.includes(t);
-  if (g) { const grp = CONTACT[g]?.items || PLAY_SINGLE[g]?.() || []; cur = cur.filter(x => !grp.includes(x)); $$(`#qlForm [data-single="${g}"]`).forEach(c => c.classList.add('off')); if (!on) { cur.push(t); tg.classList.remove('off'); } }
+  if (g) { const grp = CONTACT[g]?.items || PLAY_SINGLE[g]?.() || ({ stool: STOOL_KEYS, pee: PEE_KEYS })[g] || []; cur = cur.filter(x => !grp.includes(x)); $$(`#qlForm [data-single="${g}"]`).forEach(c => c.classList.add('off')); if (!on) { cur.push(t); tg.classList.remove('off'); } }
   else if (on) { cur = cur.filter(x => x !== t); tg.classList.add('off'); } else { cur.push(t); tg.classList.remove('off'); }
   inp.value = cur.join(', ');
 }

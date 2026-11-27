@@ -1,6 +1,6 @@
 # 🌙 Baby Routine Dashboard
 
-**Version 1.39.1** · [Changelog](CHANGELOG.md) · English / Français
+**Version 1.40.0** · [Changelog](CHANGELOG.md) · English / Français
 
 A private, free dashboard for a baby's or toddler's sleep, feeding, development and daily routine. Your log lives in **your own Google Sheet**. The dashboard is a single web page you can host for free, install on your phone, and share with whoever helps care for your child.
 
@@ -119,7 +119,7 @@ One row per event. Only **Date** and **Category** are required.
 | Value | `7 lb 8 oz` | Measurements: weight, length, head, temperature |
 | Child | `Ava` | Only with several children: a name, several separated by commas, or `all` |
 
-**Categories understood out of the box:** Sleep - Night, Sleep - Nap, Sleep - Car Nap, Awake / Restless, Breastfeed, Bottle, Pump, Milk, Water, Breakfast, Lunch, Dinner, Snack, Tummy Time, Play, Bath, Car Ride, Visit, Home Visit, Outing / Excursion, Guest, Family Contact, Handover, Medical / Appointment, Health / Incident, Vaccine, Temperature, Weight, Height, Head Circumference, Tooth, Milestone, Behaviour, Diaper - Wet, Diaper - Poop, Meds, and the `Check-in - …` rows written by the check-in form.
+**Categories understood out of the box:** Sleep - Night, Sleep - Nap, Sleep - Car Nap, Awake / Restless, Breastfeed, Bottle, Pump, Milk, Water, Breakfast, Lunch, Dinner, Snack, Tummy Time, Play, Bath, Car Ride, Visit, Home Visit, Outing / Excursion, Guest, Family Contact, Handover, Medical / Appointment, Health / Incident, Vaccine, Temperature, Weight, Height, Head Circumference, Tooth, Milestone, Behaviour, Diaper - Wet, Diaper - Poop, Diaper - Wet + Poop, Meds, and the `Check-in - …` rows written by the check-in form.
 
 You can invent your own (`Daycare`, `Swim class`…). New categories are picked up automatically with their own colour, and typos like `Sleep - Npa` are flagged rather than silently counted.
 

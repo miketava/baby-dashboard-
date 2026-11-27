@@ -8,6 +8,15 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.40.0 — 2026-11-27 · **Apps Script v1.9** (update it; includes v1.8)
+
+- **Upcoming visits and appointments as calendar pages.** The three text lines under Today's plan are now one row per kind, 🚗 parent visits, 🏠 home visits, 🩺 appointments: today's date (grey; blue when something is on today), then up to the **next 3**, each a little calendar page (month band + day), with the **gap in days** on the arrow between pages (from the previous one). One line each on a phone. The home-visit row only shows when there is one; the appointment row shows when there are any or when there are no home visits.
+  - **Tap a page** for the details below the strip: title, *in 4 days · Tue, Dec 1*, the time and how long, **where** (a link to Google Maps, or the meeting link), the event's description, and its calendar. Tap again to close. Parent visits show the date and times only (their titles are never read).
+- **One entry for a wet + poop change.** *Wet + poop* in Quick Log now writes a single **`Diaper - Wet + Poop`** row (it used to write two rows with the same notes). It counts as one wet and one dirty diaper everywhere: per-day counts, targets, the diaper chart, days since last poop, consistency, reports. Older pairs of rows still count as before.
+- **How wet:** *Light / Medium / Heavy* pills (stored as the tags `light pee`, `medium pee`, `heavy pee`) on `Diaper - Wet` and `Diaper - Wet + Poop`, next to the poop consistency on combined changes. *Health → Care tracking* shows the mix for the range. Picking one replaces the previous choice (same for consistency, which used to add up in the Tags box).
+- **Apps Script v1.9:** appointments and home visits also carry the event's location and description (trimmed), for the tap-for-details view. Family key only; viewer keys get no calendar data at all. Includes v1.8 (private notes for viewers). **To update:** *Copy script* → paste over `Code.gs` → *Manage deployments → ✏️ → New version*, or *Update script* with one-tap updates.
+- Gemini instructions **v7** (`docs/daily-log-schema.md`): `Diaper - Wet + Poop` as one row, the pee tags, and never writing to *Private Notes*.
+
 ## v1.39.1 — 2026-11-27 · **Apps Script v1.8** (update it)
 
 - **Fix:** v1.38 shipped Apps Script v1.8 but the dashboard still asked for v1.7, so *Data source* said the script was up to date, no 🔧 notice or *Update script* button appeared, and the *Private notes* switch stayed greyed out with no way forward. It now asks for v1.8. The build refuses to run if the two numbers ever disagree again.

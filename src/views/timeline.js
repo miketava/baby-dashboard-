@@ -206,11 +206,7 @@ function renderTodayPlan(){
   $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift || tp.wakeShift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
-    + (() => { const up = upcomingVisits(4).filter(v => v.D !== todayIdx() || m.visit); if (!Array.isArray(DATA.base?.planned)) return '';
-        // v1.29.1: three lines — family visits away, visits at home, appointments
-        const ua = upcomingAppts(6), line = (ic, lab, list) => list.length ? `<div class="pl-up">${ic} <b>${lab}:</b> ${list.slice(0, 3).map(a => `<b>${relDay(a.D)}</b> <span class="faint">(${esc(a.title)} · ${esc(fmtDayShort(a.D))} ${fmtTime(a.st)})</span>`).join(' · ')}</div>` : '';
-        const apl = line('🏠', L('Home visits', 'Visites à domicile'), ua.filter(a => a.home)) + line('🩺', L('Appointments', 'Rendez-vous'), ua.filter(a => !a.home));
-        return `<div class="pl-up">🚗 <b>${L('Parent visits', 'Visites des parents')}:</b> ${up.length ? up.map(v => `<b>${relDay(v.D)}</b> <span class="faint">(${esc(fmtDayShort(v.D))} ${fmtTime(v.st)}${v.en != null ? '–' + fmtTime(v.en) : ''})</span>`).join(' · ') : L('none on the calendar in the next 60 days', 'aucune à l’agenda dans les 60 prochains jours')}</div>` + apl; })();
+    + upcomingStripHTML(m);   // v1.40: calendar strip per kind (was three text lines)
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */
 function renderTodayEntries(){

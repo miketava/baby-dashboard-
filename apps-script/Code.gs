@@ -11,7 +11,7 @@ const SECRET_MIN = 16;
 // show a "Not included: …" line naming those categories. Each key: { label, exclude: [...], from, child, childName, blank }.
 const PRIVATE_COL = /^\s*priv(ate|é|e)/i;   // private columns, never sent to viewer keys (v1.8)
 const SHEET_NAME = 'Daily Log';                     // tab holding one row per event
-const SCRIPT_VERSION = '1.8';                       // the dashboard checks this to tell you when to redeploy
+const SCRIPT_VERSION = '1.9';                       // the dashboard checks this to tell you when to redeploy
 
 // Planned visits from your Google Calendar (optional). Timed events whose title matches VISIT_MATCH, from 60 days back
 // to 60 days ahead, let the dashboard pick the right day template before the visit is logged. Only the date, start and
@@ -38,7 +38,7 @@ function eventKind_(t) {
 }
 // Appointments (v1.4): timed events that look like a doctor, dentist, clinic or vaccine appointment, from the same calendars.
 // The dashboard asks once whether each one is for the child; only then does it plan the day around it. For that question it
-// needs the title and calendar name, so those are sent for these events only, to the family's key only (never to viewer keys).
+// needs the title and calendar name (and, to show when you tap it, its place and description), so those are sent for these events only, to the family's key only (never to viewer keys).
 // Set APPOINTMENTS = false to turn this off.
 const APPOINTMENTS = true;
 const APPT_MATCH = /m[ée]decin|m[ée]dical|docteur|doctor|\bdr\b|p[ée]diatr|pediatr|dentist|dentiste|orthodont|clsc|clinique|clinic|vaccin|rendez-vous|\brdv\b|appointment|\bappt\b|optom|ophtalm|audiolog|orthophon|physio|ergoth|h[ôo]pital|hospital|urgence|checkup|check-up|bilan de sant[ée]/i;
@@ -127,7 +127,8 @@ function appointments_() {
     const t = ev.getTitle();
     const kind = eventKind_(t), home = kind === 'home';
     if (ev.isAllDayEvent() || !(kind === 'appt' || home)) return;
-    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName(), home: home };
+    const a = { date: f(ev.getStartTime(), 'yyyy-MM-dd'), start: f(ev.getStartTime(), 'HH:mm'), end: f(ev.getEndTime(), 'HH:mm'), title: t, calendar: cal.getName(), home: home,
+      where: String(ev.getLocation() || '').slice(0, 200), desc: String(ev.getDescription() || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400) };   // v1.9: shown when you tap it (family key only)
     const key = a.date + ' ' + a.start + ' ' + t; if (seen[key]) return; seen[key] = 1;   // the same event in two calendars counts once
     a.id = hash_(String(ev.getId()) + '|' + a.date + ' ' + a.start);   // stable per event and time: moving it asks again
     out.push(a);

@@ -39,6 +39,7 @@ const DEFAULT_CATS = {
   'Milestone':            { color:'#eab308', icon:'⭐' },
   'Diaper - Wet':         { color:'#38bdf8', icon:'💧' },
   'Diaper - Poop':        { color:'#a16207', icon:'💩' },
+  'Diaper - Wet + Poop':  { color:'#0e7490', icon:'💧💩' },   // one change, counted as both (v1.40)
   'Meds':                 { color:'#9333ea', icon:'💊' },
   // v3 additions — structured visit handovers and reactions (so they can be counted, not just read)
   'Handover':             { color:'#db2777', icon:'🤝' },
@@ -148,6 +149,10 @@ const STOOL_ICON = {
   watery: '<path d="M3 18.5c2.2-1.6 4.6-1 6.4-1.8 2-.9 4-.4 5.8-.2 2 .3 4-.8 6-.2 1.6.5 2.4 1.6 1 2.4-2 1.2-4.8.6-7 1.1-2.4.5-5 .3-7.4 0-1.8-.2-5.2.2-4.8-1.3z" opacity=".85"/><path d="M8.5 11.5c0 1.3-.9 2.1-1.8 2.1s-1.8-.8-1.8-2.1S6.7 8.6 6.7 8.6s1.8 1.6 1.8 2.9zM17.5 9.5c0 1.1-.8 1.8-1.5 1.8s-1.5-.7-1.5-1.8.9-2.6 1.5-3.4c.6.8 1.5 2.3 1.5 3.4z" opacity=".7"/>',
 };
 const stoolIcon = (k, sz = 26) => `<svg class="stool-ic" viewBox="0 0 28 24" width="${sz}" height="${Math.round(sz * 24 / 28)}" aria-hidden="true" fill="${{ hard:'#7c3f12', formed:'#a0522d', loose:'#b7791f', watery:'#c9a227' }[k]}">${STOOL_ICON[k]}</svg>`;
+/** How wet (v1.40): stored as a tag on Diaper - Wet and Diaper - Wet + Poop rows. */
+const PEE = () => [['light pee', L('Light', 'Peu')], ['medium pee', L('Medium', 'Moyen')], ['heavy pee', L('Heavy', 'Beaucoup')]];
+const PEE_KEYS = ['light pee', 'medium pee', 'heavy pee'];
+const isWetCat = c => /wet|pee|pipi|mouill/i.test(String(c || ''));
 const isPoopCat = c => /poop|dirty|\bbm\b|stool|caca|selle/i.test(String(c || ''));
 const KIND_STYLE = {
   wake:   { color:'#10b981', label:'Wake target' },

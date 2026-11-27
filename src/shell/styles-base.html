@@ -89,6 +89,22 @@ body.viewonly .fab{display:none!important}
 .preset:hover{border-color:var(--accent)}
 .preset.live{border-color:var(--good);background:var(--good-soft)}
 .qform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+/* v1.40 — upcoming visits & appointments: little calendar pages with the gap in days between them */
+.chip[data-single=pee]:not(.off){border-color:#38bdf8;background:color-mix(in srgb,#38bdf8 16%,var(--panel));font-weight:650}
+.upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.urow{display:flex;align-items:center;gap:4px;min-width:0}
+.uic{font-size:18px;width:26px;flex:none;text-align:center}
+.ucal{flex:none;width:44px;height:46px;padding:0;border:1px solid var(--border);border-radius:9px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;cursor:pointer;color:var(--text)}
+.ucal .m{background:var(--accent);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:15px}
+.ucal .d{flex:1;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.ucal.today{opacity:.75;cursor:default} .ucal.today .m{background:var(--muted)}
+.ucal.today.has{opacity:1;cursor:pointer} .ucal.today.has .m{background:var(--accent)}
+.ucal.sel{outline:2px solid var(--accent);outline-offset:1px}
+.ugap{flex:1 1 0;min-width:26px;max-width:56px;display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:15px;line-height:1}
+.ugap small{font-size:11px;font-weight:600;margin-bottom:1px}
+.unone{font-size:12px;margin-left:6px}
+.upop{margin-top:2px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);display:flex;flex-direction:column;gap:4px;font-size:14px}
+.upop .uph{font-size:15px}
 /* v1.39 — phones: Quick Log takes the whole screen, with thumb-sized controls (44–48px) and 16px text (no iPhone zoom on focus) */
 @media (max-width:720px){
   #qlog{--sx:0;left:0;right:0;top:0;bottom:0;width:100%;max-height:none;height:100dvh;border-radius:0;transform:translate(0,105%);display:flex;flex-direction:column}

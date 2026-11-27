@@ -43,6 +43,7 @@ analytics/visit-cycle.js
 views/patterns.js
 features/cocooning.js
 features/doubles.js
+features/upcoming.js
 features/baby-growth-teeth.js
 features/kids.js
 features/family-contact.js
