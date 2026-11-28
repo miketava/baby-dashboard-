@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },
+  music: { nap: '', bed: '' },            // 🎵 sleep playlists (v1.45)
   upOpen: false,                          // Today's plan: “Coming up” box expanded on this device (v1.43)
   privateNotes: false,                    // 🔒 Private notes field in Quick Log (v1.38)
   dupKeep: [],                            // entries logged twice that were kept apart on purpose (v1.33)

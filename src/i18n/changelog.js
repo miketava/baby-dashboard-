@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.45.0', date:'2026-11-28',
+    en:['🎵 Sleep music: paste a Spotify or YouTube Music playlist link in Settings → General (plus an optional different one for bedtime). From 30 minutes before a nap or bedtime until 30 minutes after, the Today box shows a 🎵 Play nap music / Play bedtime music button that opens it in the app in one tap. No link, no button. Shared with the other caregiver.'],
+    fr:['🎵 Musique pour dormir : collez le lien d’une liste Spotify ou YouTube Music dans Réglages → Général (et au besoin une autre pour le coucher). De 30 minutes avant une sieste ou le coucher jusqu’à 30 minutes après, l’encadré Aujourd’hui affiche un bouton 🎵 Musique de la sieste / du coucher qui l’ouvre dans l’app en un geste. Sans lien, pas de bouton. Partagé avec l’autre parent.'] },
   { v:'1.44.2', date:'2026-11-28',
     en:['Quick Log: the −10 · −5 · −1 · +1 · +5 · +10 buttons are now under every Start and End time, including meals, play and other categories, and when editing an existing entry (they used to appear only on some new entries).',
         'Settings on phones: one setting per line at full width (no more cut-off drop-downs), bigger switches that no longer overlap their text, and longer explanations folded behind ⓘ.'],

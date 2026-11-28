@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.45.0 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- **🎵 Sleep music.** *Settings → General → Sleep music*: a playlist link for naps (and bedtime), and optionally a different one for bedtime. Any https link works; Spotify, YouTube Music, YouTube, Apple Music and Deezer links are recognised by name. **▶ Test** opens it. Shared with the other caregiver's phone (Config tab).
+  - **On Today:** from 30 minutes before a planned nap or bedtime (today's template, so it follows early wake-ups and visit days) until 30 minutes after, a **🎵 Play nap music** / **🎵 Play bedtime music** button sits at the top of the Today box; it also shows for 30 minutes after a nap or night is started in Quick Log. One tap opens the playlist in the music app.
+  - Hidden while she's asleep (past those first 30 minutes), once that nap has been logged, for viewer keys, and whenever no link is set.
+
 ## v1.44.2 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - **Quick Log time buttons everywhere.** The −10 · −5 · −1 · +1 · +5 · +10 row was only shown under *End time* on new entries of "duration" categories (sleep, visits, outings, bath…) and under *Start time* on new entries. It's now under every Start and End time: meals, play, handovers, family contact and the rest, and when editing an existing entry.

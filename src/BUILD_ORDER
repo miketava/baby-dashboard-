@@ -45,6 +45,7 @@ features/cocooning.js
 features/doubles.js
 features/upcoming.js
 features/split-nights.js
+features/sleep-music.js
 features/baby-growth-teeth.js
 features/kids.js
 features/family-contact.js
