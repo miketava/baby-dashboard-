@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.42.1', date:'2026-11-27',
+    en:['Private notes: when the switch is greyed out, it now says which Apps Script version the dashboard actually sees and what to do (refresh, or redeploy a new version).'],
+    fr:['Notes privées : quand l’interrupteur est grisé, il indique maintenant quelle version de l’Apps Script le tableau de bord voit vraiment et quoi faire (actualiser ou redéployer une nouvelle version).'] },
   { v:'1.42.0', date:'2026-11-27',
     en:['Timeline: family contact is no longer a big block from the message to your reply. It’s a 💬 dot when the message came in, a hollow dot when you replied, and a thin line between them, in the narrow marker strip, so the day’s routine stays readable. Tap either dot for the details.'],
     fr:['Chronologie : un contact avec la famille n’est plus un grand bloc du message à votre réponse. C’est un point 💬 à l’arrivée du message, un point creux à votre réponse et une fine ligne entre les deux, dans la bande étroite des repères : la routine de la journée reste lisible. Touchez un point pour les détails.'] },

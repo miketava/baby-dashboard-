@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.42.1 — 2026-11-27 · Apps Script v1.9 (no script change)
+
+- *Settings → General → Private notes*: when the switch is greyed out, the note now shows the Apps Script version the dashboard actually receives from the web app (e.g. "reports v1.7") and what to do: tap Refresh after redeploying, or, if it still shows the old number, deploy a **new version** of the existing web app deployment (editing `Code.gs` alone doesn't change what the web app runs).
+
 ## v1.42.0 — 2026-11-27 · Apps Script v1.9 (no script change)
 
 - **Family contact on the Timeline as linked dots.** A *Family Contact* row with an End Time (a text at 14:00 answered at 18:00) used to be drawn as a 4-hour block, crowding the day's real routine into narrower lanes. It's now drawn in the narrow marker strip (left edge in columns, top edge in rows): a filled 💬 dot when the message came in, a hollow dot when you replied or the call ended, and a thin line joining them. It takes no lane. Tap or hover either dot for the time, the reply time, the wait and the notes. Across midnight, each day shows its part of the line. Contacts without an End Time stay a single dot.
