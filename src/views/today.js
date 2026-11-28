@@ -106,7 +106,7 @@ function todayState(){
     .forEach(e => S0.callouts.push({ cls:'info', html:`📅 ${L('Coming up:', 'À venir :')} ${cat(e.cat).icon} <b>${esc(e.notes || catL(e.cat))}</b> · <b>${relDay(e.d)}</b> (${fmtDay(e.d)}${e.st != null ? ' ' + fmtTime(e.st) : ''})` }));
   if (m.ribbon?.some(e => e.k === 'incident' && e.outcome === 'Follow-up Needed')) S0.callouts.push({ cls:'bad', html:L('✚ A health note today is marked <b>Follow-up Needed</b>.', '✚ Une note de santé d’aujourd’hui est marquée <b>Suivi requis</b>.') });
   medCallouts(D).forEach(c => S0.callouts.push(c));
-  { const mc = D === todayIdx() ? sleepMusicCallout(m, now) || sleepMusicTip(m, now) : null; if (mc) S0.callouts.unshift(mc); }   // v1.45: 🎵 one tap around nap / bedtime
+  { const mc = D === todayIdx() && !sleepMusicNow(m, now) ? sleepMusicTip(m, now) : null; if (mc) S0.callouts.unshift(mc); }   // the 🎵 button itself is in the Today header (v1.45.3)   // v1.45: 🎵 one tap around nap / bedtime
   apptCallouts().forEach(c => S0.callouts.push(c));
   if (D === todayIdx()) doubleCallouts().forEach(c => S0.callouts.push(c));
   nudgeCallouts(m, D).forEach(c => S0.callouts.push(c));
@@ -158,6 +158,7 @@ function renderToday(){
   $('#todayTpl').title = isOverride ? L('📌 Chosen by you for today. Pick the ✨ one to let the dashboard choose again.', '📌 Choisi par vous pour aujourd’hui. Prenez celui avec ✨ pour laisser le tableau de bord choisir.')
     : L('✨ Picked automatically for today (from visits, appointments and today’s log). Choose another to override it for today only.', '✨ Choisi automatiquement pour aujourd’hui (selon les visites, rendez-vous et le journal du jour). Choisissez-en un autre pour le remplacer aujourd’hui seulement.');
   $('#todayPeek').innerHTML = S0.headline.replace(/<[^>]+>/g,'') + (S0.peek ? ' · ' + esc(S0.peek) : '');
+  { const mc = D === todayIdx() ? sleepMusicCallout(S0.m, S0.now) : null; $('#todayMusic').innerHTML = mc ? mc.html : ''; $('#todayMusic').hidden = !mc; }   // v1.45.3: 🎵 in the header, visible even when the box is collapsed
   if (UI.todayCollapsed) return;
   const rem = S.reminders.enabled ? nextReminder() : null;
   const status = `<div class="status">

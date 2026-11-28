@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.45.3 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- The **🎵 Play nap / bedtime music** button moved from inside the Today box (where it was hidden when the box was collapsed, and below the status) to the Today header: on phones a full-width button right under the title, above the template picker, shown whether the box is open or collapsed.
+
 ## v1.45.2 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - Sleep music tip: **Later** snoozes it until 4 more naps or bedtimes have been logged (shared between phones); **No thanks** still hides it for good, and **Set it up** opens the setting.
