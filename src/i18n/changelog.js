@@ -1,4 +1,9 @@
 const CHANGELOG = [
+  { v:'1.44.2', date:'2026-11-28',
+    en:['Quick Log: the −10 · −5 · −1 · +1 · +5 · +10 buttons are now under every Start and End time, including meals, play and other categories, and when editing an existing entry (they used to appear only on some new entries).',
+        'Settings on phones: one setting per line at full width (no more cut-off drop-downs), bigger switches that no longer overlap their text, and longer explanations folded behind ⓘ.'],
+    fr:['Entrée rapide : les boutons −10 · −5 · −1 · +1 · +5 · +10 sont maintenant sous chaque heure de début et de fin, y compris repas, jeu et autres catégories, et en modifiant une entrée existante (ils n’apparaissaient que sur certaines nouvelles entrées).',
+        'Réglages sur téléphone : un réglage par ligne sur toute la largeur (fini les listes coupées), interrupteurs plus grands qui ne chevauchent plus leur texte, et les explications plus longues repliées derrière ⓘ.'] },
   { v:'1.44.1', date:'2026-11-28',
     en:['Phones: the Today box header is laid out in rows: the title with a clear Show ▾ / Hide ▴ button, the template picker across the full width, then the current status in full (no more “since w…”).',
         'Today’s plan: the line under the title is now small chips (✨ template · ⏰ woke 06:33 · Nap 1 −27m · 🩺 appointment) instead of a sentence.'],

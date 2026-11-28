@@ -400,6 +400,16 @@ body.viewonly .fab{display:none!important}
 }
 .pchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .pchip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--border);font-size:13px;color:var(--text)}
+/* v1.44.2 — Settings on phones: one setting per line, full width; switches keep their knob clear of wrapped text */
+@media (max-width:720px){
+  #setPane .fgrid{grid-template-columns:1fr!important}
+  #setPane .field{width:100%}
+  #setPane .field input:not([type=checkbox]):not([type=radio]),#setPane .field select,#setPane .field textarea{width:100%;max-width:none;min-height:44px;font-size:16px;box-sizing:border-box}
+  #setPane .switch{display:flex;align-items:flex-start;gap:12px;font-size:15px;line-height:1.35;padding:4px 0}
+  #setPane .switch input{flex:none;margin-top:1px;width:40px;height:22px}
+  #setPane .switch input::after{width:18px;height:18px}
+  #setPane .switch input:checked::after{transform:translateX(18px)}
+}
 .upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:grid;grid-template-columns:26px 44px repeat(3,minmax(24px,1fr) 44px);align-items:center;column-gap:2px;min-width:0}   /* fixed columns: dates line up across rows */
@@ -1275,7 +1285,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.44.1';
+const APP_VERSION = '1.44.2';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1283,6 +1293,11 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.44.2', date:'2026-11-28',
+    en:['Quick Log: the −10 · −5 · −1 · +1 · +5 · +10 buttons are now under every Start and End time, including meals, play and other categories, and when editing an existing entry (they used to appear only on some new entries).',
+        'Settings on phones: one setting per line at full width (no more cut-off drop-downs), bigger switches that no longer overlap their text, and longer explanations folded behind ⓘ.'],
+    fr:['Entrée rapide : les boutons −10 · −5 · −1 · +1 · +5 · +10 sont maintenant sous chaque heure de début et de fin, y compris repas, jeu et autres catégories, et en modifiant une entrée existante (ils n’apparaissaient que sur certaines nouvelles entrées).',
+        'Réglages sur téléphone : un réglage par ligne sur toute la largeur (fini les listes coupées), interrupteurs plus grands qui ne chevauchent plus leur texte, et les explications plus longues repliées derrière ⓘ.'] },
   { v:'1.44.1', date:'2026-11-28',
     en:['Phones: the Today box header is laid out in rows: the title with a clear Show ▾ / Hide ▴ button, the template picker across the full width, then the current status in full (no more “since w…”).',
         'Today’s plan: the line under the title is now small chips (✨ template · ⏰ woke 06:33 · Nap 1 −27m · 🩺 appointment) instead of a sentence.'],
@@ -6721,9 +6736,9 @@ function renderQuickLog(){
       ${catKindNow === 'meal' && f.op !== 'end' ? `<div class="full tchips mealchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       <label class="field tfield">Date<input type="date" name="Date" value="${v('Date')}" required></label>
       <label class="field tfield">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
-      ${f.op === 'append' ? agoChips('Start Time', L('Started', 'Début')) : ''}
+      ${agoChips('Start Time', L('Started', 'Début'))}
       <label class="field tfield">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
-      ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
+      ${agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin'))}   <!-- v1.44.2: under every time field, new entries and edits alike -->
       ${isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '') ? asleepFieldHTML(f.row, '') : ''}
       ${showMilk ? `<label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>` : ''}
       ${/milk|bottle/i.test(f.row['Category'] || '') ? `<div class="full tchips" data-for="Milk (oz)">${milkChips().map(a => `<button type="button" class="chip ${f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null && Math.abs(toDisp(+f.row['Milk (oz)']) - a) < .01 ? '' : f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null ? 'off' : ''}" data-set-v="${a}">${a} ${MU()}</button>`).join('')}</div>` : ''}
@@ -9033,7 +9048,7 @@ function renderSettings(){
       <p class="hint">Everything is stored only in this browser (localStorage). Clearing site data removes it. Dashboard v${APP_VERSION} · <a href="#" data-act="about">${L('what’s new', 'nouveautés')}</a>.</p>`;
   $('#setPane').innerHTML = `<section class="on">${h}</section>`;
   // v1.44: long explanations fold behind a small ⓘ (tap to show); short hints and warnings stay visible
-  $$('#setPane p.hint').forEach(p => { if (p.textContent.trim().length < 110 || p.querySelector('b.warn,.err') || p.closest('.duppair')) return;
+  $$('#setPane p.hint, #setPane .field > span.faint').forEach(p => { if (p.textContent.trim().length < (p.tagName === 'P' ? 110 : 70) || p.querySelector('b.warn,.err') || p.closest('.duppair')) return;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost hintbtn'; b.textContent = 'ⓘ'; b.title = L('More about this', 'En savoir plus');
     b.onclick = () => { p.hidden = !p.hidden; b.classList.toggle('on', !p.hidden); }; p.hidden = true; p.before(b); });
   if (setPane === 'score') syncScoreWeights();

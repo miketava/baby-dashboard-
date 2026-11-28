@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.44.2 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- **Quick Log time buttons everywhere.** The −10 · −5 · −1 · +1 · +5 · +10 row was only shown under *End time* on new entries of "duration" categories (sleep, visits, outings, bath…) and under *Start time* on new entries. It's now under every Start and End time: meals, play, handovers, family contact and the rest, and when editing an existing entry.
+- **Settings on phones:** one setting per line at full width (no more two cramped columns cutting off drop-downs like *Day boundary*), 16 px text in boxes, bigger switches whose knob no longer overlaps long labels, and longer explanations inside a setting (e.g. under *Language*) folded behind ⓘ like the others.
+
 ## v1.44.1 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - **Today box header on phones:** row 1 is the title and a labelled **Show ▾ / Hide ▴** button (was a small ▸ / ▾ at the far right); row 2 the template picker across the full width at a readable size; row 3, when the box is collapsed, the current status in full, wrapping instead of being cut off.

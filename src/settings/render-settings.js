@@ -179,7 +179,7 @@ function renderSettings(){
       <p class="hint">Everything is stored only in this browser (localStorage). Clearing site data removes it. Dashboard v${APP_VERSION} · <a href="#" data-act="about">${L('what’s new', 'nouveautés')}</a>.</p>`;
   $('#setPane').innerHTML = `<section class="on">${h}</section>`;
   // v1.44: long explanations fold behind a small ⓘ (tap to show); short hints and warnings stay visible
-  $$('#setPane p.hint').forEach(p => { if (p.textContent.trim().length < 110 || p.querySelector('b.warn,.err') || p.closest('.duppair')) return;
+  $$('#setPane p.hint, #setPane .field > span.faint').forEach(p => { if (p.textContent.trim().length < (p.tagName === 'P' ? 110 : 70) || p.querySelector('b.warn,.err') || p.closest('.duppair')) return;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost hintbtn'; b.textContent = 'ⓘ'; b.title = L('More about this', 'En savoir plus');
     b.onclick = () => { p.hidden = !p.hidden; b.classList.toggle('on', !p.hidden); }; p.hidden = true; p.before(b); });
   if (setPane === 'score') syncScoreWeights();

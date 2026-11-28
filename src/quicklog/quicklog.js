@@ -137,9 +137,9 @@ function renderQuickLog(){
       ${catKindNow === 'meal' && f.op !== 'end' ? `<div class="full tchips mealchips" data-for="Category"><span class="faint">${L('Meal', 'Repas')}</span>${['Breakfast', 'Lunch', 'Snack', 'Dinner'].map(c => `<button type="button" class="chip ${f.row['Category'] === c ? '' : 'off'}" data-set-v="${c}">${esc(catL(c))}</button>`).join('')}</div>` : ''}
       <label class="field tfield">Date<input type="date" name="Date" value="${v('Date')}" required></label>
       <label class="field tfield">Start time ${catKindNow === 'milestone' || catKindNow === 'incident' ? '<span class="faint">(optional)</span>' : ''}<input type="time" name="Start Time" value="${v('Start Time')}"></label>
-      ${f.op === 'append' ? agoChips('Start Time', L('Started', 'Début')) : ''}
+      ${agoChips('Start Time', L('Started', 'Début'))}
       <label class="field tfield">${catKindNow === 'contact' ? L('Replied at / call ended <span class="faint">(optional)</span>', 'Réponse envoyée / fin d’appel <span class="faint">(facultatif)</span>') : `End time <span class="faint">(blank = ${DURATIONAL.has(catKindNow) ? 'in progress' : 'instant'})</span>`}<input type="time" name="End Time" value="${v('End Time')}"></label>
-      ${f.op === 'append' && (DURATIONAL.has(catKindNow) || catKindNow === 'contact') ? agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin')) : ''}
+      ${agoChips('End Time', catKindNow === 'contact' ? L('Replied', 'Réponse') : L('Ended', 'Fin'))}   <!-- v1.44.2: under every time field, new entries and edits alike -->
       ${isSleep({ k: catKindNow }) && !/car/i.test(f.row['Category'] || '') ? asleepFieldHTML(f.row, '') : ''}
       ${showMilk ? `<label class="field">Milk (${MU()})<input type="number" step="${metric() ? 5 : 0.5}" min="0" name="Milk (oz)" value="${f.row['Milk (oz)'] === '' || f.row['Milk (oz)'] == null ? '' : toDisp(+f.row['Milk (oz)'])}"></label>` : ''}
       ${/milk|bottle/i.test(f.row['Category'] || '') ? `<div class="full tchips" data-for="Milk (oz)">${milkChips().map(a => `<button type="button" class="chip ${f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null && Math.abs(toDisp(+f.row['Milk (oz)']) - a) < .01 ? '' : f.row['Milk (oz)'] !== '' && f.row['Milk (oz)'] != null ? 'off' : ''}" data-set-v="${a}">${a} ${MU()}</button>`).join('')}</div>` : ''}
