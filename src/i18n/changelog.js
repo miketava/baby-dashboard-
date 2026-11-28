@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.42.0', date:'2026-11-27',
+    en:['Timeline: family contact is no longer a big block from the message to your reply. It’s a 💬 dot when the message came in, a hollow dot when you replied, and a thin line between them, in the narrow marker strip, so the day’s routine stays readable. Tap either dot for the details.'],
+    fr:['Chronologie : un contact avec la famille n’est plus un grand bloc du message à votre réponse. C’est un point 💬 à l’arrivée du message, un point creux à votre réponse et une fine ligne entre les deux, dans la bande étroite des repères : la routine de la journée reste lisible. Touchez un point pour les détails.'] },
   { v:'1.41.0', date:'2026-11-27',
     en:['Timeline: a restless stretch logged inside a night (or nap) is drawn inside that sleep block as a striped band, instead of on its own row, so a night reads as one block with its wakings.',
         'Fix: restless time logged inside one long Sleep - Night was counted as sleep. Night sleep and 24 h totals now subtract it (they may drop a little for past nights).',

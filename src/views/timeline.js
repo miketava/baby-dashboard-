@@ -5,12 +5,14 @@
 const showOnGrid = (e, hid) => !hid.has(e.cat) && !isRibbon(e) && e.k !== 'checkin' && (S.showCare || !isCare(e));
 /** Segments for one calendar day: events clipped to [D 00:00, D 24:00) — this performs the midnight split. */
 function daySegments(D){
-  const hid = hiddenSet(), a = D*DAY, b = a + DAY, segs = [], marks = [];
+  const hid = hiddenSet(), a = D*DAY, b = a + DAY, segs = [], marks = [], links = [];
   const blockW = S.instantMode === 'block' ? +S.instantWidth || 15 : 0;
   for (const e of DATA.events) {
     if (!showOnGrid(e, hid)) continue;
     if (e.t == null) {
       if (e.s >= a && e.s < b) { if (blockW) segs.push({ e, x0: e.s - a, x1: Math.min(DAY, e.s - a + blockW), instant:true }); else marks.push({ e, x: e.s - a }); }
+    } else if (e.k === 'contact' && e.s < b && e.t > a) {   // v1.42: a message and its reply are two dots joined by a line, not a block
+      links.push({ e, x0: Math.max(e.s, a) - a, x1: Math.min(e.t, b) - a, cl: e.s < a, cr: e.t > b });
     } else if (e.s < b && e.t > a) {
       segs.push({ e, x0: Math.max(e.s, a) - a, x1: Math.min(e.t, b) - a, cl: e.s < a, cr: e.t > b });
     }
@@ -32,7 +34,7 @@ function daySegments(D){
     i = j;
   }
   nested.forEach(sg => { sg.lane = sg.host.lane; sg.n = sg.host.n; });
-  return { segs: [...packed, ...nested], marks, lanes: Math.max(1, laneEnds.length) };
+  return { segs: [...packed, ...nested], marks, links, lanes: Math.max(1, laneEnds.length) };
 }
 function overlayHTML(m, vert){
   if (!S.overlayOn || !mod('schedule')) return '';
@@ -88,7 +90,7 @@ function axisHTML(){
 }
 /** One day's track (row or column). Shared by the main timeline and the Today banner. */
 function dayRowHTML(m, { vert=false, today=false } = {}){
-  const { segs, marks, lanes } = daySegments(m.D);
+  const { segs, marks, links, lanes } = daySegments(m.D);
   const LH = 20, MK = 16;  // lane height, marker track height (px)
   const nS = parseTime(T().nightStart) ?? 1320, nE = parseTime(T().nightEnd) ?? 360;
   const shade = vert ? `<div class="night-shade" style="top:0;height:${nE/14.4}%;left:0;right:0"></div><div class="night-shade" style="top:${nS/14.4}%;bottom:0;left:0;right:0"></div>`
@@ -111,11 +113,17 @@ function dayRowHTML(m, { vert=false, today=false } = {}){
     const pos = vert ? `top:${x/14.4}%;left:1px` : `left:${x/14.4}%;top:1px`;
     return `<div class="${cls}" data-ev="${e.id}" style="${pos};background:${col}"></div>`;
   }).join('');
+  const lnk = links.map(({ e, x0, x1, cl, cr }) => {
+    const col = catColor(e.cat), dim = F.q && !qMatch(e) ? ' dim' : '', tip = esc(`${catL(e.cat)} ${fmtTime(e.s % DAY)} → ${L('reply', 'réponse')} ${fmtTime(e.t % DAY)} (${fmtDur(e.t - e.s)})${e.notes ? ' · ' + e.notes : ''}`);
+    const line = vert ? `top:${x0/14.4}%;height:${(x1-x0)/14.4}%;left:6px;width:2px` : `left:${x0/14.4}%;width:${(x1-x0)/14.4}%;top:6px;height:2px`;
+    const dot = (x, end) => `<div class="mk mklink${end ? ' reply' : ''}${dim}" data-ev="${e.id}" title="${tip}" style="${vert ? `top:${x/14.4}%;left:${end ? 3 : 1}px` : `left:${x/14.4}%;top:${end ? 3 : 1}px`};${end ? `border:2px solid ${col};background:var(--panel)` : `background:${col}`}">${end ? '' : cat(e.cat).icon}</div>`;
+    return `<div class="lnkline${dim}" style="${line};background:${col}"></div>${cl ? '' : dot(x0)}${cr ? '' : dot(x1, true)}`;
+  }).join('');
   const nowL = m.D === todayIdx() ? `<div class="now-line" style="${vert ? `top:${nowMin()/14.4}%;left:0;right:0;width:auto;height:2px;bottom:auto` : `left:${nowMin()/14.4}%`}" title="Now ${fmtTime(nowMin())}"></div>` : '';
   const lab = `<div class="tl-lab"><div class="d">${fmtDay(m.D)}</div><div class="pills">${dayPills(m)}${tlCompact() ? ribbonStackHTML(m) : ribbonHTML(m)}</div></div>`;
-  if (vert) return `<div class="col" data-day="${m.D}">${lab}<div class="tl-track" style="height:var(--vt)">${shade}${overlayHTML(m, true)}${blocks}${mks}${nowL}</div></div>`;
+  if (vert) return `<div class="col" data-day="${m.D}">${lab}<div class="tl-track" style="height:var(--vt)">${shade}${overlayHTML(m, true)}${blocks}${mks}${lnk}${nowL}</div></div>`;
   const h = MK + lanes*LH + 2;
-  return `<div class="tl-row" data-day="${m.D}">${today ? '<div class="tl-lab"></div>' : lab}<div class="tl-track" style="height:${Math.max(h, 40)}px">${shade}${overlayHTML(m, false)}${blocks}${mks}${nowL}</div></div>`;
+  return `<div class="tl-row" data-day="${m.D}">${today ? '<div class="tl-lab"></div>' : lab}<div class="tl-track" style="height:${Math.max(h, 40)}px">${shade}${overlayHTML(m, false)}${blocks}${mks}${lnk}${nowL}</div></div>`;
 }
 function renderTimeline(){
   const days = visibleDays(); const vert = S.orientation === 'v';

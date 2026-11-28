@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.42.0 — 2026-11-27 · Apps Script v1.9 (no script change)
+
+- **Family contact on the Timeline as linked dots.** A *Family Contact* row with an End Time (a text at 14:00 answered at 18:00) used to be drawn as a 4-hour block, crowding the day's real routine into narrower lanes. It's now drawn in the narrow marker strip (left edge in columns, top edge in rows): a filled 💬 dot when the message came in, a hollow dot when you replied or the call ended, and a thin line joining them. It takes no lane. Tap or hover either dot for the time, the reply time, the wait and the notes. Across midnight, each day shows its part of the line. Contacts without an End Time stay a single dot.
+
 ## v1.41.0 — 2026-11-27 · Apps Script v1.9 (no script change)
 
 - **Wakings inside the night block on the Timeline.** An *Awake / Restless* entry that sits entirely inside a sleep entry is drawn **inside** that block (inset, striped) rather than pushed onto a lane of its own, so a night reads as one block from bedtime to morning with its wakings visible. Tap it or hover for the time and length. Restless stretches that start before or end after the sleep (e.g. settling before going up) are drawn as before.
