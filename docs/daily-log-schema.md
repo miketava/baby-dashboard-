@@ -1,4 +1,4 @@
-# Daily Log schema — instructions for Gemini (v7, matches dashboard v1.40)
+# Daily Log schema — instructions for Gemini (v8, matches dashboard v1.41)
 
 Paste this whole document into the Gemini instructions you use to turn caregiver notes into rows for the **Daily Log** tab. It replaces the v3 and v4 versions. Write only to the **Daily Log** tab: never add or change rows in the **Config** or **Medications** tabs, which the dashboard manages.
 
@@ -31,7 +31,10 @@ One row per event. Columns, in this order (leave a cell empty when it doesn't ap
 
 **Never fill** `Logged At`, `Edited At` or `Logged By` (the dashboard signs entries made from each caregiver's device). The Sheet stamps them automatically.
 
-**Overnight sleep:** one row dated the evening it started, e.g. `2026-11-21, 20:05, 06:40` (the end is earlier than the start, so it means the next morning). A wake-up after midnight is its own `Awake / Restless` row dated the new day.
+**Overnight sleep:** **one** `Sleep - Night` row for the whole night, from going up at bedtime to waking up for the day, dated the evening it started, e.g. `2026-11-21, 20:05, 06:40` (the end is earlier than the start, so it means the next morning). **Do not split the night around wakings.** Each waking is its own `Awake / Restless` row *inside* that span (dated the day it happened, so a waking after midnight is dated the new day); the dashboard subtracts it from sleep.
+
+Wrong: `Sleep - Night 20:00–23:10`, `Awake / Restless 23:10–23:40`, `Sleep - Night 23:40–06:40`.
+Right: `Sleep - Night 20:00–06:40` and `Awake / Restless 23:10–23:40`.
 
 ## 2. Accuracy rules (these rows end up in reports to caseworkers and doctors)
 
@@ -45,10 +48,10 @@ One row per event. Columns, in this order (leave a cell empty when it doesn't ap
 
 | Category | Use for |
 |---|---|
-| Sleep - Night | Night sleep segments |
+| Sleep - Night | The whole night, bedtime to morning: **one row per night** (wakings go in separate Awake / Restless rows inside it) |
 | Sleep - Nap | Naps in the crib or stroller at home |
 | Sleep - Car Nap | Any sleep in the car |
-| Awake / Restless | Night wakings, unsettled periods, long settling at bedtime |
+| Awake / Restless | Night wakings (inside the night's span), unsettled periods, long settling at bedtime |
 | Breastfeed | One row per side, with Start and End. Side in Tags (`left` / `right`). Switching sides means a new row. |
 | Bottle | Bottle feed for a baby: amount in Milk (oz). Tags `formula` or `breastmilk` if stated. |
 | Milk | Milk for an older child (cup or bottle): amount in Milk (oz) |

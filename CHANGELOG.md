@@ -8,6 +8,14 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.41.0 — 2026-11-27 · Apps Script v1.9 (no script change)
+
+- **Wakings inside the night block on the Timeline.** An *Awake / Restless* entry that sits entirely inside a sleep entry is drawn **inside** that block (inset, striped) rather than pushed onto a lane of its own, so a night reads as one block from bedtime to morning with its wakings visible. Tap it or hover for the time and length. Restless stretches that start before or end after the sleep (e.g. settling before going up) are drawn as before.
+- **Fix: restless time inside a sleep counted as sleep.** With one *Sleep - Night* from bedtime to morning and the wakings logged as *Awake / Restless* rows inside it (how Quick Log logs a night), night sleep, total 24 h sleep, "sleep in the last 24 h" and each entry's asleep time counted the wakings as sleep. They now subtract them. Past nights logged that way may show a little less sleep than before; that's the correction.
+- **Data check → Nights logged in pieces.** Nights split into several *Sleep - Night* rows with the restless stretches in the gaps (typically from notes turned into rows) are listed, with **🔗 Merge into one night** each and **Merge all**. Merging extends the first piece to the morning (notes and tags of all pieces kept, the first rating or the first one given), deletes the other sleep pieces from the Sheet (bottom-up), and leaves the restless rows in place. Only nights whose every gap is a logged restless stretch (± 10 min) or under 5 minutes are offered, so unlogged time is never turned into sleep. The ⚠ pill in the header says "n nights in pieces" when there are some.
+  - These split nights were also short by 15 minutes per extra piece: each piece got the "typical settling time" taken off as if she'd gone down again. A merged night doesn't.
+- Gemini instructions **v8**: one *Sleep - Night* row per night with the wakings as *Awake / Restless* rows inside it, with a wrong / right example.
+
 ## v1.40.1 — 2026-11-27 · Apps Script v1.9 (no behaviour change)
 
 - **One-tap update "insufficient authentication scopes".** A web app runs the code *and the manifest* of the version it was deployed with. If the `appsscript.json` manifest was pasted after the running version was deployed, that version doesn't have permission to edit itself yet, even though running `allowOneTapUpdates` in the editor (which uses the latest code) approved it. The dashboard now explains this and opens the Setup guide: do that one update by hand (*Copy script* → paste → *Deploy → Manage deployments → ✏️ → New version*), after which *Update script* works. The guide's one-tap section now says the hand-made deployment is required, and the script's own error message (v1.9) says the same.

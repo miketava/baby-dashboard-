@@ -15,18 +15,24 @@ function daySegments(D){
       segs.push({ e, x0: Math.max(e.s, a) - a, x1: Math.min(e.t, b) - a, cl: e.s < a, cr: e.t > b });
     }
   }
+  // v1.41: an Awake / Restless stretch that sits entirely inside a sleep block is drawn INSIDE that block, not on its own lane
+  const sleeps = segs.filter(sg => isSleep(sg.e) && !sg.instant), nested = [];
+  for (const sg of segs) { if (!isAwake(sg.e) || sg.instant) continue;
+    const host = sleeps.find(h => h.x0 <= sg.x0 && sg.x1 <= h.x1 && h.x1 - h.x0 > sg.x1 - sg.x0); if (host) { sg.host = host; nested.push(sg); } }
+  const packed = segs.filter(sg => !sg.host);
   // Sub-lane packing for overlapping events (longest first at equal start → containers stay on top lane)
-  segs.sort((p,q) => p.x0 - q.x0 || (q.x1 - q.x0) - (p.x1 - p.x0));
+  packed.sort((p,q) => p.x0 - q.x0 || (q.x1 - q.x0) - (p.x1 - p.x0));
   const laneEnds = [];
-  for (const sg of segs) { let L = laneEnds.findIndex(end => end <= sg.x0); if (L < 0) { L = laneEnds.length; laneEnds.push(0); } laneEnds[L] = sg.x1; sg.lane = L; }
+  for (const sg of packed) { let L = laneEnds.findIndex(end => end <= sg.x0); if (L < 0) { L = laneEnds.length; laneEnds.push(0); } laneEnds[L] = sg.x1; sg.lane = L; }
   // Overlap clusters: events only share width with the events they actually overlap (used in column mode)
-  for (let i = 0; i < segs.length;) {
-    let j = i, end = segs[i].x1, n = 0;
-    while (j < segs.length && (j === i || segs[j].x0 < end)) { end = Math.max(end, segs[j].x1); n = Math.max(n, segs[j].lane + 1); j++; }
-    for (let k = i; k < j; k++) segs[k].n = n;
+  for (let i = 0; i < packed.length;) {
+    let j = i, end = packed[i].x1, n = 0;
+    while (j < packed.length && (j === i || packed[j].x0 < end)) { end = Math.max(end, packed[j].x1); n = Math.max(n, packed[j].lane + 1); j++; }
+    for (let k = i; k < j; k++) packed[k].n = n;
     i = j;
   }
-  return { segs, marks, lanes: Math.max(1, laneEnds.length) };
+  nested.forEach(sg => { sg.lane = sg.host.lane; sg.n = sg.host.n; });
+  return { segs: [...packed, ...nested], marks, lanes: Math.max(1, laneEnds.length) };
 }
 function overlayHTML(m, vert){
   if (!S.overlayOn || !mod('schedule')) return '';
@@ -90,10 +96,14 @@ function dayRowHTML(m, { vert=false, today=false } = {}){
   const blocks = segs.map(sg => {
     const e = sg.e, col = catColor(e.cat), ink = inkFor(col);
     const late = S.overlayOn && mod('schedule') && isNap(e) && napLate(m, e);
-    const cls = ['ev', sg.cl && 'cl', sg.cr && 'cr', F.q && !qMatch(e) && 'dim', F.q && qMatch(e) && 'hit', late && 'late', e.ongoing && 'ongoing', e.local && 'local'].filter(Boolean).join(' ');
-    const pos = vert
+    const cls = ['ev', sg.host && 'nest', sg.cl && 'cl', sg.cr && 'cr', F.q && !qMatch(e) && 'dim', F.q && qMatch(e) && 'hit', late && 'late', e.ongoing && 'ongoing', e.local && 'local'].filter(Boolean).join(' ');
+    const pos = sg.host
+      ? (vert ? `top:${sg.x0/14.4}%;height:calc(${(sg.x1-sg.x0)/14.4}% - 1px);left:calc(16px + (100% - 16px) * ${sg.lane}/${sg.n} + 4px);width:calc((100% - 16px)/${sg.n} - 10px)`
+              : `left:${sg.x0/14.4}%;width:calc(${(sg.x1-sg.x0)/14.4}% - 1px);top:${MK + sg.lane*LH + 4}px;height:${LH-11}px`)
+      : vert
       ? `top:${sg.x0/14.4}%;height:calc(${(sg.x1-sg.x0)/14.4}% - 1px);left:calc(16px + (100% - 16px) * ${sg.lane}/${sg.n});width:calc((100% - 16px)/${sg.n} - 2px)`
       : `left:${sg.x0/14.4}%;width:calc(${(sg.x1-sg.x0)/14.4}% - 1px);top:${MK + sg.lane*LH}px;height:${LH-3}px`;
+    if (sg.host) return `<div class="${cls}" data-ev="${e.id}" title="${esc(`${catL(e.cat)} ${fmtTime(e.s % DAY)}–${fmtTime(e.t % DAY)} (${fmtDur(e.t - e.s)})`)}" style="${pos};background-color:${col};color:${ink}"></div>`;
     return `<div class="${cls}" data-ev="${e.id}" style="${pos};background-color:${col};color:${ink}${sg.instant ? ';opacity:.85' : ''}"><span>${cat(e.cat).icon}</span><span>${esc(e.cat.replace(/^Sleep - /,''))}${e.ongoing ? ' …' : ''}</span></div>`;
   }).join('');
   const mks = marks.map(({ e, x }) => {

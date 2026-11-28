@@ -23,9 +23,9 @@ function renderHeader(){
   scp.classList.toggle('hidden', !sc || sc.score == null);
   if (sc?.score != null) { scp.innerHTML = `${L('Today', 'Aujourd’hui')} <b>${sc.score}</b>${sc.partial ? `<span class="faint" style="font-weight:500"> ${L('so far', 'jusqu’ici')}</span>` : ''}`; scp.style.color = scoreCol(sc.score); scp.style.background = `color-mix(in srgb, ${scoreCol(sc.score)} 12%, var(--panel))`;
     scp.title = L('Today’s routine score — tap to see what’s helping and what isn’t', 'Score de routine du jour — touchez pour voir ce qui aide et ce qui nuit'); }
-  const w = DATA.warnings.filter(x => !x.info).length, info = DATA.warnings.length - w;
-  const hp = $('#healthPill'); hp.classList.toggle('hidden', !DATA.warnings.length && !DATA.newCats.length);
-  hp.querySelector('span').textContent = w ? L(`${w} parse warning${w>1?'s':''}`, `${w} avertissement${w>1?'s':''}`) : DATA.newCats.length ? L(`${DATA.newCats.length} new categor${DATA.newCats.length>1?'ies':'y'}`, `${DATA.newCats.length} nouvelle${DATA.newCats.length>1?'s':''} catégorie${DATA.newCats.length>1?'s':''}`) : `${info} note${info>1?'s':''}`;
+  const w = DATA.warnings.filter(x => !x.info).length, info = DATA.warnings.length - w, sn = viewOnly() ? 0 : splitNights().length;
+  const hp = $('#healthPill'); hp.classList.toggle('hidden', !DATA.warnings.length && !DATA.newCats.length && !sn);
+  hp.querySelector('span').textContent = w ? L(`${w} parse warning${w>1?'s':''}`, `${w} avertissement${w>1?'s':''}`) : sn ? L(`${sn} night${sn>1?'s':''} in pieces`, `${sn} nuit${sn>1?'s':''} en morceaux`) : DATA.newCats.length ? L(`${DATA.newCats.length} new categor${DATA.newCats.length>1?'ies':'y'}`, `${DATA.newCats.length} nouvelle${DATA.newCats.length>1?'s':''} catégorie${DATA.newCats.length>1?'s':''}`) : `${info} note${info>1?'s':''}`;
   hp.style.background = w ? '' : 'var(--accent-soft)'; hp.style.color = w ? '' : 'var(--accent)';
   $('#syncInfo').textContent = DATA.source === 'demo' ? '' : L('Last synced ', 'Synchronisé le ') + new Date(DATA.synced).toLocaleString(LOC(), { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
   $('#btnRefresh').title = S.endpoint ? L('Refresh data from Google Sheet', 'Actualiser les données de la feuille Google') : L('Connect a Google Sheet in Settings first', 'Connectez d’abord une feuille Google dans les Paramètres');

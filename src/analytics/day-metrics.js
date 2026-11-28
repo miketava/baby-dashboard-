@@ -3,7 +3,7 @@
    8. ANALYTICS — per-day metrics, midnight rollover, day-boundary attribution, live "in progress"
    ════════════════════════════════════════════════════════════════════════════ */
 /** Sum of minutes of events matching `pred` that overlap [a, b). */
-function overlapMin(pred, a, b){ let m = 0; for (const e of DATA.events) { const s = e.so ?? e.s; if (e.t != null && s < b && e.t > a && pred(e)) m += Math.min(b, e.t) - Math.max(a, s); } return m; }   // sleep counts from when she was asleep (v1.27)
+function overlapMin(pred, a, b){ let m = 0; for (const e of DATA.events) { const s = e.so ?? e.s; if (e.t != null && s < b && e.t > a && pred(e)) { m += Math.min(b, e.t) - Math.max(a, s); if (e.wakes) for (const [w0, w1] of e.wakes) { const o = Math.min(b, w1) - Math.max(a, w0); if (o > 0) m -= o; } } } return m; }   // v1.41: minus restless stretches logged inside a sleep   // sleep counts from when she was asleep (v1.27)
 /** Wake-up time on day D: latest end of a (finished) night-sleep segment between 04:00 and 12:00. */
 function wakeOf(D){ let w = null; for (const e of DATA.events) if (isNight(e) && !e.ongoing && e.t >= D*DAY + 240 && e.t <= D*DAY + 720) w = Math.max(w ?? 0, e.t - D*DAY); return w; }
 /** Bedtime on day D: earliest night-sleep start dated D at/after 15:00. */

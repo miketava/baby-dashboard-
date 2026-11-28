@@ -31,7 +31,14 @@ function applySleepOnset(){
     }
     if (so == null) { const st = settleDefault(e); so = end == null || end - e.s > st + 10 ? e.s + st : e.s; }
     e.so = so; e.settleHow = how; e.settle = how === 'assumed' ? null : so - e.s;
-    if (end != null) e.dur = Math.max(0, end - so);
+    // v1.41: Awake / Restless entries logged INSIDE this sleep (a night waking within one long Sleep - Night) aren't sleep
+    e.wakes = null; e.awakeIn = 0;
+    if (end != null) {
+      const iv = awake.filter(x => x.s < end && x.t > so).map(x => [Math.max(x.s, so), Math.min(x.t, end)]).sort((p, q) => p[0] - q[0]), merged = [];
+      for (const [s0, s1] of iv) { const l = merged[merged.length - 1]; if (l && s0 <= l[1]) l[1] = Math.max(l[1], s1); else merged.push([s0, s1]); }
+      if (merged.length) { e.wakes = merged; e.awakeIn = merged.reduce((t, [s0, s1]) => t + s1 - s0, 0); }
+      e.dur = Math.max(0, end - so - e.awakeIn);
+    }
   }
 }
 

@@ -373,6 +373,7 @@ body.viewonly .fab{display:none!important}
 .qform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
 /* v1.40 — upcoming visits & appointments: little calendar pages with the gap in days between them */
 .chip[data-single=pee]:not(.off){border-color:#38bdf8;background:color-mix(in srgb,#38bdf8 16%,var(--panel));font-weight:650}
+.tl-track .ev.nest{z-index:3;border-radius:3px;box-shadow:0 0 0 1.5px var(--panel);background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 3px,transparent 3px 6px);min-width:3px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:flex;align-items:center;gap:4px;min-width:0}
 .uic{font-size:18px;width:26px;flex:none;text-align:center}
@@ -1246,7 +1247,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.40.1';
+const APP_VERSION = '1.41.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1254,6 +1255,13 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.41.0', date:'2026-11-27',
+    en:['Timeline: a restless stretch logged inside a night (or nap) is drawn inside that sleep block as a striped band, instead of on its own row, so a night reads as one block with its wakings.',
+        'Fix: restless time logged inside one long Sleep - Night was counted as sleep. Night sleep and 24 h totals now subtract it (they may drop a little for past nights).',
+        'Data check → “Nights logged in pieces”: nights split into several Sleep - Night rows with the restless stretches in the gaps (e.g. from notes turned into rows) can be merged into one night, one by one or all at once. Those split nights were also missing 15 min of sleep per extra piece; merging fixes it.'],
+    fr:['Chronologie : une période agitée notée à l’intérieur d’une nuit (ou d’une sieste) est dessinée dans ce bloc de sommeil comme une bande hachurée, au lieu d’une rangée à part : une nuit se lit comme un seul bloc avec ses réveils.',
+        'Correctif : le temps agité noté à l’intérieur d’un long Sleep - Night comptait comme du sommeil. Le sommeil de nuit et les totaux sur 24 h le soustraient maintenant (ils peuvent baisser un peu pour les nuits passées).',
+        'Vérification des données → « Nuits notées en morceaux » : les nuits découpées en plusieurs lignes Sleep - Night avec les périodes agitées dans les trous (p. ex. des notes converties en lignes) peuvent être fusionnées en une seule nuit, une à une ou toutes ensemble. Il manquait aussi 15 min de sommeil par morceau à ces nuits; la fusion le corrige.'] },
   { v:'1.40.1', date:'2026-11-27',
     en:['“Update script” failing with “insufficient authentication scopes” now says what it means: the version your script runs was deployed before the manifest, so do that one update by hand; one-tap updates work from then on. The setup guide says so too.'],
     fr:['Quand « Mettre le script à jour » échoue avec « insufficient authentication scopes », le message l’explique maintenant : la version que votre script exécute a été déployée avant le manifeste; faites cette mise à jour à la main une fois, ensuite les mises à jour en un geste fonctionnent. Le guide le précise aussi.'] },
@@ -3636,7 +3644,7 @@ function renderQueuePill(){
    8. ANALYTICS — per-day metrics, midnight rollover, day-boundary attribution, live "in progress"
    ════════════════════════════════════════════════════════════════════════════ */
 /** Sum of minutes of events matching `pred` that overlap [a, b). */
-function overlapMin(pred, a, b){ let m = 0; for (const e of DATA.events) { const s = e.so ?? e.s; if (e.t != null && s < b && e.t > a && pred(e)) m += Math.min(b, e.t) - Math.max(a, s); } return m; }   // sleep counts from when she was asleep (v1.27)
+function overlapMin(pred, a, b){ let m = 0; for (const e of DATA.events) { const s = e.so ?? e.s; if (e.t != null && s < b && e.t > a && pred(e)) { m += Math.min(b, e.t) - Math.max(a, s); if (e.wakes) for (const [w0, w1] of e.wakes) { const o = Math.min(b, w1) - Math.max(a, w0); if (o > 0) m -= o; } } } return m; }   // v1.41: minus restless stretches logged inside a sleep   // sleep counts from when she was asleep (v1.27)
 /** Wake-up time on day D: latest end of a (finished) night-sleep segment between 04:00 and 12:00. */
 function wakeOf(D){ let w = null; for (const e of DATA.events) if (isNight(e) && !e.ongoing && e.t >= D*DAY + 240 && e.t <= D*DAY + 720) w = Math.max(w ?? 0, e.t - D*DAY); return w; }
 /** Bedtime on day D: earliest night-sleep start dated D at/after 15:00. */
@@ -3966,9 +3974,9 @@ function renderHeader(){
   scp.classList.toggle('hidden', !sc || sc.score == null);
   if (sc?.score != null) { scp.innerHTML = `${L('Today', 'Aujourd’hui')} <b>${sc.score}</b>${sc.partial ? `<span class="faint" style="font-weight:500"> ${L('so far', 'jusqu’ici')}</span>` : ''}`; scp.style.color = scoreCol(sc.score); scp.style.background = `color-mix(in srgb, ${scoreCol(sc.score)} 12%, var(--panel))`;
     scp.title = L('Today’s routine score — tap to see what’s helping and what isn’t', 'Score de routine du jour — touchez pour voir ce qui aide et ce qui nuit'); }
-  const w = DATA.warnings.filter(x => !x.info).length, info = DATA.warnings.length - w;
-  const hp = $('#healthPill'); hp.classList.toggle('hidden', !DATA.warnings.length && !DATA.newCats.length);
-  hp.querySelector('span').textContent = w ? L(`${w} parse warning${w>1?'s':''}`, `${w} avertissement${w>1?'s':''}`) : DATA.newCats.length ? L(`${DATA.newCats.length} new categor${DATA.newCats.length>1?'ies':'y'}`, `${DATA.newCats.length} nouvelle${DATA.newCats.length>1?'s':''} catégorie${DATA.newCats.length>1?'s':''}`) : `${info} note${info>1?'s':''}`;
+  const w = DATA.warnings.filter(x => !x.info).length, info = DATA.warnings.length - w, sn = viewOnly() ? 0 : splitNights().length;
+  const hp = $('#healthPill'); hp.classList.toggle('hidden', !DATA.warnings.length && !DATA.newCats.length && !sn);
+  hp.querySelector('span').textContent = w ? L(`${w} parse warning${w>1?'s':''}`, `${w} avertissement${w>1?'s':''}`) : sn ? L(`${sn} night${sn>1?'s':''} in pieces`, `${sn} nuit${sn>1?'s':''} en morceaux`) : DATA.newCats.length ? L(`${DATA.newCats.length} new categor${DATA.newCats.length>1?'ies':'y'}`, `${DATA.newCats.length} nouvelle${DATA.newCats.length>1?'s':''} catégorie${DATA.newCats.length>1?'s':''}`) : `${info} note${info>1?'s':''}`;
   hp.style.background = w ? '' : 'var(--accent-soft)'; hp.style.color = w ? '' : 'var(--accent)';
   $('#syncInfo').textContent = DATA.source === 'demo' ? '' : L('Last synced ', 'Synchronisé le ') + new Date(DATA.synced).toLocaleString(LOC(), { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
   $('#btnRefresh').title = S.endpoint ? L('Refresh data from Google Sheet', 'Actualiser les données de la feuille Google') : L('Connect a Google Sheet in Settings first', 'Connectez d’abord une feuille Google dans les Paramètres');
@@ -4263,18 +4271,24 @@ function daySegments(D){
       segs.push({ e, x0: Math.max(e.s, a) - a, x1: Math.min(e.t, b) - a, cl: e.s < a, cr: e.t > b });
     }
   }
+  // v1.41: an Awake / Restless stretch that sits entirely inside a sleep block is drawn INSIDE that block, not on its own lane
+  const sleeps = segs.filter(sg => isSleep(sg.e) && !sg.instant), nested = [];
+  for (const sg of segs) { if (!isAwake(sg.e) || sg.instant) continue;
+    const host = sleeps.find(h => h.x0 <= sg.x0 && sg.x1 <= h.x1 && h.x1 - h.x0 > sg.x1 - sg.x0); if (host) { sg.host = host; nested.push(sg); } }
+  const packed = segs.filter(sg => !sg.host);
   // Sub-lane packing for overlapping events (longest first at equal start → containers stay on top lane)
-  segs.sort((p,q) => p.x0 - q.x0 || (q.x1 - q.x0) - (p.x1 - p.x0));
+  packed.sort((p,q) => p.x0 - q.x0 || (q.x1 - q.x0) - (p.x1 - p.x0));
   const laneEnds = [];
-  for (const sg of segs) { let L = laneEnds.findIndex(end => end <= sg.x0); if (L < 0) { L = laneEnds.length; laneEnds.push(0); } laneEnds[L] = sg.x1; sg.lane = L; }
+  for (const sg of packed) { let L = laneEnds.findIndex(end => end <= sg.x0); if (L < 0) { L = laneEnds.length; laneEnds.push(0); } laneEnds[L] = sg.x1; sg.lane = L; }
   // Overlap clusters: events only share width with the events they actually overlap (used in column mode)
-  for (let i = 0; i < segs.length;) {
-    let j = i, end = segs[i].x1, n = 0;
-    while (j < segs.length && (j === i || segs[j].x0 < end)) { end = Math.max(end, segs[j].x1); n = Math.max(n, segs[j].lane + 1); j++; }
-    for (let k = i; k < j; k++) segs[k].n = n;
+  for (let i = 0; i < packed.length;) {
+    let j = i, end = packed[i].x1, n = 0;
+    while (j < packed.length && (j === i || packed[j].x0 < end)) { end = Math.max(end, packed[j].x1); n = Math.max(n, packed[j].lane + 1); j++; }
+    for (let k = i; k < j; k++) packed[k].n = n;
     i = j;
   }
-  return { segs, marks, lanes: Math.max(1, laneEnds.length) };
+  nested.forEach(sg => { sg.lane = sg.host.lane; sg.n = sg.host.n; });
+  return { segs: [...packed, ...nested], marks, lanes: Math.max(1, laneEnds.length) };
 }
 function overlayHTML(m, vert){
   if (!S.overlayOn || !mod('schedule')) return '';
@@ -4338,10 +4352,14 @@ function dayRowHTML(m, { vert=false, today=false } = {}){
   const blocks = segs.map(sg => {
     const e = sg.e, col = catColor(e.cat), ink = inkFor(col);
     const late = S.overlayOn && mod('schedule') && isNap(e) && napLate(m, e);
-    const cls = ['ev', sg.cl && 'cl', sg.cr && 'cr', F.q && !qMatch(e) && 'dim', F.q && qMatch(e) && 'hit', late && 'late', e.ongoing && 'ongoing', e.local && 'local'].filter(Boolean).join(' ');
-    const pos = vert
+    const cls = ['ev', sg.host && 'nest', sg.cl && 'cl', sg.cr && 'cr', F.q && !qMatch(e) && 'dim', F.q && qMatch(e) && 'hit', late && 'late', e.ongoing && 'ongoing', e.local && 'local'].filter(Boolean).join(' ');
+    const pos = sg.host
+      ? (vert ? `top:${sg.x0/14.4}%;height:calc(${(sg.x1-sg.x0)/14.4}% - 1px);left:calc(16px + (100% - 16px) * ${sg.lane}/${sg.n} + 4px);width:calc((100% - 16px)/${sg.n} - 10px)`
+              : `left:${sg.x0/14.4}%;width:calc(${(sg.x1-sg.x0)/14.4}% - 1px);top:${MK + sg.lane*LH + 4}px;height:${LH-11}px`)
+      : vert
       ? `top:${sg.x0/14.4}%;height:calc(${(sg.x1-sg.x0)/14.4}% - 1px);left:calc(16px + (100% - 16px) * ${sg.lane}/${sg.n});width:calc((100% - 16px)/${sg.n} - 2px)`
       : `left:${sg.x0/14.4}%;width:calc(${(sg.x1-sg.x0)/14.4}% - 1px);top:${MK + sg.lane*LH}px;height:${LH-3}px`;
+    if (sg.host) return `<div class="${cls}" data-ev="${e.id}" title="${esc(`${catL(e.cat)} ${fmtTime(e.s % DAY)}–${fmtTime(e.t % DAY)} (${fmtDur(e.t - e.s)})`)}" style="${pos};background-color:${col};color:${ink}"></div>`;
     return `<div class="${cls}" data-ev="${e.id}" style="${pos};background-color:${col};color:${ink}${sg.instant ? ';opacity:.85' : ''}"><span>${cat(e.cat).icon}</span><span>${esc(e.cat.replace(/^Sleep - /,''))}${e.ongoing ? ' …' : ''}</span></div>`;
   }).join('');
   const mks = marks.map(({ e, x }) => {
@@ -5403,6 +5421,67 @@ function showUpcoming(i, btn){
     ${e.desc ? `<div class="faint">${esc(e.desc)}</div>` : ''}
     <div class="faint">${e.kind === 'visit' ? L('From your calendar (only the date and times are read for visits).', 'De votre agenda (seuls la date et les heures sont lus pour les visites).') : `${L('Calendar', 'Agenda')}: ${esc(e.calendar || '—')}`}</div>`;
 }
+/* ── Nights logged in pieces (v1.41) ──
+   Notes turned into rows (e.g. by Gemini) sometimes split one night into sleep 20:00–23:10, restless 23:10–23:40,
+   sleep 23:40–02:05, restless 02:05–02:30, sleep 02:30–06:40. The dashboard counts that correctly, but the timeline
+   shows a broken night and bedtime / wake-up logic has to stitch it. The data check offers to merge such a night into
+   ONE Sleep - Night from the first piece's start to the last piece's end; the restless rows stay as they are and are
+   subtracted from sleep (v1.41), so the totals don't change. Only when every gap is a logged restless stretch (± 10 min)
+   or under 5 minutes, so time nobody logged is never turned into sleep. */
+const SPLIT_TOL = 10;
+const kidOf = e => norm(e.raw?.child || '');
+function splitNights(){
+  const nights = DATA.events.filter(e => isNight(e) && e.t != null && !e.ongoing).sort((a, b) => a.s - b.s);
+  const awake = DATA.events.filter(e => isAwake(e) && e.t != null), used = new Set(), out = [];
+  const bridged = (a, b) => {   // is the gap between two pieces fully explained by logged restless stretches?
+    const g0 = a.t, g1 = b.s; if (g1 < g0 - SPLIT_TOL || g1 - g0 > 240) return null;
+    if (g1 - g0 <= 5) return [];
+    const ws = awake.filter(x => kidOf(x) === kidOf(a) && x.t > g0 - SPLIT_TOL && x.s < g1 + SPLIT_TOL).sort((p, q) => p.s - q.s);
+    let cur = g0, list = [];
+    for (const x of ws) { if (x.s > cur + SPLIT_TOL) break; if (x.t > cur) { cur = x.t; list.push(x); } }
+    return cur >= g1 - SPLIT_TOL && list.length ? list : null;
+  };
+  for (let i = 0; i < nights.length; i++) {
+    if (used.has(nights[i])) continue;
+    const chain = [nights[i]], rest = [];
+    for (let j = i + 1; j < nights.length; j++) {
+      const last = chain[chain.length - 1], nx = nights[j]; if (kidOf(nx) !== kidOf(last)) continue;
+      if (nx.s - last.t > 240) break;
+      const br = bridged(last, nx); if (!br) break;
+      chain.push(nx); rest.push(...br);
+    }
+    if (chain.length > 1) { chain.forEach(e => used.add(e)); out.push({ pieces: chain, awake: rest, s: chain[0].s, t: chain[chain.length - 1].t }); }
+  }
+  return out;
+}
+function splitNightHTML(n, i){
+  const piece = e => `${fmtTime(e.s % DAY)}–${fmtTime(e.t % DAY)}`;
+  return `<div class="duppair"><div><b>${esc(fmtDay(n.pieces[0].d))}</b> · ${L(`${n.pieces.length} sleep pieces`, `${n.pieces.length} morceaux de sommeil`)}: ${n.pieces.map(piece).join(', ')}
+    <div class="faint">${L(`${n.awake.length} restless stretch${n.awake.length === 1 ? '' : 'es'} between them`, `${n.awake.length} période${n.awake.length === 1 ? '' : 's'} agitée${n.awake.length === 1 ? '' : 's'} entre eux`)} → ${L('one', 'une')} Sleep - Night ${fmtTime(n.s % DAY)}–${fmtTime(n.t % DAY)}</div></div>
+    ${viewOnly() ? '' : `<div class="row wrap"><button class="btn sm primary" data-splitmerge="${i}">🔗 ${L('Merge into one night', 'Fusionner en une nuit')}</button></div>`}</div>`;
+}
+async function mergeSplitNights(which){
+  const all = splitNights(), list = which === 'all' ? all : [all[+which]].filter(Boolean); if (!list.length) return;
+  const why = editBlock(list[0].pieces[0]); if (why) return toast(why, true);
+  if (!confirm(L(`Merge ${list.length === 1 ? 'this night' : `these ${list.length} nights`} into one Sleep - Night each? The first piece is extended to the morning; the other sleep pieces are deleted from the Sheet. Restless rows stay, and sleep totals don't change.`,
+    `Fusionner ${list.length === 1 ? 'cette nuit' : `ces ${list.length} nuits`} en un seul Sleep - Night chacune ? Le premier morceau est prolongé jusqu’au matin; les autres morceaux sont supprimés de la feuille. Les lignes agitées restent et les totaux de sommeil ne changent pas.`))) return;
+  closeModals();
+  const dels = [];
+  for (const n of list) {
+    const [first, ...others] = n.pieces, col = f => (DATA.source === 'live' && DATA.map?.[f]) || FIELD_CANON[f];
+    const notes = n.pieces.map(e => String(e.notes || '').trim()).filter(Boolean), tags = [...new Set(n.pieces.flatMap(e => e.tags))];
+    const row = { [col('end')]: fmtTime(n.t % DAY), [col('dur')]: n.t - n.s };
+    if (notes.length > 1 || (notes.length && !first.notes)) row[col('notes')] = [...new Set(notes)].join(' · ');
+    if (tags.length > first.tags.length) row[col('tags')] = tags.join(', ');
+    if (!first.outcome) { const o = n.pieces.find(e => e.outcome)?.outcome; if (o) row[col('outcome')] = o; }
+    await saveQuickOp('update', row, { rowNum: first.sheetRow, match: first.match, localId: first.local ? first.localId : null, batch: true });
+    dels.push(...others);
+  }
+  for (const e of dels.sort((a, b) => (b.sheetRow ?? 0) - (a.sheetRow ?? 0)))   // bottom-up, so row numbers stay valid
+    await saveQuickOp('delete', {}, { rowNum: e.sheetRow, match: e.match, localId: e.local ? e.localId : null, batch: true });
+  if (S.endpoint) await syncLive({ quiet: true, skipFlush: true }); else reingest();
+  toast(L(`${list.length} night${list.length > 1 ? 's' : ''} merged ✓`, `${list.length} nuit${list.length > 1 ? 's' : ''} fusionnée${list.length > 1 ? 's' : ''} ✓`));
+}
 
 /* ════════════════════════════════════════════════════════════════════════════
    17c. v4b BABY MODULES — newborn feeding, diapers, growth (WHO), teeth, temperature
@@ -6190,7 +6269,14 @@ function applySleepOnset(){
     }
     if (so == null) { const st = settleDefault(e); so = end == null || end - e.s > st + 10 ? e.s + st : e.s; }
     e.so = so; e.settleHow = how; e.settle = how === 'assumed' ? null : so - e.s;
-    if (end != null) e.dur = Math.max(0, end - so);
+    // v1.41: Awake / Restless entries logged INSIDE this sleep (a night waking within one long Sleep - Night) aren't sleep
+    e.wakes = null; e.awakeIn = 0;
+    if (end != null) {
+      const iv = awake.filter(x => x.s < end && x.t > so).map(x => [Math.max(x.s, so), Math.min(x.t, end)]).sort((p, q) => p[0] - q[0]), merged = [];
+      for (const [s0, s1] of iv) { const l = merged[merged.length - 1]; if (l && s0 <= l[1]) l[1] = Math.max(l[1], s1); else merged.push([s0, s1]); }
+      if (merged.length) { e.wakes = merged; e.awakeIn = merged.reduce((t, [s0, s1]) => t + s1 - s0, 0); }
+      e.dur = Math.max(0, end - so - e.awakeIn);
+    }
   }
 }
 
@@ -8575,6 +8661,9 @@ function renderHealthModal(){
   const can = dups.length && !editBlock(dups[0][0]), why = dups.length ? editBlock(dups[0][0]) : '';
   $('#healthBody').innerHTML = `${DATA.newCats.length ? `<p><b>New categories discovered:</b> ${DATA.newCats.map(c => `<span class="pill" style="background:${catColor(c)}22;color:${catColor(c)}">${esc(c)}</span>`).join(' ')} — added to filters, legend and charts automatically.</p>` : ''}
     ${DATA.extras.length ? `<p><b>Extra columns found:</b> ${DATA.extras.map(esc).join(', ')} — shown in the Event Log and tooltips.</p>` : ''}
+    ${(() => { const sn = splitNights(); return sn.length ? `<h4 style="margin:10px 0 4px">${L(`Nights logged in pieces (${sn.length})`, `Nuits notées en morceaux (${sn.length})`)}</h4>
+      <p class="muted" style="margin-top:0">${L('These nights were logged as several Sleep - Night rows with the restless stretches in the gaps (often from notes turned into rows). <b>Merge</b> makes one Sleep - Night from bedtime to the morning and keeps the restless rows inside it: the timeline shows one night with its wakings, and sleep totals stay the same. Only nights whose every gap is a logged restless stretch are listed.', 'Ces nuits ont été notées en plusieurs lignes Sleep - Night avec les périodes agitées dans les trous (souvent des notes converties en lignes). <b>Fusionner</b> crée un seul Sleep - Night du coucher au matin et garde les lignes agitées à l’intérieur : la chronologie montre une nuit avec ses réveils, et les totaux de sommeil ne changent pas. Seules les nuits dont chaque trou est une période agitée notée sont listées.')}</p>
+      <div class="duplist">${sn.map(splitNightHTML).join('')}</div>${sn.length > 1 && !viewOnly() ? `<div class="row"><button class="btn sm" data-splitmerge="all">🔗 ${L(`Merge all ${sn.length}`, `Tout fusionner (${sn.length})`)}</button></div>` : ''}` : ''; })()}
     ${dbl.length ? `<h4 style="margin:10px 0 4px">${L(`Logged twice (${dbl.length})`, `Notées deux fois (${dbl.length})`)}</h4>
       <p class="muted" style="margin-top:0">${L('The same entry logged a few minutes apart with different details (e.g. both of you noting dinner). Both are kept until you choose: <b>Merge</b> keeps one entry with both sets of notes (with who wrote them), the tags combined and any blank fields filled in.', 'La même entrée notée à quelques minutes d’écart avec des détails différents (p. ex. vous deux notez le souper). Les deux sont gardées jusqu’à votre choix : <b>Fusionner</b> garde une entrée avec les deux notes (et qui les a écrites), les étiquettes réunies et les champs vides remplis.')}</p>
       <div class="duplist">${dbl.map(p => doublePairHTML(p, p[3])).join('')}</div>` : ''}
@@ -8888,7 +8977,7 @@ function wire(){
   $('#healthPill').onclick = () => { renderHealthModal(); openModal('mHealth'); };
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
-  $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); });
+  $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); const m = e.target.closest('[data-splitmerge]'); if (m) mergeSplitNights(m.dataset.splitmerge); });
   document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); });   // v1.40: upcoming strip
   document.addEventListener('click', e => {   // v1.33: entries logged twice
     const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;

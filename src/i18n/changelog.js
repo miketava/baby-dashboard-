@@ -1,4 +1,11 @@
 const CHANGELOG = [
+  { v:'1.41.0', date:'2026-11-27',
+    en:['Timeline: a restless stretch logged inside a night (or nap) is drawn inside that sleep block as a striped band, instead of on its own row, so a night reads as one block with its wakings.',
+        'Fix: restless time logged inside one long Sleep - Night was counted as sleep. Night sleep and 24 h totals now subtract it (they may drop a little for past nights).',
+        'Data check → “Nights logged in pieces”: nights split into several Sleep - Night rows with the restless stretches in the gaps (e.g. from notes turned into rows) can be merged into one night, one by one or all at once. Those split nights were also missing 15 min of sleep per extra piece; merging fixes it.'],
+    fr:['Chronologie : une période agitée notée à l’intérieur d’une nuit (ou d’une sieste) est dessinée dans ce bloc de sommeil comme une bande hachurée, au lieu d’une rangée à part : une nuit se lit comme un seul bloc avec ses réveils.',
+        'Correctif : le temps agité noté à l’intérieur d’un long Sleep - Night comptait comme du sommeil. Le sommeil de nuit et les totaux sur 24 h le soustraient maintenant (ils peuvent baisser un peu pour les nuits passées).',
+        'Vérification des données → « Nuits notées en morceaux » : les nuits découpées en plusieurs lignes Sleep - Night avec les périodes agitées dans les trous (p. ex. des notes converties en lignes) peuvent être fusionnées en une seule nuit, une à une ou toutes ensemble. Il manquait aussi 15 min de sommeil par morceau à ces nuits; la fusion le corrige.'] },
   { v:'1.40.1', date:'2026-11-27',
     en:['“Update script” failing with “insufficient authentication scopes” now says what it means: the version your script runs was deployed before the manifest, so do that one update by hand; one-tap updates work from then on. The setup guide says so too.'],
     fr:['Quand « Mettre le script à jour » échoue avec « insufficient authentication scopes », le message l’explique maintenant : la version que votre script exécute a été déployée avant le manifeste; faites cette mise à jour à la main une fois, ensuite les mises à jour en un geste fonctionnent. Le guide le précise aussi.'] },

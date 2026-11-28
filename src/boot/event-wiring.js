@@ -16,7 +16,7 @@ function wire(){
   $('#healthPill').onclick = () => { renderHealthModal(); openModal('mHealth'); };
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
-  $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); });
+  $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); const m = e.target.closest('[data-splitmerge]'); if (m) mergeSplitNights(m.dataset.splitmerge); });
   document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); });   // v1.40: upcoming strip
   document.addEventListener('click', e => {   // v1.33: entries logged twice
     const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;
