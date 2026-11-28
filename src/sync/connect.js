@@ -100,10 +100,32 @@ function connectPaneHTML(){
   return `<h4>${L('Other phones', 'Autres téléphones')}</h4>
     <p class="hint" style="margin-top:0">${L('Send this link to the other caregiver; opening it on their phone connects it to the same Sheet. It works like a password, so send it privately (a text, not a group chat).', 'Envoyez ce lien à l’autre parent ; en l’ouvrant sur son téléphone, celui-ci se relie à la même feuille. C’est comme un mot de passe : envoyez-le en privé (un texto, pas un groupe).')}</p>
     <div class="row wrap"><button class="btn" data-act="connectLink" ${S.token ? '' : 'disabled'}>🔗 ${L('Connect another phone', 'Relier un autre téléphone')}</button></div>
+    <h4>🩺 ${L('Troubleshooting', 'Dépannage')}</h4>
+    <div class="row wrap"><button class="btn" data-act="connCheck">${L('Check connection', 'Vérifier la connexion')}</button><button class="btn" data-act="connCopy">${L('Copy result', 'Copier le résultat')}</button></div>
+    <pre class="code" id="connCheck" hidden style="white-space:pre-wrap"></pre>
+    <p class="hint">${L('Shows exactly what your script URL answers (its version, whether one-tap updates are on). For the script side, in Apps Script choose <span class="mono">diagnose</span> and ▸ Run: the log lists every deployment, the script version it really runs and any missing permission.', 'Montre exactement ce que répond l’adresse de votre script (sa version, si les mises à jour en un geste sont activées). Côté script, dans Apps Script, choisissez <span class="mono">diagnose</span> et ▸ Exécuter : le journal liste chaque déploiement, la version qu’il exécute vraiment et toute autorisation manquante.')}</p>
     ${connectPasteHTML()}
     ${live ? `<h4>${L('Apps Script', 'Apps Script')}</h4>
     <p style="margin-top:0">v${esc(SCRIPT_SEEN === '0' ? '<1.0' : SCRIPT_SEEN)}${scriptOutdated() ? ` · <b>${L(`v${REQUIRED_SCRIPT} available`, `v${REQUIRED_SCRIPT} disponible`)}</b>` : ` · ${L('up to date', 'à jour')}`}</p>
     ${scriptOutdated() && SCRIPT_CAN_UPDATE ? `<div class="row wrap"><button class="btn primary" data-act="updateScript">🔧 ${L('Update script', 'Mettre le script à jour')}</button></div>` : ''}
     ${scriptOutdated() && !SCRIPT_CAN_UPDATE ? `<p class="hint">${L('To update: Setup guide → Copy script, paste it over everything in Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy. Or switch on one-tap updates (Setup guide, last section) and do it from here next time.', 'Pour mettre à jour : Guide → Copier le script, collez-le à la place de tout le contenu de Code.gs, puis Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer. Ou activez les mises à jour en un geste (Guide, dernière section) pour le faire d’ici la prochaine fois.')}</p>` : ''}
     ${v17 && !scriptOutdated() ? `<p class="hint">${SCRIPT_CAN_UPDATE ? L('One-tap updates are on: future script updates install from here.', 'Mises à jour en un geste activées : les prochaines mises à jour du script s’installent d’ici.') : L('One-tap updates are off (optional: Setup guide, last section).', 'Mises à jour en un geste désactivées (facultatif : Guide, dernière section).')}</p>` : ''}` : ''}`;
+}
+
+/* v1.45.5: “Check connection”: asks the script URL directly and shows exactly what came back, ready to copy. */
+async function connectionCheck(){
+  const box = $('#connCheck'); if (!box) return;
+  box.hidden = false; box.textContent = L('Checking…', 'Vérification…');
+  const lines = [`Dashboard v${APP_VERSION} · needs script v${REQUIRED_SCRIPT} · data source: ${DATA.source} · script last seen: v${SCRIPT_SEEN || '?'} · one-tap seen: ${SCRIPT_CAN_UPDATE}`];
+  const ep = String(S.endpoint || '').trim(), id = (ep.match(/\/s\/([^/]+)\//) || [])[1] || '';
+  lines.push(`URL: ${ep ? ep.replace(id, id.slice(0, 6) + '…' + id.slice(-6)) : '(none)'} · secret on this phone: ${S.token ? S.token.length + ' chars' : 'none'}`);
+  try {
+    const u = new URL(ep); u.searchParams.set('token', S.token || ''); u.searchParams.set('_', Date.now());
+    const t0 = Date.now(), r = await fetch(u, { cache: 'no-store', redirect: 'follow' }), txt = await r.text();
+    lines.push(`HTTP ${r.status} in ${Date.now() - t0} ms · answered from ${new URL(r.url).hostname}`);
+    let j = null; try { j = JSON.parse(txt); } catch {}
+    if (!j) lines.push('Not JSON (first 200 chars): ' + txt.slice(0, 200).replace(/\s+/g, ' '));
+    else lines.push(`ok: ${j.ok} · scriptVersion: ${j.scriptVersion || '(none)'} · selfUpdate: ${j.selfUpdate} · unclaimed: ${!!j.unclaimed} · rows: ${(j.rows || []).length} · generated: ${j.generated || '-'}${j.error ? ' · error: ' + j.error : ''}`);
+  } catch (err) { lines.push('Request failed: ' + err.message); }
+  box.textContent = lines.join('\n');
 }

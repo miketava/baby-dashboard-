@@ -238,6 +238,8 @@ function wire(){
       case 'copyScript': toast(await copyText(APPS_SCRIPT) ? L('Script copied. In Apps Script, select everything in Code.gs and paste over it.', 'Script copié. Dans Apps Script, sélectionnez tout le contenu de Code.gs et collez par-dessus.') : L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')); break;
       case 'copyManifest': toast(await copyText(manifestText()) ? L('Manifest copied: paste it over everything in appsscript.json', 'Manifeste copié : collez-le à la place de tout le contenu d’appsscript.json') : L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')); break;
       case 'connectLink': await shareConnectLink(); break;
+      case 'connCheck': await connectionCheck(); break;
+      case 'connCopy': toast(await copyText($('#connCheck')?.textContent || '') ? L('Copied', 'Copié') : L('Copy failed', 'Échec de la copie')); break;
       case 'connectPaste': pasteConnectLink($('#connectPaste')?.value); break;
       case 'updateScript': await updateScript(); break;
       case 'copyNtfy': toast(!(await copyText(ntfySnippet())) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main') : S.ntfyTopic ? L('Reminders add-on copied with your topic. Paste it as a second script file named Reminders.', 'Module copié avec votre sujet. Collez-le dans un deuxième fichier de script nommé Reminders.') : L('Copied. Pick a topic first, or change NTFY_TOPIC at the top before saving.', 'Copié. Choisissez d’abord un sujet, ou changez NTFY_TOPIC en haut avant d’enregistrer.')); break;

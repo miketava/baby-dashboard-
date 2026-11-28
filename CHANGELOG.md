@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.45.5 — 2026-11-28 · Apps Script v1.9 (adds a read-only `diagnose` function; no behaviour change)
+
+- **Settings → Data source → 🩺 Troubleshooting → Check connection:** calls your script URL directly and shows what came back: HTTP status, the version it reports, whether one-tap updates are on, whether it's claimed, row count, any error; plus what the dashboard last saw. **Copy result** to share it.
+- **Apps Script `diagnose`** (▸ Run in the editor; read-only): the code version in the editor, the connection and one-tap switches, the permissions actually approved (and which one-tap ones are missing), and for **every deployment** its URL, the version number it's pinned to, the script version that version really contains and whether it includes the one-tap manifest. Paste the log to get help.
+
 ## v1.45.4 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - Settings ⓘ buttons: a 40 px tap target with a larger icon, placed at the end of the row they explain: on the label line of a field (e.g. *Who am I*, *Language*), beside the switch or row just above (e.g. *Private notes*), or at the end of a section heading. Tapping still shows / hides the explanation underneath.

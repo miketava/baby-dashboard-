@@ -57,7 +57,7 @@ function load({ secret = 'test-secret-0123456789', dailyLog, calendars = [], rem
   };
   const code = fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
   const rem = reminders ? '\n' + fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Reminders.gs'), 'utf8') : '';
-  const fn = new Function(...Object.keys(g), code + rem + '\nreturn { doGet, doPost, allowOneTapUpdates, stopOneTapUpdates, resetConnection' + (reminders ? ', sendReminders, dueReminders_, previewReminders, installReminderTrigger' : '') + ' };');
+  const fn = new Function(...Object.keys(g), code + rem + '\nreturn { doGet, doPost, allowOneTapUpdates, stopOneTapUpdates, resetConnection, diagnose' + (reminders ? ', sendReminders, dueReminders_, previewReminders, installReminderTrigger' : '') + ' };');
   const api = fn(...Object.values(g));
   const raw = body => JSON.parse(api.doPost({ postData: { contents: JSON.stringify(body) } }));
   if (claim) { const r = raw({ action: 'claim', secret }); if (!r.ok) throw new Error('claim failed: ' + r.error); }

@@ -343,3 +343,35 @@ function selfUpdate_(files) {
       : /insufficient authentication scopes/i.test(String(err)) ? ' (the deployed version predates the manifest: deploy a new version by hand once, then one-tap updates work)' : '') };
   }
 }
+
+/** ▸ Run in the editor to see what each web app deployment really runs, and what one-tap updates are missing.
+    Read-only: changes nothing. Copy the log (View → Logs / Execution log) and share it when asking for help. */
+function diagnose() {
+  const out = [], log = s => out.push(s);
+  log('Code in the editor: v' + SCRIPT_VERSION + ' · script id ' + ScriptApp.getScriptId());
+  try { log('This web app URL: ' + (ScriptApp.getService().getUrl() || '(not deployed as a web app)')); } catch (err) { log('Web app URL: ' + err); }
+  const p = props_(); log('Connected (secret set): ' + (secret_() ? 'yes, ' + secret_().length + ' characters' : 'NO — paste the URL into the dashboard'));
+  log('Viewer keys: ' + Object.keys(viewers_()).length + ' · One-tap updates switched on: ' + (p.getProperty('ALLOW_SELF_UPDATE') === 'true' ? 'yes' : 'NO (▸ Run allowOneTapUpdates)'));
+  let scopes = [];
+  try { const r = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + ScriptApp.getOAuthToken(), { muteHttpExceptions: true }); scopes = String(JSON.parse(r.getContentText()).scope || '').split(' '); }
+  catch (err) { log('Could not read permissions: ' + err); }
+  const need = ['script.projects', 'script.deployments', 'script.external_request'];
+  log('Permissions approved for the editor code: ' + scopes.map(s => s.replace('https://www.googleapis.com/auth/', '')).join(', '));
+  need.forEach(n => { if (!scopes.some(s => s.endsWith('/' + n))) log('  MISSING ' + n + ': the appsscript.json manifest from the Setup guide isn’t saved, or ▸ Run allowOneTapUpdates again and approve'); });
+  const api = 'https://script.googleapis.com/v1/projects/' + ScriptApp.getScriptId(), auth = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  const get = path => { const r = UrlFetchApp.fetch(api + path, { headers: auth, muteHttpExceptions: true }); const j = JSON.parse(r.getContentText() || '{}'); if (r.getResponseCode() >= 300) throw new Error((j.error && j.error.message) || ('HTTP ' + r.getResponseCode())); return j; };
+  try {
+    const deps = get('/deployments').deployments || [];
+    log('Deployments: ' + deps.length);
+    deps.forEach(d => {
+      const web = (d.entryPoints || []).filter(e => e.entryPointType === 'WEB_APP')[0], n = d.deploymentConfig && d.deploymentConfig.versionNumber;
+      let runs = n ? '?' : 'latest code (test deployment)';
+      if (n) { try { const files = get('/content?versionNumber=' + n).files || [], code = files.map(f => String(f.source || '')).join('\n'), m = code.match(/const SCRIPT_VERSION = '([\d.]+)'/), man = files.filter(f => f.name === 'appsscript')[0];
+        runs = 'script v' + (m ? m[1] : '?') + (man && /script\.projects/.test(man.source) ? ', manifest OK' : ', NO one-tap manifest in that version'); } catch (err) { runs = 'could not read: ' + err.message; } }
+      log('  · ' + (web ? web.webApp.url : '(not a web app)') + ' → version ' + (n || 'HEAD') + ': ' + runs + (d.deploymentConfig && d.deploymentConfig.description ? ' (“' + d.deploymentConfig.description + '”)' : ''));
+    });
+  } catch (err) { log('Apps Script API: ' + err.message + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' → switch it on at script.google.com/home/usersettings' : '')); }
+  Logger.log(out.join('\n'));
+  return out.join('\n');
+}
+

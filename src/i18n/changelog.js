@@ -1,6 +1,9 @@
 /** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
 const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
+  { v:'1.45.5', date:'2026-11-28',
+    en:['Troubleshooting: Settings → Data source → Check connection shows exactly what your script URL answers (version, one-tap updates), with Copy result. In Apps Script, ▸ Run diagnose to list every deployment and the script version it really runs.'],
+    fr:['Dépannage : Réglages → Source de données → Vérifier la connexion montre exactement ce que répond l’adresse de votre script (version, mises à jour en un geste), avec Copier le résultat. Dans Apps Script, ▸ Exécuter diagnose liste chaque déploiement et la version qu’il exécute vraiment.'] },
   { v:'1.45.4', date:'2026-11-28',
     en:['Settings: the ⓘ buttons are bigger to tap and sit at the end of the row they explain instead of on a line of their own.'],
     fr:['Réglages : les boutons ⓘ sont plus grands à toucher et se trouvent au bout de la rangée qu’ils expliquent au lieu d’être sur une ligne à part.'] },

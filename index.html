@@ -1294,7 +1294,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.45.4';
+const APP_VERSION = '1.45.5';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1304,6 +1304,9 @@ const REQUIRED_SCRIPT = '1.9';
 /** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
 const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
+  { v:'1.45.5', date:'2026-11-28',
+    en:['Troubleshooting: Settings → Data source → Check connection shows exactly what your script URL answers (version, one-tap updates), with Copy result. In Apps Script, ▸ Run diagnose to list every deployment and the script version it really runs.'],
+    fr:['Dépannage : Réglages → Source de données → Vérifier la connexion montre exactement ce que répond l’adresse de votre script (version, mises à jour en un geste), avec Copier le résultat. Dans Apps Script, ▸ Exécuter diagnose liste chaque déploiement et la version qu’il exécute vraiment.'] },
   { v:'1.45.4', date:'2026-11-28',
     en:['Settings: the ⓘ buttons are bigger to tap and sit at the end of the row they explain instead of on a line of their own.'],
     fr:['Réglages : les boutons ⓘ sont plus grands à toucher et se trouvent au bout de la rangée qu’ils expliquent au lieu d’être sur une ligne à part.'] },
@@ -2476,6 +2479,38 @@ function selfUpdate_(files) {
       : /insufficient authentication scopes/i.test(String(err)) ? ' (the deployed version predates the manifest: deploy a new version by hand once, then one-tap updates work)' : '') };
   }
 }
+
+/** ▸ Run in the editor to see what each web app deployment really runs, and what one-tap updates are missing.
+    Read-only: changes nothing. Copy the log (View → Logs / Execution log) and share it when asking for help. */
+function diagnose() {
+  const out = [], log = s => out.push(s);
+  log('Code in the editor: v' + SCRIPT_VERSION + ' · script id ' + ScriptApp.getScriptId());
+  try { log('This web app URL: ' + (ScriptApp.getService().getUrl() || '(not deployed as a web app)')); } catch (err) { log('Web app URL: ' + err); }
+  const p = props_(); log('Connected (secret set): ' + (secret_() ? 'yes, ' + secret_().length + ' characters' : 'NO — paste the URL into the dashboard'));
+  log('Viewer keys: ' + Object.keys(viewers_()).length + ' · One-tap updates switched on: ' + (p.getProperty('ALLOW_SELF_UPDATE') === 'true' ? 'yes' : 'NO (▸ Run allowOneTapUpdates)'));
+  let scopes = [];
+  try { const r = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + ScriptApp.getOAuthToken(), { muteHttpExceptions: true }); scopes = String(JSON.parse(r.getContentText()).scope || '').split(' '); }
+  catch (err) { log('Could not read permissions: ' + err); }
+  const need = ['script.projects', 'script.deployments', 'script.external_request'];
+  log('Permissions approved for the editor code: ' + scopes.map(s => s.replace('https://www.googleapis.com/auth/', '')).join(', '));
+  need.forEach(n => { if (!scopes.some(s => s.endsWith('/' + n))) log('  MISSING ' + n + ': the appsscript.json manifest from the Setup guide isn’t saved, or ▸ Run allowOneTapUpdates again and approve'); });
+  const api = 'https://script.googleapis.com/v1/projects/' + ScriptApp.getScriptId(), auth = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  const get = path => { const r = UrlFetchApp.fetch(api + path, { headers: auth, muteHttpExceptions: true }); const j = JSON.parse(r.getContentText() || '{}'); if (r.getResponseCode() >= 300) throw new Error((j.error && j.error.message) || ('HTTP ' + r.getResponseCode())); return j; };
+  try {
+    const deps = get('/deployments').deployments || [];
+    log('Deployments: ' + deps.length);
+    deps.forEach(d => {
+      const web = (d.entryPoints || []).filter(e => e.entryPointType === 'WEB_APP')[0], n = d.deploymentConfig && d.deploymentConfig.versionNumber;
+      let runs = n ? '?' : 'latest code (test deployment)';
+      if (n) { try { const files = get('/content?versionNumber=' + n).files || [], code = files.map(f => String(f.source || '')).join('\\n'), m = code.match(/const SCRIPT_VERSION = '([\\d.]+)'/), man = files.filter(f => f.name === 'appsscript')[0];
+        runs = 'script v' + (m ? m[1] : '?') + (man && /script\\.projects/.test(man.source) ? ', manifest OK' : ', NO one-tap manifest in that version'); } catch (err) { runs = 'could not read: ' + err.message; } }
+      log('  · ' + (web ? web.webApp.url : '(not a web app)') + ' → version ' + (n || 'HEAD') + ': ' + runs + (d.deploymentConfig && d.deploymentConfig.description ? ' (“' + d.deploymentConfig.description + '”)' : ''));
+    });
+  } catch (err) { log('Apps Script API: ' + err.message + (/disabled|has not been used|SERVICE_DISABLED/i.test(String(err)) ? ' → switch it on at script.google.com/home/usersettings' : '')); }
+  Logger.log(out.join('\\n'));
+  return out.join('\\n');
+}
+
 `;
 const APPS_MANIFEST = `{
   "timeZone": "America/Toronto",
@@ -8184,12 +8219,34 @@ function connectPaneHTML(){
   return `<h4>${L('Other phones', 'Autres téléphones')}</h4>
     <p class="hint" style="margin-top:0">${L('Send this link to the other caregiver; opening it on their phone connects it to the same Sheet. It works like a password, so send it privately (a text, not a group chat).', 'Envoyez ce lien à l’autre parent ; en l’ouvrant sur son téléphone, celui-ci se relie à la même feuille. C’est comme un mot de passe : envoyez-le en privé (un texto, pas un groupe).')}</p>
     <div class="row wrap"><button class="btn" data-act="connectLink" ${S.token ? '' : 'disabled'}>🔗 ${L('Connect another phone', 'Relier un autre téléphone')}</button></div>
+    <h4>🩺 ${L('Troubleshooting', 'Dépannage')}</h4>
+    <div class="row wrap"><button class="btn" data-act="connCheck">${L('Check connection', 'Vérifier la connexion')}</button><button class="btn" data-act="connCopy">${L('Copy result', 'Copier le résultat')}</button></div>
+    <pre class="code" id="connCheck" hidden style="white-space:pre-wrap"></pre>
+    <p class="hint">${L('Shows exactly what your script URL answers (its version, whether one-tap updates are on). For the script side, in Apps Script choose <span class="mono">diagnose</span> and ▸ Run: the log lists every deployment, the script version it really runs and any missing permission.', 'Montre exactement ce que répond l’adresse de votre script (sa version, si les mises à jour en un geste sont activées). Côté script, dans Apps Script, choisissez <span class="mono">diagnose</span> et ▸ Exécuter : le journal liste chaque déploiement, la version qu’il exécute vraiment et toute autorisation manquante.')}</p>
     ${connectPasteHTML()}
     ${live ? `<h4>${L('Apps Script', 'Apps Script')}</h4>
     <p style="margin-top:0">v${esc(SCRIPT_SEEN === '0' ? '<1.0' : SCRIPT_SEEN)}${scriptOutdated() ? ` · <b>${L(`v${REQUIRED_SCRIPT} available`, `v${REQUIRED_SCRIPT} disponible`)}</b>` : ` · ${L('up to date', 'à jour')}`}</p>
     ${scriptOutdated() && SCRIPT_CAN_UPDATE ? `<div class="row wrap"><button class="btn primary" data-act="updateScript">🔧 ${L('Update script', 'Mettre le script à jour')}</button></div>` : ''}
     ${scriptOutdated() && !SCRIPT_CAN_UPDATE ? `<p class="hint">${L('To update: Setup guide → Copy script, paste it over everything in Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy. Or switch on one-tap updates (Setup guide, last section) and do it from here next time.', 'Pour mettre à jour : Guide → Copier le script, collez-le à la place de tout le contenu de Code.gs, puis Déployer → Gérer les déploiements → ✏️ → Version : Nouvelle version → Déployer. Ou activez les mises à jour en un geste (Guide, dernière section) pour le faire d’ici la prochaine fois.')}</p>` : ''}
     ${v17 && !scriptOutdated() ? `<p class="hint">${SCRIPT_CAN_UPDATE ? L('One-tap updates are on: future script updates install from here.', 'Mises à jour en un geste activées : les prochaines mises à jour du script s’installent d’ici.') : L('One-tap updates are off (optional: Setup guide, last section).', 'Mises à jour en un geste désactivées (facultatif : Guide, dernière section).')}</p>` : ''}` : ''}`;
+}
+
+/* v1.45.5: “Check connection”: asks the script URL directly and shows exactly what came back, ready to copy. */
+async function connectionCheck(){
+  const box = $('#connCheck'); if (!box) return;
+  box.hidden = false; box.textContent = L('Checking…', 'Vérification…');
+  const lines = [`Dashboard v${APP_VERSION} · needs script v${REQUIRED_SCRIPT} · data source: ${DATA.source} · script last seen: v${SCRIPT_SEEN || '?'} · one-tap seen: ${SCRIPT_CAN_UPDATE}`];
+  const ep = String(S.endpoint || '').trim(), id = (ep.match(/\/s\/([^/]+)\//) || [])[1] || '';
+  lines.push(`URL: ${ep ? ep.replace(id, id.slice(0, 6) + '…' + id.slice(-6)) : '(none)'} · secret on this phone: ${S.token ? S.token.length + ' chars' : 'none'}`);
+  try {
+    const u = new URL(ep); u.searchParams.set('token', S.token || ''); u.searchParams.set('_', Date.now());
+    const t0 = Date.now(), r = await fetch(u, { cache: 'no-store', redirect: 'follow' }), txt = await r.text();
+    lines.push(`HTTP ${r.status} in ${Date.now() - t0} ms · answered from ${new URL(r.url).hostname}`);
+    let j = null; try { j = JSON.parse(txt); } catch {}
+    if (!j) lines.push('Not JSON (first 200 chars): ' + txt.slice(0, 200).replace(/\s+/g, ' '));
+    else lines.push(`ok: ${j.ok} · scriptVersion: ${j.scriptVersion || '(none)'} · selfUpdate: ${j.selfUpdate} · unclaimed: ${!!j.unclaimed} · rows: ${(j.rows || []).length} · generated: ${j.generated || '-'}${j.error ? ' · error: ' + j.error : ''}`);
+  } catch (err) { lines.push('Request failed: ' + err.message); }
+  box.textContent = lines.join('\n');
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -9389,6 +9446,8 @@ function wire(){
       case 'copyScript': toast(await copyText(APPS_SCRIPT) ? L('Script copied. In Apps Script, select everything in Code.gs and paste over it.', 'Script copié. Dans Apps Script, sélectionnez tout le contenu de Code.gs et collez par-dessus.') : L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')); break;
       case 'copyManifest': toast(await copyText(manifestText()) ? L('Manifest copied: paste it over everything in appsscript.json', 'Manifeste copié : collez-le à la place de tout le contenu d’appsscript.json') : L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main')); break;
       case 'connectLink': await shareConnectLink(); break;
+      case 'connCheck': await connectionCheck(); break;
+      case 'connCopy': toast(await copyText($('#connCheck')?.textContent || '') ? L('Copied', 'Copié') : L('Copy failed', 'Échec de la copie')); break;
       case 'connectPaste': pasteConnectLink($('#connectPaste')?.value); break;
       case 'updateScript': await updateScript(); break;
       case 'copyNtfy': toast(!(await copyText(ntfySnippet())) ? L('Copy failed — select it manually', 'Échec de la copie — sélectionnez-le à la main') : S.ntfyTopic ? L('Reminders add-on copied with your topic. Paste it as a second script file named Reminders.', 'Module copié avec votre sujet. Collez-le dans un deuxième fichier de script nommé Reminders.') : L('Copied. Pick a topic first, or change NTFY_TOPIC at the top before saving.', 'Copié. Choisissez d’abord un sujet, ou changez NTFY_TOPIC en haut avant d’enregistrer.')); break;
