@@ -170,11 +170,13 @@ function wire(){
   $('#qlBody').addEventListener('click', e => { if (QL && e.target.closest('#qlForm .chip, #qlForm [data-nudge], #qlForm [data-now]')) QL.dirty = true; }, true);
   $('#qlBody').addEventListener('change', e => { if (e.target.name === 'Category' && QL) { const fd = Object.fromEntries(new FormData($('#qlForm')).entries()); if (fd['Milk (oz)'] !== '' && fd['Milk (oz)'] != null) fd['Milk (oz)'] = fromDisp(+fd['Milk (oz)']); QL.row = { ...QL.row, ...fd }; renderQuickLog(); } });
   // Report
-  $('#repSeg').onclick = e => { const b = e.target.closest('button'); if (b) { repMode = b.dataset.n; repSnap = null; renderReport(); } };
+  $('#repSeg').onclick = e => { const b = e.target.closest('button'); if (b) { repMode = b.dataset.n; repSnap = null; if (repMode === 'doctor' && !docAppt) { const a = nextDocAppt(); if (a) docAppt = { id: a.id, title: a.title, D: a.D, st: a.st }; } renderReport(); } };
   $('#repPrev').onclick = () => { repIdx = reportRange().p.idx - 1; renderReport(); };
   $('#repNext').onclick = () => { repIdx = reportRange().p.idx + 1; renderReport(); };
   $('#repComment').oninput = debounce(e => { REPS.comments[reportRange().key] = e.target.value; saveReps(); renderReport(); }, 400);
-  for (const [id, k] of [['#repCal','includeCalendar'], ['#repDaily','includeDaily'], ['#repNotes','includeNotes']]) $(id).onchange = e => { S.report[k] = e.target.checked; saveSettings(); renderReport(); };
+  for (const [id, k] of [['#repCal','includeCalendar'], ['#repDaily','includeDaily'], ['#repNotes','includeNotes'], ['#repSuggest','docSuggest']]) $(id).onchange = e => { S.report[k === 'includeDaily' && repMode === 'doctor' ? 'docDaily' : k] = e.target.checked; saveSettings(); renderReport(); };
+  $('#repDocNav').onchange = onDoctorNav;
+  document.addEventListener('click', e => { const b = e.target.closest('[data-docrep]'); if (b) { e.preventDefault(); openDoctorReport(b.dataset.docrep || null); } });   // v1.46: “Summary for this appointment”
   $('#repSnaps').onchange = e => { repSnap = e.target.value || null; renderReport(); };
   $('#repBody').addEventListener('click', e => { if (e.target.id === 'repLive') { e.preventDefault(); repSnap = null; renderReport(); } });
   $('#repSave').onclick = () => { if (repSnap) return toast('This is already a saved copy');

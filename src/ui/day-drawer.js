@@ -12,7 +12,7 @@ function renderDrawer(){ setTimeout(syncDrawerArrows, 0);
   const tot = [
     ['Wake-up', fmtTime(m.wake)], ['Bedtime', m.bed != null ? fmtTime(m.bed) + (bo != null && bo > 30 ? ' ⚠' : '') : '—'],
     ['Naps', `${m.napCount} · ${fmtDur(m.daySleep)}`], ['Last nap end', fmtTime(m.lastNapEnd)],
-    ['Final wake window', fmtDur(m.wwFinal)], ['Overnight awake', fmtDur(m.overnightAwake)],
+    ['Final wake window', fmtDur(m.wwFinal)], ['Overnight awake', fmtDur(m.overnightAwake) + (m.wakings ? ' · ' + plural(m.wakings, 'waking', 'wakings', 'réveil', 'réveils') : '')],
     ['Night sleep', fmtDur(m.nightSleep)], ['24h sleep', fmtDur(m.total24) + (m.complete24 ? '' : '*')],
     ['Milk', fmtOz(m.milk)], ['Water', fmtMl(m.water)],
     ['Bedtime effort', m.effort != null ? fmtDur(m.effort) + (m.firstTry === false ? ' · woke' : '') : '—'], ['Bath', m.bath ? 'Yes 🛁' : L('No', 'Non')],

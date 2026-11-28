@@ -67,6 +67,10 @@ const isSleep = e => e.k === 'night' || e.k === 'nap';
 const isNight = e => e.k === 'night';
 const isNap = e => e.k === 'nap';
 const isAwake = e => e.k === 'awake';
+/** v1.46: an Awake / Restless row counts as a *waking* (counts, “woke within an hour”, early wake-ups) only from 5 minutes;
+    shorter fusses still come off sleep time and still show on the timeline. A row with no end time (length unknown) counts. */
+const WAKE_MIN = 5;
+const isWaking = e => isAwake(e) && (e.t == null || e.ongoing || e.t - e.s >= WAKE_MIN);
 const isMeal = e => e.k === 'meal';
 const isCare = e => e.k === 'diaper' || e.k === 'meds';
 const isRibbon = e => e.allDay || RIBBON.has(e.k);

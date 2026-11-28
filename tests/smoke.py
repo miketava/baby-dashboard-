@@ -30,12 +30,13 @@ async def libs(route):
   if LIBDIR: return await route.abort()
   await route.continue_()
 
-async def open_page(browser, profile='placement', lang='en', vp=DESKTOP, touch=False, extra=None):
+async def open_page(browser, profile='placement', lang='en', vp=DESKTOP, touch=False, extra=None, at=None):
   ctx = await browser.new_context(viewport={'width': vp[0], 'height': vp[1]}, timezone_id='America/Toronto', has_touch=touch, is_mobile=touch)
   settings = {'seenVersion': VERSION, 'lang': lang, **(extra or {})}
   await ctx.add_init_script("if(!sessionStorage.t){sessionStorage.t=1;const s=%s;s.profile=%s;localStorage.setItem('bld.settings.v1',JSON.stringify(s));localStorage.setItem('bld.me.v1','{\"name\":\"Test\"}')}" % (json.dumps(settings), PROFILES[profile]))
   await ctx.route('**/*', lambda r: libs(r) if r.request.url.startswith('http') else r.continue_())
   pg = await ctx.new_page(); errs = []
+  if at: await pg.clock.set_fixed_time(at)   # e.g. '2026-11-28T16:00:00-05:00'
   pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
   await pg.goto(PAGE); await pg.wait_for_timeout(900)
   return ctx, pg, errs
@@ -223,10 +224,57 @@ async def connect(b):
   check('the copied script holds no secret', await pg.evaluate("!/const SECRET\\s*=\\s*'/.test(APPS_SCRIPT) && APPS_MANIFEST.includes('script.deployments')"))
   check('no page errors', not [e for e in errs if 'Failed to load resource' not in e], errs[:3]); await ctx.close()
 
+DOC_INJECT = """(() => {
+  const b = demoRecords(), T = todayIdx(); b.headers = [...b.headers, 'Private Notes'];
+  const add = (d, st, en, cat, notes, tags, priv) => b.records.push({ 'Date': isoOf(T + d), 'Start Time': st, 'End Time': en, 'Category': cat, 'Notes': notes || '', 'Tags': tags || '', 'Private Notes': priv || '' });
+  add(-1, '10:00', '', 'Health / Incident', 'Runny nose', '', 'PRIV-SECRET-123');
+  add(-2, '18:00', '', 'Temperature', 'after nap', '', ''); b.records[b.records.length - 1]['Value'] = '38.4';
+  add(-1, '07:30', '', 'Diaper - Poop', '', 'hard'); add(-2, '07:30', '', 'Diaper - Poop', '', 'hard'); add(-3, '07:30', '', 'Diaper - Poop', '', 'hard');
+  b.planned = []; b.appts = [{ id:'doc1', date: isoOf(T + 1), start:'10:00', end:'10:30', title:'Pédiatre - Dr Roy', calendar:'Famille' }];
+  S.apptFor = { doc1: apptKid() }; ingest(b, 'demo', 'Demo Mode');
+})()"""
+
+async def doctor_report(b):
+  print('Doctor visit summary (V6)')
+  for prof in PROFILES:
+    for lang in ('en', 'fr'):
+      ctx, pg, errs = await open_page(b, prof, lang)
+      await pg.evaluate(DOC_INJECT); await pg.wait_for_timeout(200)
+      await pg.evaluate("openDoctorReport('doc1')"); await pg.wait_for_timeout(300)
+      html = await pg.evaluate("$('#repBody').innerHTML"); txt = await pg.evaluate("$('#repBody').innerText")
+      ok = ('Doctor visit summary' if lang == 'en' else 'Sommaire pour la visite médicale') in txt and 'Pédiatre' in txt
+      check(f'{prof} · {lang}: renders with the appointment', ok and not errs, '; '.join(errs[:3]) or txt[:120])
+      check(f'{prof} · {lang}: no Private Notes text', 'PRIV-SECRET-123' not in html)
+      check(f'{prof} · {lang}: no family-contact or visit details', not re.search(r'Family contact|Contacts famille|Visite parents|caseworker|intervenant', txt), txt[:80])
+      await ctx.close()
+  ctx, pg, errs = await open_page(b, 'placement', 'en', at='2026-11-28T16:00:00-05:00')
+  await pg.evaluate(DOC_INJECT); await pg.wait_for_timeout(200)
+  check('waking rule: a 3-min fuss is not a waking, 5 min or no end time is', await pg.evaluate("[isWaking({k:'awake',s:0,t:3}), isWaking({k:'awake',s:0,t:5}), isWaking({k:'awake',s:0,t:null})]") == [False, True, True])
+  before = await pg.evaluate("[...DAYS.values()].reduce((a,d)=>a+(d.wakings||0),0)")
+  await pg.evaluate("""(() => { const b = DATA.base, D = todayIdx() - 2, n = b.records.find(r => r['Category'] === 'Sleep - Night' && r['Date'] === isoOf(D));
+    b.records.push({ 'Date': isoOf(D + 1), 'Start Time': '01:00', 'End Time': '01:03', 'Category': 'Awake / Restless' }, { 'Date': isoOf(D + 1), 'Start Time': '03:00', 'End Time': '03:12', 'Category': 'Awake / Restless' }); reingest(); })()""")
+  after = await pg.evaluate("[...DAYS.values()].reduce((a,d)=>a+(d.wakings||0),0)")
+  check('waking rule: a night gets +1 waking for a 3-min and a 12-min row', after - before == 1, (before, after))
+  await pg.evaluate("S.upOpen = true; setView('today'); renderAll()"); await pg.wait_for_timeout(300)
+  await pg.locator('.ucal[data-up]').last.click(); await pg.wait_for_timeout(150)
+  check('Coming up: “Summary for this appointment” on tomorrow’s appointment', await pg.locator('#upPop [data-docrep=doc1]').count() == 1)
+  check('Tomorrow card has the button too', await pg.locator('#tomorrowCard [data-docrep=doc1]').count() == 1)
+  await pg.locator('#upPop [data-docrep=doc1]').click(); await pg.wait_for_timeout(300)
+  txt = await pg.evaluate("$('#repBody').innerText")
+  check('it opens the summary for that appointment', await pg.evaluate("$('#report').classList.contains('on') && repMode === 'doctor'") and 'Pédiatre - Dr Roy' in txt)
+  check('suggested questions come from the flags (hard poops, fever)', 'Poop: hard 3 of the last' in txt and 'Fever on 1 day' in txt, txt[-600:])
+  await pg.fill('#repComment', 'Is the rash an allergy?'); await pg.wait_for_timeout(700)
+  check('questions typed before printing are in the summary', 'Is the rash an allergy?' in await pg.evaluate("$('#repBody').innerText"))
+  await pg.click('#repSave'); await pg.wait_for_timeout(200)
+  check('a saved copy keeps the questions', await pg.evaluate("REPS.snaps.at(-1).html.includes('Is the rash an allergy?') && REPS.snaps.at(-1).label.startsWith('Doctor visit')"))
+  await pg.select_option('#repDocSince', '30'); await pg.wait_for_timeout(200)
+  check('period picker: last 30 days', await pg.evaluate("reportRange().len") == 30)
+  check('no page errors', not errs, errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(**({'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {}))
-    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling, connect): await t(b)
+    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling, doctor_report, connect): await t(b)
     await b.close()
   bad = [r for r in results if not r[1]]
   print(f'\n{len(results) - len(bad)} / {len(results)} checks passed' + (f' · FAILED: {", ".join(r[0] for r in bad)}' if bad else ''))

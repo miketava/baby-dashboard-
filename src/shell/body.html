@@ -420,8 +420,9 @@
 <div id="report" aria-label="Summary report">
   <div class="rep-tools">
     <b>Summary report</b>
-    <div class="seg" id="repSeg"><button data-n="period">Reporting period</button><button data-n="visits" data-mod="visits">All visits to date</button><button data-n="filters">Current filters</button></div>
+    <div class="seg" id="repSeg"><button data-n="period">Reporting period</button><button data-n="visits" data-mod="visits">All visits to date</button><button data-n="filters">Current filters</button><button data-n="doctor">🩺 Doctor visit</button></div>
     <span class="row" id="repNav"><button class="btn sm" id="repPrev">◀</button><span id="repPeriod" class="muted" style="min-width:150px;text-align:center"></span><button class="btn sm" id="repNext">▶</button></span>
+    <span class="row wrap hidden" id="repDocNav"></span>
     <select id="repSnaps" title="Saved reports"></select>
     <span class="grow"></span>
     <button class="btn" id="repSave" title="Keep an unchangeable copy of this report on this device">Save copy</button>
@@ -429,11 +430,12 @@
     <button class="btn primary" id="repPrint">Print / Save as PDF</button><button class="btn" id="repClose">Close</button>
   </div>
   <div class="rep-opts" id="repOpts">
-    <label class="field grow">Caregiver comments for this report <span class="faint">(saved on this device, printed in the report)</span><textarea id="repComment" rows="2" placeholder="Context the numbers don't show: illness, teething, schedule changes, anything the worker should know…"></textarea></label>
+    <label class="field grow"><span id="repCommentLbl">Caregiver comments for this report</span> <span class="faint">(saved on this device, printed in the report)</span><textarea id="repComment" rows="2" placeholder="Context the numbers don't show: illness, teething, schedule changes, anything the worker should know…"></textarea></label>
     <div class="row wrap" style="gap:14px">
       <label class="switch"><input type="checkbox" id="repCal"> Calendar</label>
-      <label class="switch"><input type="checkbox" id="repDaily"> Day-by-day table</label>
+      <label class="switch"><input type="checkbox" id="repDaily"> <span id="repDailyLbl">Day-by-day table</span></label>
       <label class="switch"><input type="checkbox" id="repNotes"> Include note text</label>
+      <label class="switch hidden"><input type="checkbox" id="repSuggest"> Suggest questions from the log</label>
     </div>
   </div>
   <div class="rep" id="repBody"></div>

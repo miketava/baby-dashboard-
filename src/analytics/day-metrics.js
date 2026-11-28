@@ -80,11 +80,15 @@ function analyze(){
       if (bedE && bedE.settleHow !== 'assumed') effort = bedAsleep - Math.min(bed, ...cands);   // v1.27: up to when she was really asleep
       else if (cands.length) effort = bed - Math.min(...cands);
       const bAbs = D*DAY + (bedAsleep ?? bed);
-      firstTry = !DATA.events.some(e => isAwake(e) && e.s > bAbs && e.s <= bAbs + 60);
+      firstTry = !DATA.events.some(e => isWaking(e) && e.s > bAbs && e.s <= bAbs + 60);
     }
     // Late-evening / overnight feed (21:00–00:30, not during a wake-up) → wake-up between 00:30 and 03:00?
     const lateFeed = DATA.events.some(e => e.milk != null && e.st != null && e.s >= A*DAY + 1260 && e.s < (A+1)*DAY + 30 && !DATA.events.some(w => isAwake(w) && w.t != null && e.s >= w.s && e.s <= w.t));
-    const earlyWake = DATA.events.some(e => isAwake(e) && e.s >= (A+1)*DAY + 30 && e.s <= (A+1)*DAY + 180);
+    const earlyWake = DATA.events.some(e => isWaking(e) && e.s >= (A+1)*DAY + 30 && e.s <= (A+1)*DAY + 180);
+    // v1.46: the night's wakings (≥ 5 min), from when she fell asleep at bedtime to the morning wake-up
+    const nBed = bedEntry(A), nWake = wakeOf(A+1);
+    const wk0 = nBed ? nBed.so ?? nBed.s : A*DAY + nS, wk1 = nWake != null ? (A+1)*DAY + nWake : (A+1)*DAY + nE;
+    const nightWakes = DATA.events.filter(e => isWaking(e) && e.s > wk0 && e.s < wk1).sort((a, b) => a.s - b.s);
     const nightDiapers = DATA.events.filter(e => e.k === 'diaper' && e.st != null && e.s >= A*DAY + nS && e.s < (A+1)*DAY + nE).length;
     const dinner = evs.filter(e => isMeal(e) && /dinner|supper/i.test(e.cat) && e.st != null).sort((a,b) => a.st - b.st)[0];
     DAYS.set(D, {
@@ -94,6 +98,7 @@ function analyze(){
       ww2: naps.length >= 2 ? (naps[1].so ?? naps[1].s) - naps[0].t : null,
       wwFinal: bedAsleep != null && lastNapEnd != null ? bedAsleep - lastNapEnd : null, bedAsleep,
       overnightAwake, nightSleep, nightKnown: nightSleep > 0, total24, complete24,
+      wakings: nightSleep > 0 ? nightWakes.length : null, wakeLens: nightWakes.filter(e => e.t != null && !e.ongoing).map(e => e.t - e.s),
       milk: milkEv.length ? sum(milkEv.map(e => e.milk)) : null, milkWin: win, milkHours: hours,
       water: waterEv.length ? sum(waterEv.map(e => e.water)) : null,
       bath: evs.some(e => e.k === 'bath'),

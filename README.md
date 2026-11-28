@@ -55,6 +55,8 @@ Suggested targets come from your child's age and are updated as they grow; the d
 
 **Reports:** printable / PDF summaries for any period, or two-week caseworker reports with an "all visits to date" option. They cover sleep, feeding, growth, teeth, family contact, observations, milestones, appointments, a day-by-day table and your comments. Save an unchangeable copy of each report you submit. Reports say how many entries were corrected and how many were logged in real time.
 
+**Doctor visit summary:** *Report → 🩺 Doctor visit* turns the log since the last appointment into one or two printed pages for the pediatrician: growth with WHO percentiles, sleep against the range for her age, feeding, diapers, fevers / medications / vaccines, mood, milestones and patterns, each compared with the period before, then your questions for the doctor (with suggestions from the log). Also one tap from an appointment that's today or tomorrow. Never includes private notes, family contact or visit details.
+
 **Families**
 - **Several children:** add children in *Settings → Child & features*. Each gets their own profile, schedule, score, reports and check-ins. Switch between them in the header; **All** stacks everyone's days on one timeline.
 - **Sharing:** *Settings → Sharing & viewers* creates **read-only viewer keys** (e.g. for a caseworker). A viewer key can be limited to one child and can leave categories out. That filtering happens in your Apps Script before anything leaves Google, and the viewer sees a "Not included: …" line so nothing is silently missing.

@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS = {
   kids: [], kid: 0, blankKid: 0, kidView: 'one',   // multiple children (see 67_kids.js); [] = single child
   meds: [],                         // medication schedule: [{ name, dose, times, from, until, note }]
   cocoon: { start: '', weeks: 12 }, // cocooning period: start = placement date (blank = first day of data)        // categories left out of analysis and reports on this device (labelled “Not included”)
-  report: { anchor:'', periodDays:14, preparedBy:'', caseRef:'', childLabel:'', includeNotes:true, includeDaily:true, includeCalendar:true },
+  report: { anchor:'', periodDays:14, preparedBy:'', caseRef:'', childLabel:'', includeNotes:true, includeDaily:true, includeCalendar:true, docDaily:false, docSuggest:true },
 };
 
 /**

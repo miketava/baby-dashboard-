@@ -11,6 +11,7 @@ function periodBounds(idx){
   return { a: anchor + k*len, b: anchor + k*len + len - 1, idx: k, latest, len };
 }
 function reportRange(){
+  if (repMode === 'doctor') return docRange();   // v1.46
   if (repMode === 'filters') { const days = visibleDays(); return { days, a: days[0]?.D, b: days[days.length-1]?.D, key:'F', title:L('Current dashboard filters', 'Filtres actuels du tableau de bord') }; }
   if (repMode === 'visits') { const v = [...DAYS.values()].filter(d => d.visit).map(d => d.D), [f, l] = dataSpan(); const a = v.length ? Math.max(f, Math.min(...v) - 1) : f;
     return { days: daysIn(a, l), a, b: l, key:'V', title:L('All visits to date', 'Toutes les visites à ce jour') }; }
@@ -37,12 +38,19 @@ function renderReport(){
   $$('#repSeg button').forEach(b => b.classList.toggle('on', b.dataset.n === repMode));
   const R = reportRange(), O = S.report;
   $('#repNav').classList.toggle('hidden', repMode !== 'period');
+  const doc = repMode === 'doctor';   // v1.46: doctor visit summary
+  $('#repDocNav').classList.toggle('hidden', !doc); if (doc) renderDoctorNav(R);
+  $('#repCal').closest('label').classList.toggle('hidden', doc); $('#repSuggest').closest('label').classList.toggle('hidden', !doc);
+  $('#repDailyLbl').textContent = doc ? L('Appendix: day-by-day table', 'Annexe : tableau jour par jour') : L('Day-by-day table', 'Tableau jour par jour');
+  $('#repCommentLbl').textContent = doc ? L('Questions for the doctor', 'Questions pour le médecin') : L('Caregiver comments for this report', 'Commentaires du parent pour ce rapport');
+  $('#repComment').placeholder = doc ? L('What you want to ask: one per line. Saved on this device and printed in the summary.', 'Ce que vous voulez demander : une question par ligne. Gardé sur cet appareil et imprimé dans le sommaire.') : L('Context the numbers don’t show: illness, teething, schedule changes, anything the worker should know…', 'Le contexte que les chiffres ne montrent pas : maladie, dents, changements d’horaire, tout ce que l’intervenant devrait savoir…');
   if (R.p) { $('#repPeriod').textContent = `${fmtDayShort(R.a)} – ${fmtDayShort(R.b)} (${R.p.idx + 1} of ${R.p.latest + 1})`; $('#repPrev').disabled = R.p.idx === 0; $('#repNext').disabled = R.p.idx === R.p.latest; }
   $('#repSnaps').innerHTML = `<option value="">${REPS.snaps.length ? `Saved copies (${REPS.snaps.length})…` : 'No saved copies'}</option>` + REPS.snaps.slice().reverse().map(x => `<option value="${x.id}">${esc(x.label)} · saved ${new Date(x.created).toLocaleDateString(LOC())}</option>`).join('');
-  $('#repCal').checked = O.includeCalendar; $('#repDaily').checked = O.includeDaily; $('#repNotes').checked = O.includeNotes;
+  $('#repCal').checked = O.includeCalendar; $('#repDaily').checked = doc ? !!O.docDaily : O.includeDaily; $('#repNotes').checked = O.includeNotes; $('#repSuggest').checked = O.docSuggest !== false;
   if (document.activeElement !== $('#repComment')) $('#repComment').value = REPS.comments[R.key] || '';
   $('#repOpts').classList.toggle('hidden', !!repSnap);
   if (repSnap) { const x = REPS.snaps.find(y => y.id === repSnap); $('#repBody').innerHTML = `<div class="snapnote">Saved copy from ${new Date(x.created).toLocaleString(LOC())} — unchanged since it was saved. <a href="#" id="repLive">Back to live report</a></div>` + x.html; return; }
+  if (doc) return renderDoctorReport(R);
   const days = R.days; if (!days.length) { $('#repBody').innerHTML = L('<p>No data in this range.</p>', '<p>Aucune donnée dans cette période.</p>'); return; }
   const ds = days.filter(d => !d.isToday), t = T(), k = sleepSummary(ds);
   const evs = DATA.events.filter(e => days.some(d => d.D === e.d));

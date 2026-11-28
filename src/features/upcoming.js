@@ -52,5 +52,6 @@ function showUpcoming(i, btn){
     <div>🕒 ${fmtTime(e.st)}${e.en != null ? '–' + fmtTime(e.en) : ''}${dur > 0 ? ` <span class="faint">(${fmtDur(dur)})</span>` : ''}</div>
     ${e.where ? `<div>📍 ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(e.where)}</a>` : `<a href="${mapq}" target="_blank" rel="noopener">${esc(e.where)}</a>`}</div>` : ''}
     ${e.desc ? `<div class="faint">${esc(e.desc)}</div>` : ''}
+    ${e.kind === 'appt' && e.D <= todayIdx() + 1 && e.id ? `<div><button type="button" class="btn sm primary" data-docrep="${esc(e.id)}">📄 ${L('Summary for this appointment', 'Sommaire pour ce rendez-vous')}</button></div>` : ''}
     <div class="faint">${e.kind === 'visit' ? L('From your calendar (only the date and times are read for visits).', 'De votre agenda (seuls la date et les heures sont lus pour les visites).') : `${L('Calendar', 'Agenda')}: ${esc(e.calendar || '—')}`}</div>`;
 }

@@ -53,6 +53,7 @@ features/checkins.js
 features/settling.js
 views/data.js
 features/reports.js
+features/reports-doctor.js
 quicklog/quicklog.js
 quicklog/edit-entry.js
 features/smart.js
