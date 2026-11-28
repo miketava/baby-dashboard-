@@ -271,10 +271,63 @@ async def doctor_report(b):
   check('period picker: last 30 days', await pg.evaluate("reportRange().len") == 30)
   check('no page errors', not errs, errs[:3]); await ctx.close()
 
+TAP_AUDIT = """sel => [...document.querySelectorAll(sel)].filter(el => { const r = el.getBoundingClientRect(); return r.width && r.height && getComputedStyle(el).visibility !== 'hidden' && el.offsetParent !== null; })
+  .map(el => { const r = el.getBoundingClientRect(); return [String(el.className || el.tagName), (el.innerText || '').trim().slice(0, 20), Math.round(r.width), Math.round(r.height)]; }).filter(x => x[2] < 44 || x[3] < 44)"""
+TAPPABLE = 'button, a, select, input, [role=button], .chip'
+
+async def redesign_home(b):
+  print('V7 phase 1: Home, one-tap logging, Insights (phone)')
+  for prof in PROFILES:
+    for lang in ('en', 'fr'):
+      ctx, pg, errs = await open_page(b, prof, lang, PHONE, touch=True, at='2026-11-28T13:20:00-05:00')
+      ok = await pg.evaluate("!!$('#m2home .m2hero') && getComputedStyle($('#today')).display === 'none'")
+      check(f'{prof} · {lang}: Home hero shows, the old banner is behind Details', ok and not errs, '; '.join(errs[:3]))
+      small = await pg.evaluate(TAP_AUDIT, f'#m2home :is({TAPPABLE}), .bbar :is({TAPPABLE})')
+      check(f'{prof} · {lang}: Home and bottom bar tap targets ≥ 44 px', not small, small[:4])
+      await pg.evaluate("setView('insights')"); await pg.wait_for_timeout(200)
+      check(f'{prof} · {lang}: Insights hub renders', await pg.locator('.m2ins').count() >= 3 and not errs, errs[:2])
+      await ctx.close()
+  ctx, pg, errs = await open_page(b, 'placement', 'en', PHONE, touch=True, at='2026-11-28T13:20:00-05:00')
+  cnt = "DATA.events.filter(e => e.k === 'diaper' && e.d === todayIdx()).length"
+  n0 = await pg.evaluate(cnt)
+  await pg.tap('.m2tile[data-tile=diaper]'); await pg.wait_for_timeout(400)
+  check('Diaper tile opens a sheet with big buttons (≥ 44 px)', await pg.locator('#m2sheet.on .m2big').count() == 3 and not await pg.evaluate(TAP_AUDIT, f'#m2sheet :is({TAPPABLE})'))
+  await pg.tap('.m2pill[data-v=hard]'); await pg.tap('[data-mact=poop]'); await pg.wait_for_timeout(300)
+  check('one tap saves the diaper with its consistency', await pg.evaluate(cnt) == n0 + 1 and await pg.evaluate("DATA.events.filter(e => e.k === 'diaper' && e.d === todayIdx()).pop().tags.includes('hard')"))
+  check('the snackbar offers Undo and Edit', await pg.locator('#snack.on [data-sn=undo]').count() == 1 and await pg.locator('#snack.on [data-sn=edit]').count() == 1)
+  await pg.tap('[data-sn=undo]'); await pg.wait_for_timeout(400)
+  check('Undo removes it again', await pg.evaluate(cnt) == n0)
+  await pg.tap('.m2primary'); await pg.wait_for_timeout(300)
+  check('the primary button starts a nap, then becomes Woke up', await pg.evaluate("DATA.events.some(e => e.ongoing && isNap(e))") and 'Woke up' in await pg.inner_text('.m2primary'))
+  await pg.wait_for_timeout(5300)
+  await pg.tap('.m2primary'); await pg.wait_for_timeout(300)
+  check('Woke up shows Awake at once but waits for the undo window', 'Awake' in await pg.inner_text('.m2state') and await pg.evaluate("DATA.events.some(e => e.ongoing && isNap(e))"))
+  await pg.wait_for_timeout(5400)
+  check('…then ends the nap', not await pg.evaluate("DATA.events.some(e => e.ongoing && isNap(e))"))
+  await pg.evaluate("openQuickLog()"); await pg.wait_for_timeout(300)
+  small = await pg.evaluate(TAP_AUDIT, f'#qlog :is({TAPPABLE})')
+  check('Quick Log tap targets ≥ 44 px', not small, small[:4])
+  check('no page errors', not errs, errs[:3]); await ctx.close()
+  ctx, pg, errs = await open_page(b, 'placement', 'en', PHONE, touch=True, at='2026-11-28T23:40:00-05:00')
+  acts = "[...document.querySelectorAll('.m2acts button')].map(b => b.innerText)"
+  a = await pg.evaluate(acts)
+  check('at night the main button is Night waking, not the end of the night', 'Night waking' in a[0] and 'Up for the day' in a[1], a)
+  await pg.tap('.m2primary'); await pg.wait_for_timeout(300)
+  a = await pg.evaluate(acts)
+  check('during a waking: Back asleep, and the hero says awake in the night', 'Back asleep' in a[0] and 'Awake in the night' in await pg.inner_text('.m2state'), a)
+  await ctx.close()
+  ctx, pg, errs = await open_page(b, 'placement', 'en', PHONE)
+  imp = await pg.evaluate("JSON.parse(localStorage['bld2.imported'] || 'null')")   # property access reads the raw key
+  check('test-site storage: settings and Who am I copied, no offline queue', imp and 'settings.v1' in imp['keys'] and 'me.v1' in imp['keys'] and 'local.v2' not in imp['keys'], imp)
+  await pg.evaluate("S.title = 'Next only'; saveSettings()")
+  raw = await pg.evaluate("[JSON.parse(localStorage['bld2.settings.v1']).title, JSON.parse(localStorage['bld.settings.v1']).title || '']")
+  check('the test site writes its own keys and leaves the current app’s settings alone', raw[0] == 'Next only' and raw[1] != 'Next only', raw)
+  await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(**({'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {}))
-    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling, doctor_report, connect): await t(b)
+    for t in (every_view, quick_log, score_weights, filters, tour, day_panel, swipes, templates_and_appointments, settling, doctor_report, redesign_home, connect): await t(b)
     await b.close()
   bad = [r for r in results if not r[1]]
   print(f'\n{len(results) - len(bad)} / {len(results)} checks passed' + (f' · FAILED: {", ".join(r[0] for r in bad)}' if bad else ''))

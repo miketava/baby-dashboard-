@@ -1,5 +1,7 @@
 # V7 spec — Mobile-first redesign
 
+> **Status (2026-11-28):** phase 1 built on `redesign`: test-site storage, new bottom bar (Today · Timeline · ＋ · Insights · More), Home (hero with live timer and ring, primary action, quick tiles with one-tap mini sheets, Today chips, heads-up cards), Undo / Edit snackbar, Insights hub, press feedback, springs and haptics. At night the main button is *Night waking* (then *Back asleep*), with *Up for the day* beside it, so one tap never ends the night by mistake. Long-press ＋ reopens the last thing logged. Tests: `tests/smoke.py` (redesign_home).
+
 **Goal:** the same app underneath (every metric, template, report, sync rule and Sheet column), with a front end built for a phone held in one hand: logging in one or two taps with the thumb, big targets, clear state at a glance, and motion and feedback that make it feel like an app rather than a web page. Power-user depth (reports, timeline, analysis, settings) stays, one level further in.
 
 **Where it's built:** the `redesign` branch of `baby-dashboard-`, published to the separate test site `baby-dashboard-next` (`miketava.github.io/baby-dashboard-next/`). `main` stays the current app and keeps getting features and fixes; `main` is merged into `redesign` regularly. If the redesign wins, `redesign` is merged into `main`.

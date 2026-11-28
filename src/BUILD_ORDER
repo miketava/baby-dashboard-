@@ -5,7 +5,9 @@ shell/head.html
 shell/styles-base.html
 shell/styles-responsive.html
 shell/styles-nav-and-ui.html
+shell/styles-next.html
 shell/body.html
+next/storage.js
 core/version.js
 i18n/changelog.js
 core/constants.js
@@ -79,6 +81,10 @@ settings/settings-core.js
 settings/data-health.js
 settings/sharing.js
 settings/render-settings.js
+next/actions.js
+next/home.js
+next/insights.js
+next/wiring.js
 boot/event-wiring.js
 boot/boot.js
 ui/back-button.js

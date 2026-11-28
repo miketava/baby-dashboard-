@@ -17,6 +17,7 @@ const NAV = () => [
   { v:'today',     ic:'📅', g:'daily',     n:L('Today', 'Aujourd’hui') },
   { v:'timeline',  ic:'🗓️', g:'daily',     n:L('Timeline', 'Chronologie') },
   { v:'checkins',  ic:'📝', g:'daily',     n:L('Check-ins', 'Bilans'), mod:'checkins' },
+  { v:'insights',  ic:'💡', g:'analysis',  n:L('Insights', 'Aperçus') },   // V7 hub
   { v:'patterns',  ic:'📊', g:'analysis',  n: mod('visits') ? L('Routine & Visits', 'Routine et visites') : L('Routine', 'Routine') },
   { v:'sleep',     ic:'😴', g:'analysis',  n:L('Sleep', 'Sommeil') },
   { v:'nutrition', ic:'🍼', g:'analysis',  n:L('Feeding', 'Alimentation') },
@@ -26,7 +27,7 @@ const NAV = () => [
   { v:'awards',    ic:'🏆', g:'fun',       n:L('Badges', 'Badges'), mod:'badges' },
 ].filter(t => !t.mod || mod(t.mod));
 /** Phone bar: Today · Timeline · ＋ · (Check-ins, or Routine) · More */
-const BBAR_4 = () => NAV().some(t => t.v === 'checkins') ? 'checkins' : 'patterns';
+const BBAR_4 = () => 'insights';   // V7: Home · Timeline · ＋ · Insights · More
 function renderNav(){
   const tabs = NAV(), grp = g => L(...TAB_GROUPS[g]); let last = '', h = '';
   tabs.forEach(t => { if (t.g !== last) { h += `<div class="tgrp">${esc(grp(t.g))}</div>`; last = t.g; }

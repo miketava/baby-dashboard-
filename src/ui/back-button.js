@@ -11,6 +11,7 @@ function navPushView(v){ if (NAV_FROM_POP) return; if (history.state?.o) history
     ['#tour',      el => el.classList.contains('on'),                          () => endTour()],
     ['#report',    el => el.classList.contains('on'),                          () => closeReport()],
     ...$$('.modal').map(m => ['#' + m.id, el => el.classList.contains('on'),    () => { const c = $('#' + m.id + ' [data-close]'); if (c) c.click(); else { m.classList.remove('on'); closeModals(); } }]),
+    ['#m2sheet',   el => el.classList.contains('on'),                          () => closeMini()],   // V7 mini sheets
     ['#qlog',      el => el.classList.contains('on'),                          () => closeQuickLog()],
     ['#moreSheet', el => el.classList.contains('on'),                          () => closeMore()],
     ['#drawer',    el => el.classList.contains('on'),                          () => closeDrawer()],

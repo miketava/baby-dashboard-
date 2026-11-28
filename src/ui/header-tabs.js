@@ -73,6 +73,7 @@ function renderView(){
   else if (VIEW === 'contact') renderContact();
   else if (VIEW === 'checkins') renderCheckins();
   else if (VIEW === 'awards') renderAwards();
+  else if (VIEW === 'insights') renderInsights();
   else renderData();
   if (drawerDay != null) renderDrawer();
 }

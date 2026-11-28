@@ -75,6 +75,7 @@
 <main>
   <!-- View 1: Timeline -->
   <section class="view on" id="v-today">
+    <div id="m2home" class="m2home"></div>
     <section class="today" id="today">
   <div class="today-head">
     <div class="ttl"><span aria-hidden="true">☀️</span><span id="todayTitle">Today</span></div>
@@ -101,6 +102,7 @@
     </div>
   </section>
 
+  <section class="view" id="v-insights"><div class="m2page"><h2 class="m2h">Insights</h2><div id="insightsBody"></div></div></section>
   <section class="view" id="v-timeline">
     <div class="card">
       <div class="card-head">
@@ -442,6 +444,8 @@
 </div>
 
 <div id="dropzone">Drop your Daily Log CSV to load it</div>
+<div id="snack" class="snack" role="status" aria-live="polite"></div>
+<div id="m2sheet" class="m2sheet" role="dialog" aria-modal="true" aria-labelledby="m2sheetTitle"><div class="m2scrim" data-m2close></div><div class="m2panel"><div class="grab" data-m2grab></div><div class="m2sh" data-m2grab><b id="m2sheetTitle"></b><button type="button" class="m2close" data-m2close aria-label="Close">✕</button></div><div id="m2sheetBody"></div></div></div>
 <div id="toasts"></div>
 
 <script>
