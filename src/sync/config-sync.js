@@ -11,7 +11,7 @@
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes', 'music'];   // share: viewer keys, so “Copy script” has them on every device
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes', 'music', 'musicTipOff'];   // share: viewer keys, so “Copy script” has them on every device
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;

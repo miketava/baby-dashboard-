@@ -4,23 +4,34 @@
 const MUSIC_BEFORE = 30, MUSIC_AFTER = 30;
 const musicHost = u => { try { const h = new URL(u).hostname.replace(/^www\./, ''); return /spotify/.test(h) ? 'Spotify' : /music\.youtube/.test(h) ? 'YouTube Music' : /youtu/.test(h) ? 'YouTube' : /music\.apple/.test(h) ? 'Apple Music' : /deezer/.test(h) ? 'Deezer' : h; } catch { return ''; } };
 const musicOk = u => /^https:\/\/\S+$/i.test(String(u || '').trim());
-/** {url, kind:'nap'|'bed'} when a nap or bedtime is within the window (or a sleep just started); else null. */
-function sleepMusicNow(m, now){
-  const nap = String(S.music?.nap || '').trim(), bed = String(S.music?.bed || '').trim() || nap;
-  if (!musicOk(nap) && !musicOk(bed)) return null;
+/** 'nap' | 'bed' when a nap or bedtime is within the window (or a sleep just started); else null. */
+function sleepWindow(m, now){
   const D = m.D, nowA = D * DAY + now;
   const going = DATA.events.find(e => isSleep(e) && e.ongoing && nowA - e.s <= MUSIC_AFTER);   // just went down
-  if (going) { const k = isNight(going) ? 'bed' : 'nap', u = k === 'bed' ? bed : nap; return musicOk(u) ? { url: u, kind: k } : null; }
+  if (going) return isNight(going) ? 'bed' : 'nap';
   if (DATA.events.some(e => isSleep(e) && e.ongoing)) return null;                             // asleep: nothing to start
   const items = m.tpl ? [...tplItems(m.tpl, 'nap').filter(i => !i.optional), ...tplItems(m.tpl, 'bedtime')] : [];
   for (const i of items) { const t = parseTime(i.start); if (t == null) continue;
     if (now >= t - MUSIC_BEFORE && now <= t + MUSIC_AFTER) {
-      const k = i.kind === 'bedtime' ? 'bed' : 'nap', u = k === 'bed' ? bed : nap;
       // a nap already logged today at about this time means it's done
-      if (k === 'nap' && DATA.events.some(e => isNap(e) && e.d === D && e.st != null && Math.abs(e.st - t) <= 90 && !e.ongoing)) continue;
-      if (musicOk(u)) return { url: u, kind: k };
+      if (i.kind !== 'bedtime' && DATA.events.some(e => isNap(e) && e.d === D && e.st != null && Math.abs(e.st - t) <= 90 && !e.ongoing)) continue;
+      return i.kind === 'bedtime' ? 'bed' : 'nap';
     } }
   return null;
+}
+/** {url, kind} when there's a playlist for the current nap / bedtime window; else null. */
+function sleepMusicNow(m, now){
+  const nap = String(S.music?.nap || '').trim(), bed = String(S.music?.bed || '').trim() || nap;
+  if (!musicOk(nap) && !musicOk(bed)) return null;
+  const k = sleepWindow(m, now), u = k === 'bed' ? bed : nap;
+  return k && musicOk(u) ? { url: u, kind: k } : null;
+}
+/** v1.45.1: a one-time tip, around nap / bedtime, once 3+ sleeps were logged this week without a playlist set. */
+function sleepMusicTip(m, now){
+  if (viewOnly() || S.musicTipOff || musicOk(S.music?.nap) || musicOk(S.music?.bed) || !sleepWindow(m, now)) return null;
+  if (DATA.events.filter(e => isSleep(e) && !isCarNap(e) && e.d >= todayIdx() - 7).length < 3) return null;
+  return { cls: 'info', html: `🎵 ${L('<b>Tip:</b> put her lullaby playlist one tap away at nap and bedtime.', '<b>Astuce :</b> mettez sa liste de berceuses à un geste, à la sieste et au coucher.')}
+    <button class="btn sm primary" data-gopane="general" style="margin-left:6px">${L('Set it up', 'Configurer')}</button><button class="btn sm ghost" data-musictip="off">${L('No thanks', 'Non merci')}</button>` };
 }
 function sleepMusicCallout(m, now){
   if (viewOnly()) return null;

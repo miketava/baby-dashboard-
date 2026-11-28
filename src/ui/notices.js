@@ -4,7 +4,7 @@ function maybeShowWhatsNew(){
   if (S.seenVersion === APP_VERSION || !S.profile.onboarded || $('.modal.on') || TOUR) return;
   const list = unseenChanges(); if (!list.length) { S.seenVersion = APP_VERSION; saveSettings(); return; }
   $('#newTitle').textContent = L(`What's new in v${APP_VERSION}`, `Nouveautés de la v${APP_VERSION}`);
-  $('#newBody').innerHTML = list.map(e => `<div${list.length > 1 ? ' class="vcard"' : ''}>${list.length > 1 ? `<b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { month:'long', day:'numeric' }))}</span>` : ''}<ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')
+  $('#newBody').innerHTML = list.map(e => `<div${list.length > 1 ? ' class="vcard"' : ''}>${list.length > 1 ? `<b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { month:'long', day:'numeric' }))}</span>` : ''}<ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${clGo(e)}</div>`).join('')
     + `${scriptOutdated() ? `<p class="scopenote">🔧 ${L('This version needs an updated Apps Script — see the notice at the top of the page.', 'Cette version exige un Apps Script à jour — voir l’avis en haut de la page.')}</p>` : ''}
     <div class="row sp" style="margin-top:12px"><button class="btn" data-act-new="all">${L('Full changelog', 'Historique complet')}</button><button class="btn primary" data-act-new="ok">${L('Got it', 'Compris')}</button></div>`;
   openModal('mNew');

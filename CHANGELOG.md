@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.45.1 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- **Finding sleep music:** with no playlist set and 3+ naps or bedtimes logged in the last week, the Today box shows a one-time tip during the nap / bedtime window: *Tip: put her lullaby playlist one tap away* with **Set it up** (opens *Settings → General*) or **No thanks** (never shown again, on either phone).
+- **What's new can take you there:** a changelog entry can carry a button to the Settings page where its feature is set up. v1.45.0 (*Set up sleep music*) and v1.38.0 (*Turn on private notes*) have one, in the What's new popup and in *About & changes*.
+
 ## v1.45.0 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - **🎵 Sleep music.** *Settings → General → Sleep music*: a playlist link for naps (and bedtime), and optionally a different one for bedtime. Any https link works; Spotify, YouTube Music, YouTube, Apple Music and Deezer links are recognised by name. **▶ Test** opens it. Shared with the other caregiver's phone (Config tab).

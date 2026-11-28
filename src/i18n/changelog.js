@@ -1,5 +1,10 @@
+/** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
+const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
-  { v:'1.45.0', date:'2026-11-28',
+  { v:'1.45.1', date:'2026-11-28',
+    en:['If you log naps or bedtimes without a sleep playlist set, a one-time tip near nap time offers to set it up (or No thanks). What’s new entries for features you set up in Settings now have a button that takes you there.'],
+    fr:['Si vous notez des siestes ou des couchers sans liste de musique, une astuce unique près de l’heure de la sieste propose de la configurer (ou Non merci). Les nouveautés à configurer dans les Réglages ont maintenant un bouton qui vous y mène.'] },
+  { v:'1.45.0', date:'2026-11-28', go:{ pane:'general', en:'Set up sleep music', fr:'Configurer la musique' },
     en:['🎵 Sleep music: paste a Spotify or YouTube Music playlist link in Settings → General (plus an optional different one for bedtime). From 30 minutes before a nap or bedtime until 30 minutes after, the Today box shows a 🎵 Play nap music / Play bedtime music button that opens it in the app in one tap. No link, no button. Shared with the other caregiver.'],
     fr:['🎵 Musique pour dormir : collez le lien d’une liste Spotify ou YouTube Music dans Réglages → Général (et au besoin une autre pour le coucher). De 30 minutes avant une sieste ou le coucher jusqu’à 30 minutes après, l’encadré Aujourd’hui affiche un bouton 🎵 Musique de la sieste / du coucher qui l’ouvre dans l’app en un geste. Sans lien, pas de bouton. Partagé avec l’autre parent.'] },
   { v:'1.44.2', date:'2026-11-28',
@@ -54,7 +59,7 @@ const CHANGELOG = [
   { v:'1.39.0', date:'2026-11-27',
     en:['Phones: Quick Log now fills the whole screen with thumb-sized controls. Pills, time nudges, amount chips and Now buttons are about twice as tall, boxes are taller with larger text (no more zooming in on iPhone), and Back / Save stay pinned at the bottom. Swipe down or ✕ still closes it, and anything typed is kept as a draft.'],
     fr:['Téléphones : l’Entrée rapide occupe maintenant tout l’écran avec des commandes à la taille du pouce. Pastilles, ajustements d’heure, quantités et boutons Maint. sont environ deux fois plus hauts, les champs sont plus grands avec un texte plus gros (fini le zoom sur iPhone), et Retour / Enregistrer restent fixés en bas. Glisser vers le bas ou ✕ la ferme toujours, et ce qui est tapé est gardé en brouillon.'] },
-  { v:'1.38.0', date:'2026-11-27',
+  { v:'1.38.0', date:'2026-11-27', go:{ pane:'general', en:'Turn on private notes', fr:'Activer les notes privées' },
     en:['🔒 Private notes (off by default; Settings → General): a second notes box in Quick Log for things only the family should read. They go in their own Private Notes column, show with a 🔒 in the day’s entries, and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key receives.',
         'Needs Apps Script v1.8, which removes that column before anything is sent to a viewer key: Copy script, paste over Code.gs, deploy a new version (or Update script if one-tap updates are on). The switch stays greyed out until then.'],
     fr:['🔒 Notes privées (désactivées par défaut; Réglages → Général) : une seconde zone de notes dans l’Entrée rapide pour ce que seule la famille doit lire. Elles vont dans leur propre colonne Private Notes, s’affichent avec un 🔒 dans les entrées du jour et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur.',

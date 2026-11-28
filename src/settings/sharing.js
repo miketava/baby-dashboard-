@@ -47,7 +47,7 @@ function aboutPaneHTML(){
       <div class="kpi"><span>Apps Script</span><b style="font-size:15px">${esc(sv)}</b><span class="faint">${L('needs', 'requis :')} v${REQUIRED_SCRIPT}</span></div></div>
     <p class="hint" style="margin-top:0">${L('The dashboard is the index.html file you host; the Apps Script lives in your Sheet. When a release needs a new script, a notice tells you — paste the new Code.gs and deploy a new version (same URL).', 'Le tableau de bord est le fichier index.html que vous hébergez; l’Apps Script vit dans votre feuille. Quand une version exige un nouveau script, un avis vous le dit — collez le nouveau Code.gs et déployez une nouvelle version (même URL).')}</p>
     <h4>${L('Changelog', 'Historique des versions')}</h4>
-    ${CHANGELOG.map(e => `<div class="vcard"><div><b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { year:'numeric', month:'long', day:'numeric' }))}</span></div><ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}`;
+    ${CHANGELOG.map(e => `<div class="vcard"><div><b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { year:'numeric', month:'long', day:'numeric' }))}</span></div><ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${clGo(e)}</div>`).join('')}`;
 }
 function viewerConfig(v){
   storeActiveKid();

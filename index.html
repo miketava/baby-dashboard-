@@ -1286,15 +1286,20 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.45.0';
+const APP_VERSION = '1.45.1';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
 /** Apps Script version this dashboard expects (doGet reports its own SCRIPT_VERSION). */
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
+/** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
+const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
-  { v:'1.45.0', date:'2026-11-28',
+  { v:'1.45.1', date:'2026-11-28',
+    en:['If you log naps or bedtimes without a sleep playlist set, a one-time tip near nap time offers to set it up (or No thanks). What’s new entries for features you set up in Settings now have a button that takes you there.'],
+    fr:['Si vous notez des siestes ou des couchers sans liste de musique, une astuce unique près de l’heure de la sieste propose de la configurer (ou Non merci). Les nouveautés à configurer dans les Réglages ont maintenant un bouton qui vous y mène.'] },
+  { v:'1.45.0', date:'2026-11-28', go:{ pane:'general', en:'Set up sleep music', fr:'Configurer la musique' },
     en:['🎵 Sleep music: paste a Spotify or YouTube Music playlist link in Settings → General (plus an optional different one for bedtime). From 30 minutes before a nap or bedtime until 30 minutes after, the Today box shows a 🎵 Play nap music / Play bedtime music button that opens it in the app in one tap. No link, no button. Shared with the other caregiver.'],
     fr:['🎵 Musique pour dormir : collez le lien d’une liste Spotify ou YouTube Music dans Réglages → Général (et au besoin une autre pour le coucher). De 30 minutes avant une sieste ou le coucher jusqu’à 30 minutes après, l’encadré Aujourd’hui affiche un bouton 🎵 Musique de la sieste / du coucher qui l’ouvre dans l’app en un geste. Sans lien, pas de bouton. Partagé avec l’autre parent.'] },
   { v:'1.44.2', date:'2026-11-28',
@@ -1349,7 +1354,7 @@ const CHANGELOG = [
   { v:'1.39.0', date:'2026-11-27',
     en:['Phones: Quick Log now fills the whole screen with thumb-sized controls. Pills, time nudges, amount chips and Now buttons are about twice as tall, boxes are taller with larger text (no more zooming in on iPhone), and Back / Save stay pinned at the bottom. Swipe down or ✕ still closes it, and anything typed is kept as a draft.'],
     fr:['Téléphones : l’Entrée rapide occupe maintenant tout l’écran avec des commandes à la taille du pouce. Pastilles, ajustements d’heure, quantités et boutons Maint. sont environ deux fois plus hauts, les champs sont plus grands avec un texte plus gros (fini le zoom sur iPhone), et Retour / Enregistrer restent fixés en bas. Glisser vers le bas ou ✕ la ferme toujours, et ce qui est tapé est gardé en brouillon.'] },
-  { v:'1.38.0', date:'2026-11-27',
+  { v:'1.38.0', date:'2026-11-27', go:{ pane:'general', en:'Turn on private notes', fr:'Activer les notes privées' },
     en:['🔒 Private notes (off by default; Settings → General): a second notes box in Quick Log for things only the family should read. They go in their own Private Notes column, show with a 🔒 in the day’s entries, and are never in reports, printouts, CSV exports, Copy for AI or anything a viewer key receives.',
         'Needs Apps Script v1.8, which removes that column before anything is sent to a viewer key: Copy script, paste over Code.gs, deploy a new version (or Update script if one-tap updates are on). The switch stays greyed out until then.'],
     fr:['🔒 Notes privées (désactivées par défaut; Réglages → Général) : une seconde zone de notes dans l’Entrée rapide pour ce que seule la famille doit lire. Elles vont dans leur propre colonne Private Notes, s’affichent avec un 🔒 dans les entrées du jour et ne sont jamais dans les rapports, impressions, exports CSV, Copier pour l’IA ni rien de ce que reçoit une clé lecteur.',
@@ -4209,7 +4214,7 @@ function todayState(){
     .forEach(e => S0.callouts.push({ cls:'info', html:`📅 ${L('Coming up:', 'À venir :')} ${cat(e.cat).icon} <b>${esc(e.notes || catL(e.cat))}</b> · <b>${relDay(e.d)}</b> (${fmtDay(e.d)}${e.st != null ? ' ' + fmtTime(e.st) : ''})` }));
   if (m.ribbon?.some(e => e.k === 'incident' && e.outcome === 'Follow-up Needed')) S0.callouts.push({ cls:'bad', html:L('✚ A health note today is marked <b>Follow-up Needed</b>.', '✚ Une note de santé d’aujourd’hui est marquée <b>Suivi requis</b>.') });
   medCallouts(D).forEach(c => S0.callouts.push(c));
-  { const mc = D === todayIdx() ? sleepMusicCallout(m, now) : null; if (mc) S0.callouts.unshift(mc); }   // v1.45: 🎵 one tap around nap / bedtime
+  { const mc = D === todayIdx() ? sleepMusicCallout(m, now) || sleepMusicTip(m, now) : null; if (mc) S0.callouts.unshift(mc); }   // v1.45: 🎵 one tap around nap / bedtime
   apptCallouts().forEach(c => S0.callouts.push(c));
   if (D === todayIdx()) doubleCallouts().forEach(c => S0.callouts.push(c));
   nudgeCallouts(m, D).forEach(c => S0.callouts.push(c));
@@ -5594,23 +5599,34 @@ async function mergeSplitNights(which){
 const MUSIC_BEFORE = 30, MUSIC_AFTER = 30;
 const musicHost = u => { try { const h = new URL(u).hostname.replace(/^www\./, ''); return /spotify/.test(h) ? 'Spotify' : /music\.youtube/.test(h) ? 'YouTube Music' : /youtu/.test(h) ? 'YouTube' : /music\.apple/.test(h) ? 'Apple Music' : /deezer/.test(h) ? 'Deezer' : h; } catch { return ''; } };
 const musicOk = u => /^https:\/\/\S+$/i.test(String(u || '').trim());
-/** {url, kind:'nap'|'bed'} when a nap or bedtime is within the window (or a sleep just started); else null. */
-function sleepMusicNow(m, now){
-  const nap = String(S.music?.nap || '').trim(), bed = String(S.music?.bed || '').trim() || nap;
-  if (!musicOk(nap) && !musicOk(bed)) return null;
+/** 'nap' | 'bed' when a nap or bedtime is within the window (or a sleep just started); else null. */
+function sleepWindow(m, now){
   const D = m.D, nowA = D * DAY + now;
   const going = DATA.events.find(e => isSleep(e) && e.ongoing && nowA - e.s <= MUSIC_AFTER);   // just went down
-  if (going) { const k = isNight(going) ? 'bed' : 'nap', u = k === 'bed' ? bed : nap; return musicOk(u) ? { url: u, kind: k } : null; }
+  if (going) return isNight(going) ? 'bed' : 'nap';
   if (DATA.events.some(e => isSleep(e) && e.ongoing)) return null;                             // asleep: nothing to start
   const items = m.tpl ? [...tplItems(m.tpl, 'nap').filter(i => !i.optional), ...tplItems(m.tpl, 'bedtime')] : [];
   for (const i of items) { const t = parseTime(i.start); if (t == null) continue;
     if (now >= t - MUSIC_BEFORE && now <= t + MUSIC_AFTER) {
-      const k = i.kind === 'bedtime' ? 'bed' : 'nap', u = k === 'bed' ? bed : nap;
       // a nap already logged today at about this time means it's done
-      if (k === 'nap' && DATA.events.some(e => isNap(e) && e.d === D && e.st != null && Math.abs(e.st - t) <= 90 && !e.ongoing)) continue;
-      if (musicOk(u)) return { url: u, kind: k };
+      if (i.kind !== 'bedtime' && DATA.events.some(e => isNap(e) && e.d === D && e.st != null && Math.abs(e.st - t) <= 90 && !e.ongoing)) continue;
+      return i.kind === 'bedtime' ? 'bed' : 'nap';
     } }
   return null;
+}
+/** {url, kind} when there's a playlist for the current nap / bedtime window; else null. */
+function sleepMusicNow(m, now){
+  const nap = String(S.music?.nap || '').trim(), bed = String(S.music?.bed || '').trim() || nap;
+  if (!musicOk(nap) && !musicOk(bed)) return null;
+  const k = sleepWindow(m, now), u = k === 'bed' ? bed : nap;
+  return k && musicOk(u) ? { url: u, kind: k } : null;
+}
+/** v1.45.1: a one-time tip, around nap / bedtime, once 3+ sleeps were logged this week without a playlist set. */
+function sleepMusicTip(m, now){
+  if (viewOnly() || S.musicTipOff || musicOk(S.music?.nap) || musicOk(S.music?.bed) || !sleepWindow(m, now)) return null;
+  if (DATA.events.filter(e => isSleep(e) && !isCarNap(e) && e.d >= todayIdx() - 7).length < 3) return null;
+  return { cls: 'info', html: `🎵 ${L('<b>Tip:</b> put her lullaby playlist one tap away at nap and bedtime.', '<b>Astuce :</b> mettez sa liste de berceuses à un geste, à la sieste et au coucher.')}
+    <button class="btn sm primary" data-gopane="general" style="margin-left:6px">${L('Set it up', 'Configurer')}</button><button class="btn sm ghost" data-musictip="off">${L('No thanks', 'Non merci')}</button>` };
 }
 function sleepMusicCallout(m, now){
   if (viewOnly()) return null;
@@ -7925,7 +7941,7 @@ function achDetail(id){
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes', 'music'];   // share: viewer keys, so “Copy script” has them on every device
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes', 'music', 'musicTipOff'];   // share: viewer keys, so “Copy script” has them on every device
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
@@ -8276,7 +8292,7 @@ function maybeShowWhatsNew(){
   if (S.seenVersion === APP_VERSION || !S.profile.onboarded || $('.modal.on') || TOUR) return;
   const list = unseenChanges(); if (!list.length) { S.seenVersion = APP_VERSION; saveSettings(); return; }
   $('#newTitle').textContent = L(`What's new in v${APP_VERSION}`, `Nouveautés de la v${APP_VERSION}`);
-  $('#newBody').innerHTML = list.map(e => `<div${list.length > 1 ? ' class="vcard"' : ''}>${list.length > 1 ? `<b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { month:'long', day:'numeric' }))}</span>` : ''}<ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')
+  $('#newBody').innerHTML = list.map(e => `<div${list.length > 1 ? ' class="vcard"' : ''}>${list.length > 1 ? `<b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { month:'long', day:'numeric' }))}</span>` : ''}<ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${clGo(e)}</div>`).join('')
     + `${scriptOutdated() ? `<p class="scopenote">🔧 ${L('This version needs an updated Apps Script — see the notice at the top of the page.', 'Cette version exige un Apps Script à jour — voir l’avis en haut de la page.')}</p>` : ''}
     <div class="row sp" style="margin-top:12px"><button class="btn" data-act-new="all">${L('Full changelog', 'Historique complet')}</button><button class="btn primary" data-act-new="ok">${L('Got it', 'Compris')}</button></div>`;
   openModal('mNew');
@@ -8900,7 +8916,7 @@ function aboutPaneHTML(){
       <div class="kpi"><span>Apps Script</span><b style="font-size:15px">${esc(sv)}</b><span class="faint">${L('needs', 'requis :')} v${REQUIRED_SCRIPT}</span></div></div>
     <p class="hint" style="margin-top:0">${L('The dashboard is the index.html file you host; the Apps Script lives in your Sheet. When a release needs a new script, a notice tells you — paste the new Code.gs and deploy a new version (same URL).', 'Le tableau de bord est le fichier index.html que vous hébergez; l’Apps Script vit dans votre feuille. Quand une version exige un nouveau script, un avis vous le dit — collez le nouveau Code.gs et déployez une nouvelle version (même URL).')}</p>
     <h4>${L('Changelog', 'Historique des versions')}</h4>
-    ${CHANGELOG.map(e => `<div class="vcard"><div><b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { year:'numeric', month:'long', day:'numeric' }))}</span></div><ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}`;
+    ${CHANGELOG.map(e => `<div class="vcard"><div><b>v${e.v}</b> <span class="faint">· ${esc(fmtDay(parseDate(e.date), { year:'numeric', month:'long', day:'numeric' }))}</span></div><ul class="find">${clText(e).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${clGo(e)}</div>`).join('')}`;
 }
 function viewerConfig(v){
   storeActiveKid();
@@ -9127,6 +9143,10 @@ function wire(){
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); const m = e.target.closest('[data-splitmerge]'); if (m) mergeSplitNights(m.dataset.splitmerge); });
+  document.addEventListener('click', e => {   // v1.45.1: “go” buttons (What's new, tips) and the music tip
+    const g = e.target.closest?.('[data-gopane]'); if (g) { if ($('#mNew')?.classList.contains('on')) seenWhatsNew(); closeModals(); openSettings(g.dataset.gopane); }
+    if (e.target.closest?.('[data-musictip]')) { S.musicTipOff = true; saveSettings(); renderAll(); }
+  });
   document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); if (e.target.closest?.('[data-uptoggle]')) { S.upOpen = !S.upOpen; saveSettings(); renderTodayPlan(); } });   // v1.40 strip · v1.43 box
   document.addEventListener('click', e => {   // v1.33: entries logged twice
     const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;
