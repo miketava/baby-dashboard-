@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.43.1 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- *Coming up*: the calendar pages sit on a fixed grid (icon · today · then three gap + date columns), so dates line up across the rows instead of each row spacing itself. The empty rounded box under the rows was the tap-for-details panel showing while hidden (a style overrode `hidden`); it now stays out of sight until a date is tapped.
+
 ## v1.43.0 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - **"Coming up" box** at the top of Today's plan, between the template name and the schedule, instead of the calendar strip at the bottom of the schedule.

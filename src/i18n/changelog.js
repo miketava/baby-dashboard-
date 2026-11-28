@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.43.1', date:'2026-11-28',
+    en:['Coming up: the dates line up in columns across the 🚗 / 🏠 / 🩺 rows, and the empty box under them is gone (it’s the details panel, now hidden until you tap a date).'],
+    fr:['À venir : les dates s’alignent en colonnes d’une rangée 🚗 / 🏠 / 🩺 à l’autre, et l’encadré vide en dessous a disparu (c’est le panneau de détails, maintenant caché jusqu’à ce que vous touchiez une date).'] },
   { v:'1.43.0', date:'2026-11-28',
     en:['Today’s plan: upcoming visits and appointments now have their own “Coming up” box at the top of the card instead of being mixed into the schedule. Closed, it shows 🚗 🏠 🩺 with how many are coming (blue when one is today or tomorrow) and how soon the next is; tap to open the calendar pages. It stays open or closed the way you left it.'],
     fr:['Plan du jour : les prochaines visites et rendez-vous ont maintenant leur propre encadré « À venir » en haut de la carte au lieu d’être mêlés à l’horaire. Fermé, il montre 🚗 🏠 🩺 avec combien sont à venir (en bleu quand l’un est aujourd’hui ou demain) et dans combien de temps vient le prochain; touchez pour ouvrir les pages de calendrier. Il reste ouvert ou fermé comme vous l’avez laissé.'] },

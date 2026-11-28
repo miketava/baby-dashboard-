@@ -390,7 +390,7 @@ body.viewonly .fab{display:none!important}
 .upchev{color:var(--muted);font-size:13px}
 .upbox .upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.urow{display:flex;align-items:center;gap:4px;min-width:0}
+.urow{display:grid;grid-template-columns:26px 44px repeat(3,minmax(24px,1fr) 44px);align-items:center;column-gap:2px;min-width:0}   /* fixed columns: dates line up across rows */
 .uic{font-size:18px;width:26px;flex:none;text-align:center}
 .ucal{flex:none;width:44px;height:46px;padding:0;border:1px solid var(--border);border-radius:9px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;cursor:pointer;color:var(--text)}
 .ucal .m{background:var(--accent);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:15px}
@@ -398,9 +398,10 @@ body.viewonly .fab{display:none!important}
 .ucal.today{opacity:.75;cursor:default} .ucal.today .m{background:var(--muted)}
 .ucal.today.has{opacity:1;cursor:pointer} .ucal.today.has .m{background:var(--accent)}
 .ucal.sel{outline:2px solid var(--accent);outline-offset:1px}
-.ugap{flex:1 1 0;min-width:26px;max-width:56px;display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:15px;line-height:1}
+.ugap{min-width:0;display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:15px;line-height:1}
 .ugap small{font-size:11px;font-weight:600;margin-bottom:1px}
-.unone{font-size:12px;margin-left:6px}
+.unone{font-size:12px;margin-left:6px;grid-column:3 / -1}
+.upop[hidden]{display:none}
 .upop{margin-top:2px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);display:flex;flex-direction:column;gap:4px;font-size:14px}
 .upop .uph{font-size:15px}
 /* v1.39 — phones: Quick Log takes the whole screen, with thumb-sized controls (44–48px) and 16px text (no iPhone zoom on focus) */
@@ -1263,7 +1264,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.43.0';
+const APP_VERSION = '1.43.1';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1271,6 +1272,9 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.43.1', date:'2026-11-28',
+    en:['Coming up: the dates line up in columns across the 🚗 / 🏠 / 🩺 rows, and the empty box under them is gone (it’s the details panel, now hidden until you tap a date).'],
+    fr:['À venir : les dates s’alignent en colonnes d’une rangée 🚗 / 🏠 / 🩺 à l’autre, et l’encadré vide en dessous a disparu (c’est le panneau de détails, maintenant caché jusqu’à ce que vous touchiez une date).'] },
   { v:'1.43.0', date:'2026-11-28',
     en:['Today’s plan: upcoming visits and appointments now have their own “Coming up” box at the top of the card instead of being mixed into the schedule. Closed, it shows 🚗 🏠 🩺 with how many are coming (blue when one is today or tomorrow) and how soon the next is; tap to open the calendar pages. It stays open or closed the way you left it.'],
     fr:['Plan du jour : les prochaines visites et rendez-vous ont maintenant leur propre encadré « À venir » en haut de la carte au lieu d’être mêlés à l’horaire. Fermé, il montre 🚗 🏠 🩺 avec combien sont à venir (en bleu quand l’un est aujourd’hui ou demain) et dans combien de temps vient le prochain; touchez pour ouvrir les pages de calendrier. Il reste ouvert ou fermé comme vous l’avez laissé.'] },
