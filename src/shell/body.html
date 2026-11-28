@@ -80,15 +80,14 @@
     <div class="ttl"><span aria-hidden="true">☀️</span><span id="todayTitle">Today</span></div>
     <div class="peek" id="todayPeek"></div>
     <select id="todayTpl" data-mod="schedule" title="Template for today (auto-selected from today's rows)"></select>
-    <label class="switch" data-mod="reminders" title="Browser reminders 15 min before naps, meals and the nap cutoff (while this tab is open)"><input type="checkbox" id="remToggle"> 🔔</label>
     <button class="btn sm ghost" id="todayCollapse" title="Collapse / expand">▾</button>
   </div>
   <div class="today-body" id="todayBody"></div>
 </section>
+    <div id="upBox"></div>
     <div id="tomorrowCard"></div>
     <div class="card" style="margin-top:14px" id="planCard">
       <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub" data-keep></div></div></div>
-      <div id="upBox"></div>
       <div id="planList"></div>
     </div>
     <div class="card" style="margin-top:14px">
@@ -359,11 +358,11 @@
     <div class="mhead"><h3>Settings</h3><span class="grow"></span><span class="savedchip" id="savedChip" data-noi18n></span><button class="btn icon ghost" data-close>✕</button></div>
     <div class="mbody">
       <nav class="mnav" id="setNav">
-        <button data-p="profile" class="on">Child &amp; features</button>
+        <button data-p="general" class="on">General</button>
+        <button data-p="profile">Child &amp; features</button>
         <button data-p="source">Data source</button>
         <button data-p="guide">Setup guide</button>
         <button data-p="notify" data-mod="reminders">Reminders</button>
-        <button data-p="general">General</button>
         <button data-p="targets">Targets</button>
         <button data-p="templates" data-mod="schedule">Schedule templates</button>
         <button data-p="score" data-mod="schedule">Routine score</button>

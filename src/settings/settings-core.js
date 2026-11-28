@@ -2,7 +2,7 @@
 /* ════════════════════════════════════════════════════════════════════════════
    21. SETTINGS MODAL
    ════════════════════════════════════════════════════════════════════════════ */
-let setPane = 'profile', tplIdx = 0;
+let setPane = 'general', tplIdx = 0;
 function openModal(id){ $('#' + id).classList.add('on'); $('#scrim').classList.add('on'); }
 /** Press-and-hold (touch) or right-click (mouse) on any entry, in any tab, opens it for editing. */
 function wireEditGestures(){

@@ -1,4 +1,11 @@
 const CHANGELOG = [
+  { v:'1.44.0', date:'2026-11-28',
+    en:['Today: “Coming up” is its own card between the Today box and Today’s plan.',
+        'Today box: the template picker gets the full width (no more cut-off name); ✨ marks the template picked automatically and 📌 one you chose, with a tooltip saying which. The 🔔 switch moved to Settings → Reminders (Enable tab reminders).',
+        'Settings opens on General, now the first tab, and long explanations are folded behind a small ⓘ (tap to read).'],
+    fr:['Aujourd’hui : « À venir » est une carte à part entre l’encadré Aujourd’hui et le plan du jour.',
+        'Encadré Aujourd’hui : le choix du modèle prend toute la largeur (plus de nom coupé); ✨ marque le modèle choisi automatiquement et 📌 celui que vous avez choisi, avec une bulle qui le précise. L’interrupteur 🔔 est passé dans Réglages → Rappels (Activer les rappels de l’onglet).',
+        'Les réglages s’ouvrent sur Général, maintenant le premier onglet, et les longues explications sont repliées derrière un petit ⓘ (touchez pour lire).'] },
   { v:'1.43.1', date:'2026-11-28',
     en:['Coming up: the dates line up in columns across the 🚗 / 🏠 / 🩺 rows, and the empty box under them is gone (it’s the details panel, now hidden until you tap a date).'],
     fr:['À venir : les dates s’alignent en colonnes d’une rangée 🚗 / 🏠 / 🩺 à l’autre, et l’encadré vide en dessous a disparu (c’est le panneau de détails, maintenant caché jusqu’à ce que vous touchiez une date).'] },

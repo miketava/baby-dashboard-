@@ -152,9 +152,10 @@ function renderToday(){
   const S0 = todayState(), D = S0.D;
   $('#todayTitle').textContent = `Today · ${fmtDay(D)} · ${fmtTime(S0.now)}`;
   const isOverride = S.todayTpl?.date === isoOf(D) && S.todayTpl.id !== 'auto';
-  $('#todayTpl').innerHTML = `<option value="auto">Auto: ${esc(autoTemplate(S0.m.stub ? null : S0.m)?.name || '')}</option>` + S.templates.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
+  $('#todayTpl').innerHTML = `<option value="auto">✨ ${esc(autoTemplate(S0.m.stub ? null : S0.m)?.name || '')}</option>` + S.templates.map(t => `<option value="${esc(t.id)}">📌 ${esc(t.name)}</option>`).join('');
   $('#todayTpl').value = isOverride ? S.todayTpl.id : 'auto';
-  $('#remToggle').checked = !!S.reminders.enabled;
+  $('#todayTpl').title = isOverride ? L('📌 Chosen by you for today. Pick the ✨ one to let the dashboard choose again.', '📌 Choisi par vous pour aujourd’hui. Prenez celui avec ✨ pour laisser le tableau de bord choisir.')
+    : L('✨ Picked automatically for today (from visits, appointments and today’s log). Choose another to override it for today only.', '✨ Choisi automatiquement pour aujourd’hui (selon les visites, rendez-vous et le journal du jour). Choisissez-en un autre pour le remplacer aujourd’hui seulement.');
   $('#todayPeek').innerHTML = S0.headline.replace(/<[^>]+>/g,'') + (S0.peek ? ' · ' + esc(S0.peek) : '');
   if (UI.todayCollapsed) return;
   const rem = S.reminders.enabled ? nextReminder() : null;

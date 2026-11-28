@@ -377,7 +377,8 @@ body.viewonly .fab{display:none!important}
 .tl-track .lnkline{position:absolute;z-index:3;border-radius:2px;opacity:.55;pointer-events:none}
 .tl-track .mk.mklink.reply{width:10px;height:10px;font-size:0;margin-left:-5px}
 .tl.v .mk.mklink.reply{margin-left:0;margin-top:-5px}
-.upbox{margin:2px 0 12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);overflow:hidden}
+.upbox{margin:14px 0 0;border:1px solid var(--border);border-radius:var(--radius,14px);background:var(--panel);overflow:hidden;box-shadow:var(--shadow,none)}
+#todayTpl{flex:1 1 150px;min-width:0;max-width:100%;text-overflow:ellipsis}
 .upsum{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;min-height:44px}
 .uptitle{font-weight:650;font-size:14px;white-space:nowrap}
 .upks{display:flex;gap:10px;flex:1;min-width:0}
@@ -388,7 +389,9 @@ body.viewonly .fab{display:none!important}
 .upk.none .upn{display:none}
 .upnext{font-size:12.5px;white-space:nowrap}
 .upchev{color:var(--muted);font-size:13px}
-.upbox .upstrip{margin:0;padding:2px 12px 12px}
+.upbox .hintbtn{min-height:0!important;padding:0 8px!important;height:24px;border-radius:99px;font-size:13px;color:var(--muted);margin:2px 0}
+.hintbtn.on{color:var(--accent)}
+.upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:grid;grid-template-columns:26px 44px repeat(3,minmax(24px,1fr) 44px);align-items:center;column-gap:2px;min-width:0}   /* fixed columns: dates line up across rows */
 .uic{font-size:18px;width:26px;flex:none;text-align:center}
@@ -896,15 +899,14 @@ main{overflow-x:clip}
     <div class="ttl"><span aria-hidden="true">☀️</span><span id="todayTitle">Today</span></div>
     <div class="peek" id="todayPeek"></div>
     <select id="todayTpl" data-mod="schedule" title="Template for today (auto-selected from today's rows)"></select>
-    <label class="switch" data-mod="reminders" title="Browser reminders 15 min before naps, meals and the nap cutoff (while this tab is open)"><input type="checkbox" id="remToggle"> 🔔</label>
     <button class="btn sm ghost" id="todayCollapse" title="Collapse / expand">▾</button>
   </div>
   <div class="today-body" id="todayBody"></div>
 </section>
+    <div id="upBox"></div>
     <div id="tomorrowCard"></div>
     <div class="card" style="margin-top:14px" id="planCard">
       <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub" data-keep></div></div></div>
-      <div id="upBox"></div>
       <div id="planList"></div>
     </div>
     <div class="card" style="margin-top:14px">
@@ -1175,11 +1177,11 @@ main{overflow-x:clip}
     <div class="mhead"><h3>Settings</h3><span class="grow"></span><span class="savedchip" id="savedChip" data-noi18n></span><button class="btn icon ghost" data-close>✕</button></div>
     <div class="mbody">
       <nav class="mnav" id="setNav">
-        <button data-p="profile" class="on">Child &amp; features</button>
+        <button data-p="general" class="on">General</button>
+        <button data-p="profile">Child &amp; features</button>
         <button data-p="source">Data source</button>
         <button data-p="guide">Setup guide</button>
         <button data-p="notify" data-mod="reminders">Reminders</button>
-        <button data-p="general">General</button>
         <button data-p="targets">Targets</button>
         <button data-p="templates" data-mod="schedule">Schedule templates</button>
         <button data-p="score" data-mod="schedule">Routine score</button>
@@ -1264,7 +1266,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.43.1';
+const APP_VERSION = '1.44.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1272,6 +1274,13 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.44.0', date:'2026-11-28',
+    en:['Today: “Coming up” is its own card between the Today box and Today’s plan.',
+        'Today box: the template picker gets the full width (no more cut-off name); ✨ marks the template picked automatically and 📌 one you chose, with a tooltip saying which. The 🔔 switch moved to Settings → Reminders (Enable tab reminders).',
+        'Settings opens on General, now the first tab, and long explanations are folded behind a small ⓘ (tap to read).'],
+    fr:['Aujourd’hui : « À venir » est une carte à part entre l’encadré Aujourd’hui et le plan du jour.',
+        'Encadré Aujourd’hui : le choix du modèle prend toute la largeur (plus de nom coupé); ✨ marque le modèle choisi automatiquement et 📌 celui que vous avez choisi, avec une bulle qui le précise. L’interrupteur 🔔 est passé dans Réglages → Rappels (Activer les rappels de l’onglet).',
+        'Les réglages s’ouvrent sur Général, maintenant le premier onglet, et les longues explications sont repliées derrière un petit ⓘ (touchez pour lire).'] },
   { v:'1.43.1', date:'2026-11-28',
     en:['Coming up: the dates line up in columns across the 🚗 / 🏠 / 🩺 rows, and the empty box under them is gone (it’s the details panel, now hidden until you tap a date).'],
     fr:['À venir : les dates s’alignent en colonnes d’une rangée 🚗 / 🏠 / 🩺 à l’autre, et l’encadré vide en dessous a disparu (c’est le panneau de détails, maintenant caché jusqu’à ce que vous touchiez une date).'] },
@@ -4212,9 +4221,10 @@ function renderToday(){
   const S0 = todayState(), D = S0.D;
   $('#todayTitle').textContent = `Today · ${fmtDay(D)} · ${fmtTime(S0.now)}`;
   const isOverride = S.todayTpl?.date === isoOf(D) && S.todayTpl.id !== 'auto';
-  $('#todayTpl').innerHTML = `<option value="auto">Auto: ${esc(autoTemplate(S0.m.stub ? null : S0.m)?.name || '')}</option>` + S.templates.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
+  $('#todayTpl').innerHTML = `<option value="auto">✨ ${esc(autoTemplate(S0.m.stub ? null : S0.m)?.name || '')}</option>` + S.templates.map(t => `<option value="${esc(t.id)}">📌 ${esc(t.name)}</option>`).join('');
   $('#todayTpl').value = isOverride ? S.todayTpl.id : 'auto';
-  $('#remToggle').checked = !!S.reminders.enabled;
+  $('#todayTpl').title = isOverride ? L('📌 Chosen by you for today. Pick the ✨ one to let the dashboard choose again.', '📌 Choisi par vous pour aujourd’hui. Prenez celui avec ✨ pour laisser le tableau de bord choisir.')
+    : L('✨ Picked automatically for today (from visits, appointments and today’s log). Choose another to override it for today only.', '✨ Choisi automatiquement pour aujourd’hui (selon les visites, rendez-vous et le journal du jour). Choisissez-en un autre pour le remplacer aujourd’hui seulement.');
   $('#todayPeek').innerHTML = S0.headline.replace(/<[^>]+>/g,'') + (S0.peek ? ' · ' + esc(S0.peek) : '');
   if (UI.todayCollapsed) return;
   const rem = S.reminders.enabled ? nextReminder() : null;
@@ -8691,7 +8701,7 @@ function syncFilterBtns(){
 /* ════════════════════════════════════════════════════════════════════════════
    21. SETTINGS MODAL
    ════════════════════════════════════════════════════════════════════════════ */
-let setPane = 'profile', tplIdx = 0;
+let setPane = 'general', tplIdx = 0;
 function openModal(id){ $('#' + id).classList.add('on'); $('#scrim').classList.add('on'); }
 /** Press-and-hold (touch) or right-click (mouse) on any entry, in any tab, opens it for editing. */
 function wireEditGestures(){
@@ -9002,6 +9012,10 @@ function renderSettings(){
       <div class="row wrap"><button class="btn" data-act="clearCache">Clear cached data</button><button class="btn danger" data-act="resetAll">Reset all settings</button></div>
       <p class="hint">Everything is stored only in this browser (localStorage). Clearing site data removes it. Dashboard v${APP_VERSION} · <a href="#" data-act="about">${L('what’s new', 'nouveautés')}</a>.</p>`;
   $('#setPane').innerHTML = `<section class="on">${h}</section>`;
+  // v1.44: long explanations fold behind a small ⓘ (tap to show); short hints and warnings stay visible
+  $$('#setPane p.hint').forEach(p => { if (p.textContent.trim().length < 110 || p.querySelector('b.warn,.err') || p.closest('.duppair')) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost hintbtn'; b.textContent = 'ⓘ'; b.title = L('More about this', 'En savoir plus');
+    b.onclick = () => { p.hidden = !p.hidden; b.classList.toggle('on', !p.hidden); }; p.hidden = true; p.before(b); });
   if (setPane === 'score') syncScoreWeights();
 }
 function describeFilter(f){ const r = { last7:'Last 7 days', last14:'Last 14 days', week:'This week', all:'All time', custom:'Custom range' }[f.range] || f.range; return [r, f.dayType !== 'all' ? f.dayType + ' days' : '', f.q ? `“${f.q}”` : '', f.hidden?.length ? f.hidden.length + ' hidden categories' : ''].filter(Boolean).join(' · '); }
@@ -9041,7 +9055,7 @@ function wire(){
   // Today banner
   $('#todayCollapse').onclick = () => { UI.todayCollapsed = !UI.todayCollapsed; saveUI(); renderToday(); };
   $('#todayTpl').onchange = e => { S.todayTpl = { date: isoOf(todayIdx()), id: e.target.value }; saveSettings(); analyze(); renderAll(); };
-  $('#remToggle').onchange = e => toggleReminders(e.target.checked);
+  document.addEventListener('change', e => { if (e.target.matches?.('input[data-set="reminders.enabled"]')) toggleReminders(e.target.checked); });   // v1.44: the 🔔 moved from the Today header to Settings → Reminders
   // Filter bar
   $('#filterToggle').onclick = () => $('#filterbar').classList.toggle('open');
   $('#catToggle').onclick = () => { UI.catsOpen = !UI.catsOpen; saveUI(); renderFilterBar(); };

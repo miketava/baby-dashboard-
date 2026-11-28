@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.44.0 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- **Coming up** is now its own card between the Today box and *Today's plan* (it was inside the plan card).
+- **Today box header:** the template picker takes the full width, so long names no longer get cut off. The automatic choice shows as **✨ Name** and a template you picked for today as **📌 Name**; the tooltip says which ("Picked automatically for today…" / "Chosen by you for today…"). The 🔔 browser-reminder switch is gone from the header: it's *Settings → Reminders → Enable tab reminders* (same setting, still asks for notification permission).
+- **Settings:** *General* is the first tab and where Settings opens. Explanations longer than a line or two are folded behind a small **ⓘ** under their setting (tap to show / hide); short hints stay visible.
+
 ## v1.43.1 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - *Coming up*: the calendar pages sit on a fixed grid (icon · today · then three gap + date columns), so dates line up across the rows instead of each row spacing itself. The empty rounded box under the rows was the tap-for-details panel showing while hidden (a style overrode `hidden`); it now stays out of sight until a date is tapped.

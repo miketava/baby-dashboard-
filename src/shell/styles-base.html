@@ -95,7 +95,8 @@ body.viewonly .fab{display:none!important}
 .tl-track .lnkline{position:absolute;z-index:3;border-radius:2px;opacity:.55;pointer-events:none}
 .tl-track .mk.mklink.reply{width:10px;height:10px;font-size:0;margin-left:-5px}
 .tl.v .mk.mklink.reply{margin-left:0;margin-top:-5px}
-.upbox{margin:2px 0 12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);overflow:hidden}
+.upbox{margin:14px 0 0;border:1px solid var(--border);border-radius:var(--radius,14px);background:var(--panel);overflow:hidden;box-shadow:var(--shadow,none)}
+#todayTpl{flex:1 1 150px;min-width:0;max-width:100%;text-overflow:ellipsis}
 .upsum{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;min-height:44px}
 .uptitle{font-weight:650;font-size:14px;white-space:nowrap}
 .upks{display:flex;gap:10px;flex:1;min-width:0}
@@ -106,7 +107,9 @@ body.viewonly .fab{display:none!important}
 .upk.none .upn{display:none}
 .upnext{font-size:12.5px;white-space:nowrap}
 .upchev{color:var(--muted);font-size:13px}
-.upbox .upstrip{margin:0;padding:2px 12px 12px}
+.upbox .hintbtn{min-height:0!important;padding:0 8px!important;height:24px;border-radius:99px;font-size:13px;color:var(--muted);margin:2px 0}
+.hintbtn.on{color:var(--accent)}
+.upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:grid;grid-template-columns:26px 44px repeat(3,minmax(24px,1fr) 44px);align-items:center;column-gap:2px;min-width:0}   /* fixed columns: dates line up across rows */
 .uic{font-size:18px;width:26px;flex:none;text-align:center}

@@ -25,7 +25,7 @@ function wire(){
   // Today banner
   $('#todayCollapse').onclick = () => { UI.todayCollapsed = !UI.todayCollapsed; saveUI(); renderToday(); };
   $('#todayTpl').onchange = e => { S.todayTpl = { date: isoOf(todayIdx()), id: e.target.value }; saveSettings(); analyze(); renderAll(); };
-  $('#remToggle').onchange = e => toggleReminders(e.target.checked);
+  document.addEventListener('change', e => { if (e.target.matches?.('input[data-set="reminders.enabled"]')) toggleReminders(e.target.checked); });   // v1.44: the 🔔 moved from the Today header to Settings → Reminders
   // Filter bar
   $('#filterToggle').onclick = () => $('#filterbar').classList.toggle('open');
   $('#catToggle').onclick = () => { UI.catsOpen = !UI.catsOpen; saveUI(); renderFilterBar(); };
