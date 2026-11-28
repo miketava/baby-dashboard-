@@ -1,6 +1,9 @@
 /** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
 const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
+  { v:'1.45.4', date:'2026-11-28',
+    en:['Settings: the ⓘ buttons are bigger to tap and sit at the end of the row they explain instead of on a line of their own.'],
+    fr:['Réglages : les boutons ⓘ sont plus grands à toucher et se trouvent au bout de la rangée qu’ils expliquent au lieu d’être sur une ligne à part.'] },
   { v:'1.45.3', date:'2026-11-28',
     en:['The 🎵 Play nap / bedtime music button now sits at the top of the Today box, right under its title, and shows even when the box is collapsed.'],
     fr:['Le bouton 🎵 Musique de la sieste / du coucher est maintenant en haut de l’encadré Aujourd’hui, juste sous son titre, et s’affiche même quand l’encadré est replié.'] },

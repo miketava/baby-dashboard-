@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.45.4 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- Settings ⓘ buttons: a 40 px tap target with a larger icon, placed at the end of the row they explain: on the label line of a field (e.g. *Who am I*, *Language*), beside the switch or row just above (e.g. *Private notes*), or at the end of a section heading. Tapping still shows / hides the explanation underneath.
+
 ## v1.45.3 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - The **🎵 Play nap / bedtime music** button moved from inside the Today box (where it was hidden when the box was collapsed, and below the status) to the Today header: on phones a full-width button right under the title, above the template picker, shown whether the box is open or collapsed.

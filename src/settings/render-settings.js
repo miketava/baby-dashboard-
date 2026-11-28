@@ -181,8 +181,14 @@ function renderSettings(){
   $('#setPane').innerHTML = `<section class="on">${h}</section>`;
   // v1.44: long explanations fold behind a small ⓘ (tap to show); short hints and warnings stay visible
   $$('#setPane p.hint, #setPane .field > span.faint').forEach(p => { if (p.textContent.trim().length < (p.tagName === 'P' ? 110 : 70) || p.querySelector('b.warn,.err') || p.closest('.duppair')) return;
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost hintbtn'; b.textContent = 'ⓘ'; b.title = L('More about this', 'En savoir plus');
-    b.onclick = () => { p.hidden = !p.hidden; b.classList.toggle('on', !p.hidden); }; p.hidden = true; p.before(b); });
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost hintbtn'; b.innerHTML = '<span class="ic">i</span>'; b.setAttribute('aria-label', L('More about this', 'En savoir plus')); b.title = L('More about this', 'En savoir plus');
+    b.onclick = e => { e.preventDefault(); e.stopPropagation(); p.hidden = !p.hidden; b.classList.toggle('on', !p.hidden); }; p.hidden = true;
+    // v1.45.4: the ⓘ sits at the END of the row it explains (a field's label line, or the switch / row just above), not on a line of its own
+    if (p.tagName !== 'P') { const f = p.closest('.field'); f.classList.add('hasinfo'); f.prepend(b); b.classList.add('inl'); return; }
+    let prev = p.previousElementSibling; while (prev && !prev.textContent.trim() && !prev.querySelector('input,select,textarea')) prev = prev.previousElementSibling;   // skip empty rows
+    if (prev && !prev.matches('h4, .hintrow') && prev.offsetParent !== undefined) { const row = document.createElement('div'); row.className = 'hintrow'; prev.before(row); row.append(prev, b); }
+    else if (prev?.matches('h4')) { prev.classList.add('hashint'); prev.append(b); }
+    else p.before(b); });
   if (setPane === 'score') syncScoreWeights();
 }
 function describeFilter(f){ const r = { last7:'Last 7 days', last14:'Last 14 days', week:'This week', all:'All time', custom:'Custom range' }[f.range] || f.range; return [r, f.dayType !== 'all' ? f.dayType + ' days' : '', f.q ? `“${f.q}”` : '', f.hidden?.length ? f.hidden.length + ' hidden categories' : ''].filter(Boolean).join(' · '); }
