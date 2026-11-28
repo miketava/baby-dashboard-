@@ -12,12 +12,28 @@ function upRowHTML(icon, label, list){
     html += `<span class="ugap"><small>${d ? d + L('d', 'j') : L('same', 'même')}</small>→</span>${calPage(e.D, '', UP_ITEMS.push(e) - 1)}`; });
   return `<div class="urow" title="${esc(label)}"><span class="uic" aria-label="${esc(label)}">${icon}</span>${html}${ev.length ? '' : `<span class="faint unone">${L('none in the next 60 days', 'aucune d’ici 60 jours')}</span>`}</div>`;
 }
-/** The strip for Today's plan; '' when the calendar isn't connected. */
+/** v1.43: “Coming up” box at the top of Today's plan: collapsed, the kinds with a count of what's ahead (next 60 days);
+    expanded, the calendar strip. Open / closed is remembered on this device. '' when the calendar isn't connected. */
+function upLists(m){
+  const visits = upcomingVisits(99).filter(v => v.D !== todayIdx() || m.visit).map(v => ({ ...v, kind: 'visit' }));
+  const ua = upcomingAppts(99), home = ua.filter(a => a.home).map(a => ({ ...a, kind: 'home' })), appt = ua.filter(a => !a.home).map(a => ({ ...a, kind: 'appt' }));
+  return { visits, home, appt };
+}
+function upcomingBoxHTML(m){
+  if (!Array.isArray(DATA.base?.planned)) return '';
+  const { visits, home, appt } = upLists(m), T0 = todayIdx(), open = !!S.upOpen;
+  const kinds = [['🚗', L('Parent visits', 'Visites des parents'), visits, mod('visits') || visits.length], ['🏠', L('Home visits', 'Visites à domicile'), home, home.length], ['🩺', L('Appointments', 'Rendez-vous'), appt, true]].filter(k => k[3]);
+  const soon = l => l.some(e => e.D <= T0 + 1);   // today or tomorrow: highlighted
+  const sum = kinds.map(([ic, lab, l]) => `<span class="upk${l.length ? '' : ' none'}${soon(l) ? ' soon' : ''}" title="${esc(lab)}: ${l.length}">${ic}<span class="upn">${l.length}</span></span>`).join('');
+  const next = [...visits, ...home, ...appt].sort((a, b) => a.D - b.D || a.st - b.st)[0];
+  return `<div class="upbox${open ? ' open' : ''}">
+    <button type="button" class="upsum" data-uptoggle aria-expanded="${open}"><span class="uptitle">📅 ${L('Coming up', 'À venir')}</span><span class="upks">${sum}</span>${!open && next ? `<span class="upnext faint">${esc(relDay(next.D))}</span>` : ''}<span class="upchev">${open ? '▾' : '▸'}</span></button>
+    ${open ? upcomingStripHTML(m) : ''}</div>`;
+}
 function upcomingStripHTML(m){
   if (!Array.isArray(DATA.base?.planned)) return '';
   UP_ITEMS = [];
-  const visits = upcomingVisits(3).filter(v => v.D !== todayIdx() || m.visit).map(v => ({ ...v, kind: 'visit' }));
-  const ua = upcomingAppts(8), home = ua.filter(a => a.home).map(a => ({ ...a, kind: 'home' })), appt = ua.filter(a => !a.home).map(a => ({ ...a, kind: 'appt' }));
+  const { visits, home, appt } = upLists(m);
   const rows = [upRowHTML('🚗', L('Parent visits', 'Visites des parents'), visits)];
   if (home.length) rows.push(upRowHTML('🏠', L('Home visits', 'Visites à domicile'), home));
   if (appt.length || !home.length) rows.push(upRowHTML('🩺', L('Appointments', 'Rendez-vous'), appt));

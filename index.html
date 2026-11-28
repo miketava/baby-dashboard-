@@ -377,6 +377,18 @@ body.viewonly .fab{display:none!important}
 .tl-track .lnkline{position:absolute;z-index:3;border-radius:2px;opacity:.55;pointer-events:none}
 .tl-track .mk.mklink.reply{width:10px;height:10px;font-size:0;margin-left:-5px}
 .tl.v .mk.mklink.reply{margin-left:0;margin-top:-5px}
+.upbox{margin:2px 0 12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);overflow:hidden}
+.upsum{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;min-height:44px}
+.uptitle{font-weight:650;font-size:14px;white-space:nowrap}
+.upks{display:flex;gap:10px;flex:1;min-width:0}
+.upk{position:relative;font-size:18px;line-height:1;padding-right:6px}
+.upk.none{opacity:.35}
+.upn{position:absolute;right:-6px;top:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--muted);color:#fff;font-size:10.5px;font-weight:700;line-height:16px;text-align:center;box-sizing:border-box}
+.upk.soon .upn{background:var(--accent)}
+.upk.none .upn{display:none}
+.upnext{font-size:12.5px;white-space:nowrap}
+.upchev{color:var(--muted);font-size:13px}
+.upbox .upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:flex;align-items:center;gap:4px;min-width:0}
 .uic{font-size:18px;width:26px;flex:none;text-align:center}
@@ -891,6 +903,7 @@ main{overflow-x:clip}
     <div id="tomorrowCard"></div>
     <div class="card" style="margin-top:14px" id="planCard">
       <div class="card-head"><div><h2 id="planTitle">Today’s plan</h2><div class="sub" id="planSub" data-keep></div></div></div>
+      <div id="upBox"></div>
       <div id="planList"></div>
     </div>
     <div class="card" style="margin-top:14px">
@@ -1250,7 +1263,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.42.1';
+const APP_VERSION = '1.43.0';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1258,6 +1271,9 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.43.0', date:'2026-11-28',
+    en:['Today’s plan: upcoming visits and appointments now have their own “Coming up” box at the top of the card instead of being mixed into the schedule. Closed, it shows 🚗 🏠 🩺 with how many are coming (blue when one is today or tomorrow) and how soon the next is; tap to open the calendar pages. It stays open or closed the way you left it.'],
+    fr:['Plan du jour : les prochaines visites et rendez-vous ont maintenant leur propre encadré « À venir » en haut de la carte au lieu d’être mêlés à l’horaire. Fermé, il montre 🚗 🏠 🩺 avec combien sont à venir (en bleu quand l’un est aujourd’hui ou demain) et dans combien de temps vient le prochain; touchez pour ouvrir les pages de calendrier. Il reste ouvert ou fermé comme vous l’avez laissé.'] },
   { v:'1.42.1', date:'2026-11-27',
     en:['Private notes: when the switch is greyed out, it now says which Apps Script version the dashboard actually sees and what to do (refresh, or redeploy a new version).'],
     fr:['Notes privées : quand l’interrupteur est grisé, il indique maintenant quelle version de l’Apps Script le tableau de bord voit vraiment et quoi faire (actualiser ou redéployer une nouvelle version).'] },
@@ -1851,6 +1867,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },
+  upOpen: false,                          // Today's plan: “Coming up” box expanded on this device (v1.43)
   privateNotes: false,                    // 🔒 Private notes field in Quick Log (v1.38)
   dupKeep: [],                            // entries logged twice that were kept apart on purpose (v1.33)
   trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only
@@ -4489,7 +4506,8 @@ function renderTodayPlan(){
   $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift || tp.wakeShift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
-    + upcomingStripHTML(m);   // v1.40: calendar strip per kind (was three text lines)
+    ;
+  $('#upBox').innerHTML = upcomingBoxHTML(m);   // v1.43: its own collapsible box above the plan
 }
 /** Today's entries: everything logged today, newest first, ready to fix. */
 function renderTodayEntries(){
@@ -5412,12 +5430,28 @@ function upRowHTML(icon, label, list){
     html += `<span class="ugap"><small>${d ? d + L('d', 'j') : L('same', 'même')}</small>→</span>${calPage(e.D, '', UP_ITEMS.push(e) - 1)}`; });
   return `<div class="urow" title="${esc(label)}"><span class="uic" aria-label="${esc(label)}">${icon}</span>${html}${ev.length ? '' : `<span class="faint unone">${L('none in the next 60 days', 'aucune d’ici 60 jours')}</span>`}</div>`;
 }
-/** The strip for Today's plan; '' when the calendar isn't connected. */
+/** v1.43: “Coming up” box at the top of Today's plan: collapsed, the kinds with a count of what's ahead (next 60 days);
+    expanded, the calendar strip. Open / closed is remembered on this device. '' when the calendar isn't connected. */
+function upLists(m){
+  const visits = upcomingVisits(99).filter(v => v.D !== todayIdx() || m.visit).map(v => ({ ...v, kind: 'visit' }));
+  const ua = upcomingAppts(99), home = ua.filter(a => a.home).map(a => ({ ...a, kind: 'home' })), appt = ua.filter(a => !a.home).map(a => ({ ...a, kind: 'appt' }));
+  return { visits, home, appt };
+}
+function upcomingBoxHTML(m){
+  if (!Array.isArray(DATA.base?.planned)) return '';
+  const { visits, home, appt } = upLists(m), T0 = todayIdx(), open = !!S.upOpen;
+  const kinds = [['🚗', L('Parent visits', 'Visites des parents'), visits, mod('visits') || visits.length], ['🏠', L('Home visits', 'Visites à domicile'), home, home.length], ['🩺', L('Appointments', 'Rendez-vous'), appt, true]].filter(k => k[3]);
+  const soon = l => l.some(e => e.D <= T0 + 1);   // today or tomorrow: highlighted
+  const sum = kinds.map(([ic, lab, l]) => `<span class="upk${l.length ? '' : ' none'}${soon(l) ? ' soon' : ''}" title="${esc(lab)}: ${l.length}">${ic}<span class="upn">${l.length}</span></span>`).join('');
+  const next = [...visits, ...home, ...appt].sort((a, b) => a.D - b.D || a.st - b.st)[0];
+  return `<div class="upbox${open ? ' open' : ''}">
+    <button type="button" class="upsum" data-uptoggle aria-expanded="${open}"><span class="uptitle">📅 ${L('Coming up', 'À venir')}</span><span class="upks">${sum}</span>${!open && next ? `<span class="upnext faint">${esc(relDay(next.D))}</span>` : ''}<span class="upchev">${open ? '▾' : '▸'}</span></button>
+    ${open ? upcomingStripHTML(m) : ''}</div>`;
+}
 function upcomingStripHTML(m){
   if (!Array.isArray(DATA.base?.planned)) return '';
   UP_ITEMS = [];
-  const visits = upcomingVisits(3).filter(v => v.D !== todayIdx() || m.visit).map(v => ({ ...v, kind: 'visit' }));
-  const ua = upcomingAppts(8), home = ua.filter(a => a.home).map(a => ({ ...a, kind: 'home' })), appt = ua.filter(a => !a.home).map(a => ({ ...a, kind: 'appt' }));
+  const { visits, home, appt } = upLists(m);
   const rows = [upRowHTML('🚗', L('Parent visits', 'Visites des parents'), visits)];
   if (home.length) rows.push(upRowHTML('🏠', L('Home visits', 'Visites à domicile'), home));
   if (appt.length || !home.length) rows.push(upRowHTML('🩺', L('Appointments', 'Rendez-vous'), appt));
@@ -8995,7 +9029,7 @@ function wire(){
   $('#scriptPill').onclick = () => openSettings('source');
   $('#scorePill').onclick = () => openDrawer(todayIdx());
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); const m = e.target.closest('[data-splitmerge]'); if (m) mergeSplitNights(m.dataset.splitmerge); });
-  document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); });   // v1.40: upcoming strip
+  document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); if (e.target.closest?.('[data-uptoggle]')) { S.upOpen = !S.upOpen; saveSettings(); renderTodayPlan(); } });   // v1.40 strip · v1.43 box
   document.addEventListener('click', e => {   // v1.33: entries logged twice
     const g = e.target.closest?.('[data-dblmerge],[data-dblkeep],[data-dblsee]'); if (!g) return;
     if (g.dataset.dblmerge != null) mergeDouble(+g.dataset.dblmerge); else if (g.dataset.dblkeep != null) keepBothDouble(+g.dataset.dblkeep); else { renderHealthModal(); openModal('mHealth'); }

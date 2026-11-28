@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   scatterX: 'day',
   showCare: false,               // Diaper / Meds on the timeline
   todayTpl: { date: null, id: 'auto' },
+  upOpen: false,                          // Today's plan: “Coming up” box expanded on this device (v1.43)
   privateNotes: false,                    // 🔒 Private notes field in Quick Log (v1.38)
   dupKeep: [],                            // entries logged twice that were kept apart on purpose (v1.33)
   trendAck: {},                           // acknowledged trends: { [kid:]key: { at, v, by } } (v1.31)   // manual override for today only

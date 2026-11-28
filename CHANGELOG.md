@@ -8,6 +8,12 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.43.0 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- **"Coming up" box** at the top of Today's plan, between the template name and the schedule, instead of the calendar strip at the bottom of the schedule.
+  - **Closed** (default): 📅 Coming up · 🚗 · 🏠 · 🩺, each with a small count of what's ahead in the next 60 days (blue when one is today or tomorrow; faded at 0), and how soon the next one is ("tomorrow", "in 3 days"). The 🏠 icon appears only when a home visit is coming; 🚗 on the placement path or when visits are on the calendar.
+  - **Tap** to open the calendar pages from v1.40 (today → next 3 per kind with the day gaps; tap a page for details). Open / closed is remembered on this device.
+
 ## v1.42.1 — 2026-11-27 · Apps Script v1.9 (no script change)
 
 - *Settings → General → Private notes*: when the switch is greyed out, the note now shows the Apps Script version the dashboard actually receives from the web app (e.g. "reports v1.7") and what to do: tap Refresh after redeploying, or, if it still shows the old number, deploy a **new version** of the existing web app deployment (editing `Code.gs` alone doesn't change what the web app runs).

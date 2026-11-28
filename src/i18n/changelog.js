@@ -1,4 +1,7 @@
 const CHANGELOG = [
+  { v:'1.43.0', date:'2026-11-28',
+    en:['Today’s plan: upcoming visits and appointments now have their own “Coming up” box at the top of the card instead of being mixed into the schedule. Closed, it shows 🚗 🏠 🩺 with how many are coming (blue when one is today or tomorrow) and how soon the next is; tap to open the calendar pages. It stays open or closed the way you left it.'],
+    fr:['Plan du jour : les prochaines visites et rendez-vous ont maintenant leur propre encadré « À venir » en haut de la carte au lieu d’être mêlés à l’horaire. Fermé, il montre 🚗 🏠 🩺 avec combien sont à venir (en bleu quand l’un est aujourd’hui ou demain) et dans combien de temps vient le prochain; touchez pour ouvrir les pages de calendrier. Il reste ouvert ou fermé comme vous l’avez laissé.'] },
   { v:'1.42.1', date:'2026-11-27',
     en:['Private notes: when the switch is greyed out, it now says which Apps Script version the dashboard actually sees and what to do (refresh, or redeploy a new version).'],
     fr:['Notes privées : quand l’interrupteur est grisé, il indique maintenant quelle version de l’Apps Script le tableau de bord voit vraiment et quoi faire (actualiser ou redéployer une nouvelle version).'] },
