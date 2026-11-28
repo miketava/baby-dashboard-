@@ -391,6 +391,15 @@ body.viewonly .fab{display:none!important}
 .upchev{color:var(--muted);font-size:13px}
 .upbox .hintbtn{min-height:0!important;padding:0 8px!important;height:24px;border-radius:99px;font-size:13px;color:var(--muted);margin:2px 0}
 .hintbtn.on{color:var(--accent)}
+@media (max-width:720px){
+  .today-head{display:grid;grid-template-columns:1fr auto;grid-template-areas:"ttl btn" "tpl tpl" "peek peek";gap:8px 10px}
+  .today-head .ttl{grid-area:ttl;font-size:16px}
+  .today-head #todayTpl{grid-area:tpl;width:100%;max-width:none;min-height:44px;font-size:16px}
+  .today-head .peek{grid-area:peek;white-space:normal;min-width:0;font-size:14px;color:var(--text)}
+  .today-head #todayCollapse{grid-area:btn;min-height:40px;padding:6px 12px;font-size:13px;font-weight:600}
+}
+.pchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pchip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--border);font-size:13px;color:var(--text)}
 .upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:grid;grid-template-columns:26px 44px repeat(3,minmax(24px,1fr) 44px);align-items:center;column-gap:2px;min-width:0}   /* fixed columns: dates line up across rows */
@@ -1266,7 +1275,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.44.0';
+const APP_VERSION = '1.44.1';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1274,6 +1283,11 @@ const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recentl
 const REQUIRED_SCRIPT = '1.9';
 /** Newest first. Each entry: version, date, and what changed (English / French). */
 const CHANGELOG = [
+  { v:'1.44.1', date:'2026-11-28',
+    en:['Phones: the Today box header is laid out in rows: the title with a clear Show ▾ / Hide ▴ button, the template picker across the full width, then the current status in full (no more “since w…”).',
+        'Today’s plan: the line under the title is now small chips (✨ template · ⏰ woke 06:33 · Nap 1 −27m · 🩺 appointment) instead of a sentence.'],
+    fr:['Téléphones : l’en-tête de l’encadré Aujourd’hui est en rangées : le titre avec un bouton clair Afficher ▾ / Masquer ▴, le choix du modèle sur toute la largeur, puis l’état actuel en entier (fini « since w… »).',
+        'Plan du jour : la ligne sous le titre est maintenant de petites pastilles (✨ modèle · ⏰ réveil 06:33 · Sieste 1 −27 min · 🩺 rendez-vous) au lieu d’une phrase.'] },
   { v:'1.44.0', date:'2026-11-28',
     en:['Today: “Coming up” is its own card between the Today box and Today’s plan.',
         'Today box: the template picker gets the full width (no more cut-off name); ✨ marks the template picked automatically and 📌 one you chose, with a tooltip saying which. The 🔔 switch moved to Settings → Reminders (Enable tab reminders).',
@@ -4217,7 +4231,7 @@ function budgetHTML(S0){
 }
 function renderToday(){
   const box = $('#today'); box.classList.toggle('collapsed', !!UI.todayCollapsed);
-  $('#todayCollapse').textContent = UI.todayCollapsed ? '▸' : '▾';
+  $('#todayCollapse').textContent = UI.todayCollapsed ? L('Show ▾', 'Afficher ▾') : L('Hide ▴', 'Masquer ▴');   // v1.44.1: say what it does
   const S0 = todayState(), D = S0.D;
   $('#todayTitle').textContent = `Today · ${fmtDay(D)} · ${fmtTime(S0.now)}`;
   const isOverride = S.todayTpl?.date === isoOf(D) && S.todayTpl.id !== 'auto';
@@ -4494,6 +4508,7 @@ function planActual(it, m, used){
   if (it.kind === 'meal') { const e = m.evs.find(e => isMeal(e) && !used.has(e) && e.st != null && Math.abs(e.st - a) <= 75); if (e) { used.add(e); return fmtTime(e.st); } return null; }
   return null;
 }
+const isOverride0 = () => S.todayTpl?.date === isoOf(todayIdx()) && S.todayTpl.id && S.todayTpl.id !== 'auto';
 function renderTodayPlan(){
   const card = $('#planCard'); if (!card) return;
   const m = todayMetrics(), tp = m.tpl;
@@ -4517,7 +4532,12 @@ function renderTodayPlan(){
   const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && !isRecent(it) && k !== nextI).length, open = !!UI.planPast;
   $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
   const pv = !m.visit ? plannedVisit(m.D) : null, ap = !m.visit && !pv ? apptOn(m.D) : null;
-  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift || tp.wakeShift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
+  { // v1.44.1: chips instead of a sentence
+    const chip = (t, title) => `<span class="pchip"${title ? ` title="${esc(title)}"` : ''}>${t}</span>`;
+    const shiftChip = tp.wakeShift ? chip(`⏰ ${L(`woke ${fmtTime(tp.wokeAt)}`, `réveil ${fmtTime(tp.wokeAt)}`)} · ${L('Nap 1', 'Sieste 1')} −${fmtDur(tp.wakeShift)}`, shiftNote(tp).trim())
+      : tp.shift ? chip(`↔ ${esc(shiftNote(tp).replace(/^\s*\(|\)\s*$/g, '').trim())}`) : '';
+    $('#planSub').innerHTML = `<div class="pchips">${chip(`${isOverride0() ? '📌' : '✨'} <b>${esc(tp.name)}</b>`, L('Change it in the Today box above', 'À changer dans l’encadré Aujourd’hui ci-dessus'))}${pv ? chip(`🗓️ ${L('calendar visit', 'visite agenda')}`) : ''}${ap ? chip(`${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}`) : ''}${shiftChip}${beds.length > 1 ? chip(`🌙 ${L('bedtime follows the bridge nap', 'coucher selon la sieste de transition')}`) : ''}</div>`;
+  }
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     ;

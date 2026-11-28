@@ -109,6 +109,15 @@ body.viewonly .fab{display:none!important}
 .upchev{color:var(--muted);font-size:13px}
 .upbox .hintbtn{min-height:0!important;padding:0 8px!important;height:24px;border-radius:99px;font-size:13px;color:var(--muted);margin:2px 0}
 .hintbtn.on{color:var(--accent)}
+@media (max-width:720px){
+  .today-head{display:grid;grid-template-columns:1fr auto;grid-template-areas:"ttl btn" "tpl tpl" "peek peek";gap:8px 10px}
+  .today-head .ttl{grid-area:ttl;font-size:16px}
+  .today-head #todayTpl{grid-area:tpl;width:100%;max-width:none;min-height:44px;font-size:16px}
+  .today-head .peek{grid-area:peek;white-space:normal;min-width:0;font-size:14px;color:var(--text)}
+  .today-head #todayCollapse{grid-area:btn;min-height:40px;padding:6px 12px;font-size:13px;font-weight:600}
+}
+.pchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pchip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--border);font-size:13px;color:var(--text)}
 .upstrip{margin:0;padding:2px 12px 12px}
 .upstrip{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .urow{display:grid;grid-template-columns:26px 44px repeat(3,minmax(24px,1fr) 44px);align-items:center;column-gap:2px;min-width:0}   /* fixed columns: dates line up across rows */

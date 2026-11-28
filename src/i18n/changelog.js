@@ -1,4 +1,9 @@
 const CHANGELOG = [
+  { v:'1.44.1', date:'2026-11-28',
+    en:['Phones: the Today box header is laid out in rows: the title with a clear Show ▾ / Hide ▴ button, the template picker across the full width, then the current status in full (no more “since w…”).',
+        'Today’s plan: the line under the title is now small chips (✨ template · ⏰ woke 06:33 · Nap 1 −27m · 🩺 appointment) instead of a sentence.'],
+    fr:['Téléphones : l’en-tête de l’encadré Aujourd’hui est en rangées : le titre avec un bouton clair Afficher ▾ / Masquer ▴, le choix du modèle sur toute la largeur, puis l’état actuel en entier (fini « since w… »).',
+        'Plan du jour : la ligne sous le titre est maintenant de petites pastilles (✨ modèle · ⏰ réveil 06:33 · Sieste 1 −27 min · 🩺 rendez-vous) au lieu d’une phrase.'] },
   { v:'1.44.0', date:'2026-11-28',
     en:['Today: “Coming up” is its own card between the Today box and Today’s plan.',
         'Today box: the template picker gets the full width (no more cut-off name); ✨ marks the template picked automatically and 📌 one you chose, with a tooltip saying which. The 🔔 switch moved to Settings → Reminders (Enable tab reminders).',

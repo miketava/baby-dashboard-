@@ -198,6 +198,7 @@ function planActual(it, m, used){
   if (it.kind === 'meal') { const e = m.evs.find(e => isMeal(e) && !used.has(e) && e.st != null && Math.abs(e.st - a) <= 75); if (e) { used.add(e); return fmtTime(e.st); } return null; }
   return null;
 }
+const isOverride0 = () => S.todayTpl?.date === isoOf(todayIdx()) && S.todayTpl.id && S.todayTpl.id !== 'auto';
 function renderTodayPlan(){
   const card = $('#planCard'); if (!card) return;
   const m = todayMetrics(), tp = m.tpl;
@@ -221,7 +222,12 @@ function renderTodayPlan(){
   const nPast = items.filter((it, k) => isPast(it) && !isNow(it) && !isRecent(it) && k !== nextI).length, open = !!UI.planPast;
   $('#planTitle').textContent = L('Today’s plan', 'Plan du jour');
   const pv = !m.visit ? plannedVisit(m.D) : null, ap = !m.visit && !pv ? apptOn(m.D) : null;
-  $('#planSub').innerHTML = `${esc(tp.name)}${pv ? ` · 🗓️ ${L('visit from your calendar', 'visite de votre agenda')}` : ''}${ap ? ` · ${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}` : ''}${tp.shift || tp.wakeShift ? esc(shiftNote(tp)) : ''} · ${L('change it in the banner above', 'à changer dans le bandeau ci-dessus')}${beds.length > 1 ? ` · ${L('bedtime follows the bridge nap', 'le coucher suit la sieste de transition')}` : ''}`;
+  { // v1.44.1: chips instead of a sentence
+    const chip = (t, title) => `<span class="pchip"${title ? ` title="${esc(title)}"` : ''}>${t}</span>`;
+    const shiftChip = tp.wakeShift ? chip(`⏰ ${L(`woke ${fmtTime(tp.wokeAt)}`, `réveil ${fmtTime(tp.wokeAt)}`)} · ${L('Nap 1', 'Sieste 1')} −${fmtDur(tp.wakeShift)}`, shiftNote(tp).trim())
+      : tp.shift ? chip(`↔ ${esc(shiftNote(tp).replace(/^\s*\(|\)\s*$/g, '').trim())}`) : '';
+    $('#planSub').innerHTML = `<div class="pchips">${chip(`${isOverride0() ? '📌' : '✨'} <b>${esc(tp.name)}</b>`, L('Change it in the Today box above', 'À changer dans l’encadré Aujourd’hui ci-dessus'))}${pv ? chip(`🗓️ ${L('calendar visit', 'visite agenda')}`) : ''}${ap ? chip(`${ap.home ? '🏠' : '🩺'} ${esc(ap.title)} ${fmtTime(ap.st)}`) : ''}${shiftChip}${beds.length > 1 ? chip(`🌙 ${L('bedtime follows the bridge nap', 'coucher selon la sieste de transition')}`) : ''}</div>`;
+  }
   $('#planList').innerHTML = (nPast ? `<button class="btn sm ghost pl-more" id="planPast">${open ? L('Hide earlier', 'Masquer le début de journée') : L(`Earlier today (${nPast}) ▸`, `Plus tôt aujourd’hui (${nPast}) ▸`)}</button>` : '')
     + `<div class="pl${open ? ' showpast' : ''}">${rows.join('')}${medPlanRows()}</div>`
     ;

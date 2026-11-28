@@ -148,7 +148,7 @@ function budgetHTML(S0){
 }
 function renderToday(){
   const box = $('#today'); box.classList.toggle('collapsed', !!UI.todayCollapsed);
-  $('#todayCollapse').textContent = UI.todayCollapsed ? '▸' : '▾';
+  $('#todayCollapse').textContent = UI.todayCollapsed ? L('Show ▾', 'Afficher ▾') : L('Hide ▴', 'Masquer ▴');   // v1.44.1: say what it does
   const S0 = todayState(), D = S0.D;
   $('#todayTitle').textContent = `Today · ${fmtDay(D)} · ${fmtTime(S0.now)}`;
   const isOverride = S.todayTpl?.date === isoOf(D) && S.todayTpl.id !== 'auto';

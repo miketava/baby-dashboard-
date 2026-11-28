@@ -8,6 +8,11 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.44.1 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- **Today box header on phones:** row 1 is the title and a labelled **Show ▾ / Hide ▴** button (was a small ▸ / ▾ at the far right); row 2 the template picker across the full width at a readable size; row 3, when the box is collapsed, the current status in full, wrapping instead of being cut off.
+- **Today's plan subtitle as chips:** ✨/📌 the template · 🗓️ calendar visit · 🩺/🏠 appointment and time · ⏰ "woke 06:33 · Nap 1 −27m" (or the visit shift) · 🌙 bridge-nap bedtime. The "change it in the banner above" text is now the template chip's tooltip.
+
 ## v1.44.0 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - **Coming up** is now its own card between the Today box and *Today's plan* (it was inside the plan card).
