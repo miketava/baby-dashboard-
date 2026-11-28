@@ -8,6 +8,10 @@ The first time someone opens the app after an update, a **What's new** popup lis
 
 ---
 
+## v1.45.2 — 2026-11-28 · Apps Script v1.9 (no script change)
+
+- Sleep music tip: **Later** snoozes it until 4 more naps or bedtimes have been logged (shared between phones); **No thanks** still hides it for good, and **Set it up** opens the setting.
+
 ## v1.45.1 — 2026-11-28 · Apps Script v1.9 (no script change)
 
 - **Finding sleep music:** with no playlist set and 3+ naps or bedtimes logged in the last week, the Today box shows a one-time tip during the nap / bedtime window: *Tip: put her lullaby playlist one tap away* with **Set it up** (opens *Settings → General*) or **No thanks** (never shown again, on either phone).

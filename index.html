@@ -1286,7 +1286,7 @@ main{overflow-x:clip}
    1. CONSTANTS & DEFAULTS
    ════════════════════════════════════════════════════════════════════════════ */
 /** Dashboard version (shown in Settings → About; bump it and add a CHANGELOG entry with every release). */
-const APP_VERSION = '1.45.1';
+const APP_VERSION = '1.45.2';
 /** “Make a copy” link for the blank template Sheet (Daily Log tab with the headers ready). */
 const TEMPLATE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1_SqZC-ntwuU4Quo3q5gxOKk_gS4fthuISEdzy1mq-ZI/copy';
 const PLAN_GRACE_MIN = 45;   // Today's plan keeps items that ended this recently in view
@@ -1296,6 +1296,9 @@ const REQUIRED_SCRIPT = '1.9';
 /** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
 const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
+  { v:'1.45.2', date:'2026-11-28',
+    en:['The sleep music tip has a Later button: it comes back after 4 more naps or bedtimes are logged. No thanks still hides it for good.'],
+    fr:['L’astuce de musique pour dormir a un bouton Plus tard : elle revient après 4 siestes ou couchers de plus. Non merci la masque toujours pour de bon.'] },
   { v:'1.45.1', date:'2026-11-28',
     en:['If you log naps or bedtimes without a sleep playlist set, a one-time tip near nap time offers to set it up (or No thanks). What’s new entries for features you set up in Settings now have a button that takes you there.'],
     fr:['Si vous notez des siestes ou des couchers sans liste de musique, une astuce unique près de l’heure de la sieste propose de la configurer (ou Non merci). Les nouveautés à configurer dans les Réglages ont maintenant un bouton qui vous y mène.'] },
@@ -5625,8 +5628,9 @@ function sleepMusicNow(m, now){
 function sleepMusicTip(m, now){
   if (viewOnly() || S.musicTipOff || musicOk(S.music?.nap) || musicOk(S.music?.bed) || !sleepWindow(m, now)) return null;
   if (DATA.events.filter(e => isSleep(e) && !isCarNap(e) && e.d >= todayIdx() - 7).length < 3) return null;
+  if (S.musicTipLater != null && DATA.events.filter(e => isSleep(e) && !isCarNap(e) && e.s > S.musicTipLater).length < 4) return null;   // “Later”: again after 4 more naps / bedtimes
   return { cls: 'info', html: `🎵 ${L('<b>Tip:</b> put her lullaby playlist one tap away at nap and bedtime.', '<b>Astuce :</b> mettez sa liste de berceuses à un geste, à la sieste et au coucher.')}
-    <button class="btn sm primary" data-gopane="general" style="margin-left:6px">${L('Set it up', 'Configurer')}</button><button class="btn sm ghost" data-musictip="off">${L('No thanks', 'Non merci')}</button>` };
+    <button class="btn sm primary" data-gopane="general" style="margin-left:6px">${L('Set it up', 'Configurer')}</button><button class="btn sm" data-musictip="later">${L('Later', 'Plus tard')}</button><button class="btn sm ghost" data-musictip="off">${L('No thanks', 'Non merci')}</button>` };
 }
 function sleepMusicCallout(m, now){
   if (viewOnly()) return null;
@@ -7941,7 +7945,7 @@ function achDetail(id){
    ════════════════════════════════════════════════════════════════════════════ */
 const LS_CFGSYNC = 'bld.cfgsync.v1';
 const CFG_CHILD_KEYS = KID_KEYS.filter(k => k !== 'meds');
-const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes', 'music', 'musicTipOff'];   // share: viewer keys, so “Copy script” has them on every device
+const CFG_GLOBAL_KEYS = ['kids', 'blankKid', 'title', 'dayBoundary', 'foodWords', 'presets', 'catColors', 'checkinAt', 'contactRules', 'vaxSchedule', 'todayTpl', 'apptFor', 'apptIgnoreCals', 'libSeen', 'share', 'trendAck', 'dupKeep', 'badges', 'privateNotes', 'music', 'musicTipOff', 'musicTipLater'];   // share: viewer keys, so “Copy script” has them on every device
 const MED_SHEET_COLS = ['Child', 'Name', 'Dose', 'Times', 'From', 'Until', 'Note'];
 let CFGS = lsGet(LS_CFGSYNC, null) || { hash: {}, at: null };
 let cfgApplying = false, cfgPushTimer = null, cfgReady = false;
@@ -9145,7 +9149,7 @@ function wire(){
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); const m = e.target.closest('[data-splitmerge]'); if (m) mergeSplitNights(m.dataset.splitmerge); });
   document.addEventListener('click', e => {   // v1.45.1: “go” buttons (What's new, tips) and the music tip
     const g = e.target.closest?.('[data-gopane]'); if (g) { if ($('#mNew')?.classList.contains('on')) seenWhatsNew(); closeModals(); openSettings(g.dataset.gopane); }
-    if (e.target.closest?.('[data-musictip]')) { S.musicTipOff = true; saveSettings(); renderAll(); }
+    const mt = e.target.closest?.('[data-musictip]'); if (mt) { if (mt.dataset.musictip === 'later') S.musicTipLater = nowAbs(); else S.musicTipOff = true; saveSettings(); renderAll(); }
   });
   document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); if (e.target.closest?.('[data-uptoggle]')) { S.upOpen = !S.upOpen; saveSettings(); renderTodayPlan(); } });   // v1.40 strip · v1.43 box
   document.addEventListener('click', e => {   // v1.33: entries logged twice

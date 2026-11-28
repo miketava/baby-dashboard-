@@ -19,7 +19,7 @@ function wire(){
   $('#healthBody').addEventListener('click', e => { const b = e.target.closest('[data-dupdel]'); if (b) cleanDuplicates(b.dataset.dupdel); const m = e.target.closest('[data-splitmerge]'); if (m) mergeSplitNights(m.dataset.splitmerge); });
   document.addEventListener('click', e => {   // v1.45.1: “go” buttons (What's new, tips) and the music tip
     const g = e.target.closest?.('[data-gopane]'); if (g) { if ($('#mNew')?.classList.contains('on')) seenWhatsNew(); closeModals(); openSettings(g.dataset.gopane); }
-    if (e.target.closest?.('[data-musictip]')) { S.musicTipOff = true; saveSettings(); renderAll(); }
+    const mt = e.target.closest?.('[data-musictip]'); if (mt) { if (mt.dataset.musictip === 'later') S.musicTipLater = nowAbs(); else S.musicTipOff = true; saveSettings(); renderAll(); }
   });
   document.addEventListener('click', e => { const u = e.target.closest?.('.ucal[data-up]'); if (u) showUpcoming(+u.dataset.up, u); if (e.target.closest?.('[data-uptoggle]')) { S.upOpen = !S.upOpen; saveSettings(); renderTodayPlan(); } });   // v1.40 strip · v1.43 box
   document.addEventListener('click', e => {   // v1.33: entries logged twice

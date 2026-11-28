@@ -30,8 +30,9 @@ function sleepMusicNow(m, now){
 function sleepMusicTip(m, now){
   if (viewOnly() || S.musicTipOff || musicOk(S.music?.nap) || musicOk(S.music?.bed) || !sleepWindow(m, now)) return null;
   if (DATA.events.filter(e => isSleep(e) && !isCarNap(e) && e.d >= todayIdx() - 7).length < 3) return null;
+  if (S.musicTipLater != null && DATA.events.filter(e => isSleep(e) && !isCarNap(e) && e.s > S.musicTipLater).length < 4) return null;   // “Later”: again after 4 more naps / bedtimes
   return { cls: 'info', html: `🎵 ${L('<b>Tip:</b> put her lullaby playlist one tap away at nap and bedtime.', '<b>Astuce :</b> mettez sa liste de berceuses à un geste, à la sieste et au coucher.')}
-    <button class="btn sm primary" data-gopane="general" style="margin-left:6px">${L('Set it up', 'Configurer')}</button><button class="btn sm ghost" data-musictip="off">${L('No thanks', 'Non merci')}</button>` };
+    <button class="btn sm primary" data-gopane="general" style="margin-left:6px">${L('Set it up', 'Configurer')}</button><button class="btn sm" data-musictip="later">${L('Later', 'Plus tard')}</button><button class="btn sm ghost" data-musictip="off">${L('No thanks', 'Non merci')}</button>` };
 }
 function sleepMusicCallout(m, now){
   if (viewOnly()) return null;

@@ -1,6 +1,9 @@
 /** v1.45.1: an entry can carry go: { pane, en, fr } — a button in What's new and the changelog that opens that Settings page. */
 const clGo = e => e.go && !viewOnly() ? `<button class="btn sm primary" data-gopane="${e.go.pane}" style="margin:2px 0 6px">${esc(L(e.go.en, e.go.fr))} →</button>` : '';
 const CHANGELOG = [
+  { v:'1.45.2', date:'2026-11-28',
+    en:['The sleep music tip has a Later button: it comes back after 4 more naps or bedtimes are logged. No thanks still hides it for good.'],
+    fr:['L’astuce de musique pour dormir a un bouton Plus tard : elle revient après 4 siestes ou couchers de plus. Non merci la masque toujours pour de bon.'] },
   { v:'1.45.1', date:'2026-11-28',
     en:['If you log naps or bedtimes without a sleep playlist set, a one-time tip near nap time offers to set it up (or No thanks). What’s new entries for features you set up in Settings now have a button that takes you there.'],
     fr:['Si vous notez des siestes ou des couchers sans liste de musique, une astuce unique près de l’heure de la sieste propose de la configurer (ou Non merci). Les nouveautés à configurer dans les Réglages ont maintenant un bouton qui vous y mène.'] },
